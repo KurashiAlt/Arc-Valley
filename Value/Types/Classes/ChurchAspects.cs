@@ -80,7 +80,7 @@ public class ChurchAspect : IArcObject
             Instance.Localisation.Add($"{ChurchAspect.Id}", ChurchAspect.Name.Value);
             Instance.Localisation.Add($"desc_{ChurchAspect.Id}", ChurchAspect.Desc.Value);
         }
-        Instance.OverwriteFile(Path.Combine(Instance.directory, "target/common/church_aspects/ChurchAspects.txt"), sb.ToString());
+        Instance.OverwriteFile("target/common/church_aspects/ChurchAspects.txt", sb.ToString());
         Console.WriteLine($"Finished Transpiling Church Aspects".Pastel(ConsoleColor.Cyan));
     }
 }

@@ -52,13 +52,16 @@ namespace ArcInstance
             Building.Transpile();
             TranspileCountries();
             ChurchAspect.Transpile();
-            
+            AdvisorType.Transpile();
+            TradeNode.Transpile();
+
             TranspileLocalisations();
 
             return;
         }
         public static void OverwriteFile(string path, string text, bool AllowFormatting = true)
         {
+            path = Path.Combine(directory, path);
             if (AllowFormatting && args.Contains("--format")) text = Parser.FormatCode(text);
 
             if(File.Exists(path))
@@ -78,12 +81,12 @@ namespace ArcInstance
             {
                 Compiler comp = new();
                 sb.Append($"{ctr.Tag} = \"countries/{ctr.Tag}.txt\"\n");
-                OverwriteFile(Path.Combine(directory, $"target/common/countries/{ctr.Tag}.txt"), comp.Compile($"graphical_culture = {ctr.GraphicalCulture} color = {{ {ctr.Color} }} historical_idea_groups = {{ {ctr.HistoricalIdeaGroups} }} historical_units = {{ {ctr.HistoricalUnits} }} monarch_names = {{ {ctr.MonarchNames} }} leader_names = {{ {ctr.LeaderNames} }} ship_names = {{ {ctr.ShipNames} }} army_names = {{ {ctr.ArmyNames} }} fleet_names = {{ {ctr.FleetNames} }} {ctr.Definitions}"));
-                OverwriteFile(Path.Combine(directory, $"target/history/countries/{ctr.Tag}.txt"), comp.Compile($"government = {ctr.Government} government_rank = {ctr.GovernmentRank} mercantilism = {ctr.Mercantilism} technology_group = {ctr.TechnologyGroup} religion = {ctr.Religion} primary_culture = {ctr.PrimaryCulture} capital = {ctr.Capital.Id}  {ctr.History}"));
+                OverwriteFile($"target/common/countries/{ctr.Tag}.txt", comp.Compile($"graphical_culture = {ctr.GraphicalCulture} color = {{ {ctr.Color} }} historical_idea_groups = {{ {ctr.HistoricalIdeaGroups} }} historical_units = {{ {ctr.HistoricalUnits} }} monarch_names = {{ {ctr.MonarchNames} }} leader_names = {{ {ctr.LeaderNames} }} ship_names = {{ {ctr.ShipNames} }} army_names = {{ {ctr.ArmyNames} }} fleet_names = {{ {ctr.FleetNames} }} {ctr.Definitions}"));
+                OverwriteFile($"target/history/countries/{ctr.Tag}.txt", comp.Compile($"government = {ctr.Government} government_rank = {ctr.GovernmentRank} mercantilism = {ctr.Mercantilism} technology_group = {ctr.TechnologyGroup} religion = {ctr.Religion} primary_culture = {ctr.PrimaryCulture} capital = {ctr.Capital.Id}  {ctr.History}"));
                 Localisation.Add($"{ctr.Tag}", $"{ctr.Name}");
                 Localisation.Add($"{ctr.Tag}_ADJ", $"{ctr.Adj}");
             }
-            OverwriteFile(Path.Combine(directory, "target/common/country_tags/countries.txt"), sb.ToString());
+            OverwriteFile("target/common/country_tags/countries.txt", sb.ToString());
             Console.WriteLine($"Finished Transpiling Countries".Pastel(ConsoleColor.Cyan));
         }
         private static void TranspileAdjacencies()
@@ -94,7 +97,7 @@ namespace ArcInstance
                 sb.Append($"{adjacency.From.Id};{adjacency.To.Id};{adjacency.Type};{adjacency.Through.Id};{adjacency.StartX};{adjacency.StartY};{adjacency.StopX};{adjacency.StopY};;\n");
             }
             sb.Append("-1;-1;;-1;-1;-1;-1;-1;-1;");
-            OverwriteFile(Path.Combine(directory, "target/map/adjacencies.csv"), sb.ToString(), false);
+            OverwriteFile("target/map/adjacencies.csv", sb.ToString(), false);
             Console.WriteLine($"Finished Transpiling Adjacencies".Pastel(ConsoleColor.Cyan));
         }
         private static void TranspileBookmarks()
@@ -119,7 +122,7 @@ namespace ArcInstance
                 if (bookmark.Default) sb.Append("default = yes ");
                 if (!bookmark.Effect.IsEmpty()) sb.Append($"effect = {{ {bookmark.Effect.Compile()} }} ");
                 sb.Append($"}} ");
-                OverwriteFile(Path.Combine(directory, $"target/common/bookmarks/{bookmark.Id}.txt"), sb.ToString());
+                OverwriteFile($"target/common/bookmarks/{bookmark.Id}.txt", sb.ToString());
             }
             Console.WriteLine($"Finished Transpiling Bookmarks".Pastel(ConsoleColor.Cyan));
         }
@@ -130,7 +133,7 @@ namespace ArcInstance
             {
                 sb.Append($" {loc.Key}: \"{loc.Value.Trim('"')}\"\n");
             }
-            OverwriteFile(Path.Combine(directory, "target/localisation/replace/arc5_l_english.yml"), Parser.ConvertStringToUtf8Bom(sb.ToString()));
+            OverwriteFile("target/localisation/replace/arc5_l_english.yml", Parser.ConvertStringToUtf8Bom(sb.ToString()));
             Console.WriteLine($"Finished Transpiling Localisations".Pastel(ConsoleColor.Cyan));
         }
         private static void TranspileTerrains()
@@ -145,7 +148,7 @@ namespace ArcInstance
             sb.Append(" } ");
             sb.Append($"terrain = {{ {Compiler.global["terrain_declarations"]} }}");
             sb.Append($"tree = {{ {Compiler.global["tree"]} }}");
-            OverwriteFile(Path.Combine(directory, "target/map/terrain.txt"), sb.ToString());
+            OverwriteFile("target/map/terrain.txt", sb.ToString());
             Console.WriteLine($"Finished Transpiling Terrains".Pastel(ConsoleColor.Cyan));
         }
         private static void TranspileOnActions()
@@ -155,7 +158,7 @@ namespace ArcInstance
             {
                 sb.Append($"{OnAction.Key} = {{ {OnAction.Value.Compile()}}} ");
             }
-            OverwriteFile(Path.Combine(directory, "target/common/on_actions/00_on_actions.txt"), sb.ToString());
+            OverwriteFile("target/common/on_actions/00_on_actions.txt", sb.ToString());
             Console.WriteLine($"Finished Transpiling On Actions".Pastel(ConsoleColor.Cyan));
         }
         private static void TranspileTradeGoods()
@@ -169,8 +172,8 @@ namespace ArcInstance
                 Localisation.Add(tradeGood.Id.Value, tradeGood.Name.Value);
                 Localisation.Add($"{tradeGood.Id}DESC", tradeGood.Description.Value);
             }
-            OverwriteFile(Path.Combine(directory, "target/common/tradegoods/00_tradegoods.txt"), sb.ToString());
-            OverwriteFile(Path.Combine(directory, "target/common/prices/00_prices.txt"), sa.ToString());
+            OverwriteFile("target/common/tradegoods/00_tradegoods.txt", sb.ToString());
+            OverwriteFile("target/common/prices/00_prices.txt", sa.ToString());
             Console.WriteLine($"Finished Transpiling Trade Goods".Pastel(ConsoleColor.Cyan));
         }
         private static void TranspileSuperregions()
@@ -183,7 +186,7 @@ namespace ArcInstance
                 Localisation.Add($"{superregion.Id.Value}_name", superregion.Name.Value);
                 Localisation.Add($"{superregion.Id.Value}_adj", superregion.Adj.Value);
             }
-            OverwriteFile(Path.Combine(directory, "target/map/superregion.txt"), sb.ToString());
+            OverwriteFile("target/map/superregion.txt", sb.ToString());
             Console.WriteLine($"Finished Transpiling Superregion".Pastel(ConsoleColor.Cyan));
         }
         private static void TranspileRegions()
@@ -196,7 +199,7 @@ namespace ArcInstance
                 Localisation.Add($"{region.Id.Value}_name", region.Name.Value);
                 Localisation.Add($"{region.Id.Value}_adj", region.Adj.Value);
             }
-            OverwriteFile(Path.Combine(directory, "target/map/region.txt"), sb.ToString());
+            OverwriteFile("target/map/region.txt", sb.ToString());
             Console.WriteLine($"Finished Transpiling Regions".Pastel(ConsoleColor.Cyan));
         }
         private static void TranspileAreas()
@@ -207,7 +210,7 @@ namespace ArcInstance
                 sb.Append($"{area.Id} = {{ {string.Join(' ', from Province in Province.Provinces.Values() where Province.Area == area select Province.Id)} }} ");
                 Localisation.Add($"{area.Id.Value}", area.Name.Value);
             }
-            OverwriteFile(Path.Combine(directory, "target/map/area.txt"), sb.ToString());
+            OverwriteFile("target/map/area.txt", sb.ToString());
             Console.WriteLine($"Finished Transpiling Areas".Pastel(ConsoleColor.Cyan));
         }
         public static void TranspileTarget(string path)
@@ -286,7 +289,7 @@ namespace ArcInstance
 
                 if (province.Value.IsLand() || province.Value.Impassible) Continent.Append($" {province.Value.Id}");
 
-                OverwriteFile($"{directory}/target/history/provinces/{id} - ARC.txt", result);
+                OverwriteFile($"target/history/provinces/{id} - ARC.txt", result);
             }
             Continent.Append(" }");
 
@@ -302,10 +305,10 @@ namespace ArcInstance
                 return $"base_tax = {first} base_production = {second} base_manpower = {third} ";
             }
 
-            OverwriteFile(directory + "/target/map/continent.txt", Continent.ToString());
-            OverwriteFile(directory + "/target/map/positions.txt", Positions.ToString());
-            OverwriteFile(directory + "/target/map/definition.csv", ProvinceDefines.ToString(), false);
-            OverwriteFile(directory + "/target/map/climate.txt", $@"
+            OverwriteFile("target/map/continent.txt", Continent.ToString());
+            OverwriteFile("target/map/positions.txt", Positions.ToString());
+            OverwriteFile("target/map/definition.csv", ProvinceDefines.ToString(), false);
+            OverwriteFile("target/map/climate.txt", $@"
 tropical = {{
     
 }}
@@ -348,7 +351,7 @@ severe_monsoon = {{
 }}
 
 equator_y_on_province_image = 224");
-            OverwriteFile(directory + "/target/map/default.map", $@"
+            OverwriteFile("target/map/default.map", $@"
 width = 4096
 height = 2816
 

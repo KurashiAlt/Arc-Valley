@@ -129,7 +129,7 @@ public class Building : IArcObject
             Instance.Localisation.Add($"building_{building.Id}", building.Name.Value);
             Instance.Localisation.Add($"building_{building.Id}_desc", building.Desc.Value);
         }
-        Instance.OverwriteFile(Path.Combine(Instance.directory, "target/common/buildings/arc.txt"), sb.ToString());
+        Instance.OverwriteFile("target/common/buildings/arc.txt", sb.ToString());
         Console.WriteLine($"Finished Transpiling Buildings".Pastel(ConsoleColor.Cyan));
     }
 

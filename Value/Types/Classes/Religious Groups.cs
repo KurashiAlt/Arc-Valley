@@ -100,9 +100,9 @@ public class ReligionGroup : IArcObject
         }
         countryreligionview = countryreligionview.Replace("$church_aspects$", sa.ToString());
 
-        Instance.OverwriteFile(Path.Combine(Instance.directory, "target/interface/countryreligionview.gui"), countryreligionview);
+        Instance.OverwriteFile("target/interface/countryreligionview.gui", countryreligionview);
 
-        Instance.OverwriteFile(Path.Combine(Instance.directory, "target/common/religions/arc.txt"), sb.ToString());
+        Instance.OverwriteFile("target/common/religions/arc.txt", sb.ToString());
         Console.WriteLine($"Finished Transpiling Religions".Pastel(ConsoleColor.Cyan));
     }
     public override string ToString() => Name.Value;

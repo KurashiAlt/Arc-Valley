@@ -316,6 +316,8 @@ namespace Arc
                         "religion" => Religion.Call(i),
                         "religious_group" => ReligionGroup.Call(i),
                         "personal_deity" => PersonalDeity.Call(i),
+                        "advisor_type" => AdvisorType.Call(i),
+                        "tradenode" => TradeNode.Call(i),
                         _ => throw new Exception()
                     };
                 } },

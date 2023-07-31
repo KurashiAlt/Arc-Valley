@@ -168,6 +168,8 @@ public class Religion : IArcObject
         if (DeclareWarInRegency) sb.Append("declare_war_in_regency = yes ");
         if (CanHaveSecondaryReligion) sb.Append("can_have_secondary_religion = yes ");
         if (AllowFemaleDefenderOfFaith) sb.Append("allow_female_defenders_of_the_faith = yes ");
+        if (HreReligion) sb.Append("hre_religion = yes ");
+        if (HreHereticReligion) sb.Append("hre_heretic_religion = yes ");
         if (PersonalDeity) sb.Append("personal_deity = yes ");
         if (UsesChurchPower) sb.Append("uses_church_power = yes ");
         if (UsesKarma) sb.Append("uses_karma = yes ");
