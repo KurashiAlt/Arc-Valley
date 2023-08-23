@@ -48,13 +48,13 @@ public static partial class Parser
                 }
                 else if(str[ndx] == '}')
                 {
-                    string a = s.ToString().Trim(' ', '`');
+                    string a = s.ToString();
                     if (!string.IsNullOrWhiteSpace(a)) retval.AddLast(a);
                     s.Clear();
                 }
                 else if (char.IsWhiteSpace(str[ndx]))
                 {
-                    string a = s.ToString().Trim(' ', '`');
+                    string a = s.ToString();
                     if (!string.IsNullOrWhiteSpace(a.Trim())) retval.AddLast(a.Trim());
                     s.Clear();
                     ndx++;
@@ -68,7 +68,7 @@ public static partial class Parser
             s.Append(str[ndx]);
             ndx++;
         }
-        string v = s.ToString().Trim(' ', '`');
+        string v = s.ToString();
         if (!string.IsNullOrWhiteSpace(v)) retval.AddLast(v);
         return retval;
     }

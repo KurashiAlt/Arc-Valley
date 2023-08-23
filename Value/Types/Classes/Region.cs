@@ -1,4 +1,7 @@
-﻿namespace Arc;
+﻿using ArcInstance;
+using System.Text;
+
+namespace Arc;
 public class Region : IArcObject
 {
 	public static readonly Dict<Region> Regions = new();
@@ -45,6 +48,19 @@ public class Region : IArcObject
 
 		return i;
 	}
-	public override string ToString() => Name.Value;
-	public Walker Call(Walker i, ref List<string> result, Compiler comp) { result.Add(Id.Value); return i; }
+	public static string Transpile()
+    {
+        StringBuilder sb = new();
+        foreach (Region region in Region.Regions.Values())
+        {
+            sb.Append($"{region.Id} = {{ areas = {{ {string.Join(' ', from Area in Area.Areas.Values() where Area.Region == region select Area.Id)} }} }} ");
+            Instance.Localisation.Add($"{region.Id.Value}", region.Name.Value);
+            Instance.Localisation.Add($"{region.Id.Value}_name", region.Name.Value);
+            Instance.Localisation.Add($"{region.Id.Value}_adj", region.Adj.Value);
+        }
+        Instance.OverwriteFile("target/map/region.txt", sb.ToString());
+        return "Regions";
+    }
+    public override string ToString() => Name.Value;
+	public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
 }

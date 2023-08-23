@@ -5,6 +5,21 @@ public class Dict<Type> : IArcObject, IEnumerable<KeyValuePair<string, Type>> wh
     private readonly Dictionary<string, DictPointer<Type>> Kvps;
     public Dictionary<string, Type>.ValueCollection Values() => Kvps.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Value).Values;
     public Dict() { Kvps = new(); }
+    public Dict(Block s, Func<string, Args, Type> constructor) 
+    {
+        Kvps = new();
+        if (Parser.HasEnclosingBrackets(s)) Compiler.RemoveEnclosingBrackets(s);
+
+        if (s.Count == 0) return;
+
+        Walker i = new(s);
+        do
+        {
+            string key = i.Current;
+            i = Args.GetArgs(i, out Args args);
+            Add(key, constructor(key, args));
+        } while (i.MoveNext());
+    }
     public bool IsObject() => true;
     public IVariable? Get(string indexer) => Kvps[indexer].Value;
     public bool CanGet(string indexer) => Kvps.ContainsKey(indexer);
@@ -14,6 +29,11 @@ public class Dict<Type> : IArcObject, IEnumerable<KeyValuePair<string, Type>> wh
     {
         Kvps.Add(indexer, new DictPointer<Type>(Value));
     }
+    public void Add((string indexer, Type Value) v)
+    {
+        Kvps.Add(v.indexer, new DictPointer<Type>(v.Value));
+    }
+
     public static Walker Call(Walker i)
     {
         throw new Exception();
@@ -21,8 +41,9 @@ public class Dict<Type> : IArcObject, IEnumerable<KeyValuePair<string, Type>> wh
 
     public override string ToString() => "Arc Dict";
 
-    public Walker Call(Walker i, ref List<string> result, Compiler comp)
+    public Walker Call(Walker i, ref Block result, Compiler comp)
     {
+        Console.Write(i.Current);
         throw new NotImplementedException();
     }
 

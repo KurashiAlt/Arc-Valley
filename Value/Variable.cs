@@ -1,7 +1,7 @@
 ﻿namespace Arc;
 public interface IVariable
 {
-    public Walker Call(Walker i, ref List<string> result, Compiler comp);
+    public Walker Call(Walker i, ref Block result, Compiler comp);
     public bool IsFloat() => false;
     public bool IsInt() => false;
     public bool IsBool() => false;

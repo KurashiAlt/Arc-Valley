@@ -70,8 +70,8 @@ public class ChurchAspect : IArcObject
         return i;
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref List<string> result, Compiler comp) { result.Add(Id.Value); return i; }
-    public static void Transpile()
+    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
+    public static string Transpile()
     {
         StringBuilder sb = new("");
         foreach (ChurchAspect ChurchAspect in ChurchAspects.Values())
@@ -81,6 +81,6 @@ public class ChurchAspect : IArcObject
             Instance.Localisation.Add($"desc_{ChurchAspect.Id}", ChurchAspect.Desc.Value);
         }
         Instance.OverwriteFile("target/common/church_aspects/ChurchAspects.txt", sb.ToString());
-        Console.WriteLine($"Finished Transpiling Church Aspects".Pastel(ConsoleColor.Cyan));
+        return "Church Aspects";
     }
 }

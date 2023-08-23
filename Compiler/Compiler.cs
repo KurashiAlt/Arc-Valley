@@ -2,6 +2,12 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
+using System.Reflection;
+using System.Runtime.Loader;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
+
 namespace Arc
 {
     public partial class Compiler
@@ -256,22 +262,55 @@ namespace Arc
                 { "on_royal_marriage_broken", new() },
                 { "on_alliance_created", new() },
                 { "on_royal_marriage", new() },
-                { "on_heir_disinherited", new() }
+                { "on_heir_disinherited", new() },
+                { "on_added_to_trade_company", new() },
+                { "on_removed_from_company", new() },
+                { "on_company_formed", new() },
+                { "on_company_disolved", new() }
             } },
-            { "provinces", Province.Provinces },
+            { "adjacencies", Adjacency.Adjacencies },
+            { "advisor_types", AdvisorType.AdvisorTypes },
             { "areas", Area.Areas },
-            { "regions", Region.Regions },
-            { "superregions", Superregion.Superregions },
-            { "tradegoods", TradeGood.TradeGoods },
-            { "terrains", Terrain.Terrains },
             { "blessings", Blessing.Blessings },
+            { "bookmarks", Bookmark.Bookmarks },
+            { "buildings", Building.Buildings },
+            { "church_aspects", ChurchAspect.ChurchAspects },
+            { "countries", Country.Countries },
+            { "culture_groups", CultureGroup.CultureGroups },
+            { "cultures", Culture.Cultures },
+            { "estates", Estate.Estates },
+            { "event_modifiers", EventModifier.EventModifiers },
+            { "personal_deitys", PersonalDeity.PersonalDeitys },
+            { "provinces", Province.Provinces },
+            { "regions", Region.Regions },
+            { "religions", Religion.Religions },
+            { "religious_groups", ReligionGroup.ReligionGroups },
+            { "superregions", Superregion.Superregions },
+            { "terrains", Terrain.Terrains },
+            { "trade_goods", TradeGood.TradeGoods },
+            { "trade_nodes", TradeNode.TradeNodes },
             { "terrain_declarations", new ArcBlock() },
             { "tree", new ArcBlock() },
             { "interface", new Dict<IValue>() {
                 { "church_aspects", new ArcString("") },
                 { "countryreligionview", new ArcString("") }
-            } }
+            } },
+            { "special_units", new Dict<IVariable>()
+            {
+                { "carolean", new Dict<IVariable>()
+                {
+                    { "id", new ArcString("carolean") },
+                    { "name", new ArcString("\"Carolean\"") },
+                    { "modifier", new ArcBlock() },
+                    { "starting_strength", new ArcFloat(1.0) },
+                    { "starting_morale", new ArcFloat(0.1) },
+                    { "base_cost_modifier", new ArcFloat(1.0) },
+                    { "uses_construction", new ArcInt(1) },
+                    { "localisation", new ArcBlock("carolean_name = \"$HOME$'s $NUM$$ORDER$ Carolean\"\r\n\tmodifier_has_carolean = \"Allows Carolean Infantry\"\r\n\tmodifier_local_has_carolean = \"Province Allows Carolean Infantry\"\r\n\tcarolean_cant_have = \"Your nation cannot raise Carolean Infantry.\"\r\n\tcarolean_forcelimit = \"We can recruit up to $VAL|%Y$ of our total Carolean Culture Provinces' development of $DEV$ as §GCarolean Infantry§! due to:\"\r\n\tcarolean_limit_culture = \"$PROVINCE$ is a $CULTURE$ province, so can not recruit Carolean Infantry here.\"\r\n\tcarolean_desc = \"The Carolean are the Swedish and Finnish infantry of the Swedish Empire. Recruited from the peasantry, the Carolean go under strict training and are renowned to invoke fear in the hearts of their enemies.\\nCarolean regiments can only be recruited in owned provinces of §YSwedish§! or §YFinnish§! culture, and the amount of possible units depends on the development of these provinces.\"\r\n\tregcat_carolean = \"Carolean\"\r\n\tadd_carolean_sub_unit_effect = \"Get '§GCarolean Infantry§!' $UNIT$ in $WHERE|Y$.\"\r\n\tcarolean_regiment = \"Carolean Regiment\\n$EFFECT$\"\r\n\thave_less_carolean_than = \"Have less Carolean Regiments than $VALUE|Y$.\\n\"\r\n\thave_at_least_carolean_than = \"Have at least $VALUE|Y$ Carolean Regiments.\\n\"\r\n\tmodifier_amount_of_carolean = \"Possible Carolean Infantry\"\r\n\tmodifier_local_amount_of_carolean = \"Possible Carolean Infantry\"\r\n\tonly_carolean_modifier = \"§YAffects only Carolean Regiments§!\"\r\n\tcarolean_regiment_type = \"Carolean\"") },
+                } },
+            } },
         };
+        public static int QuickEventModifiers = 0;
 
 #pragma warning disable CS8618 // Fields are assigned by Arc5.cs
 #pragma warning disable CA2211 // Non-constant fields should not be visible
@@ -288,39 +327,259 @@ namespace Arc
 
             return Compile(Parser.ParseCode(file));
         }
+        public void ObjectDeclare(string file, bool preprocessor = false)
+        {
+            if (preprocessor)
+                file = Parser.Preprocessor(file);
+
+            ObjectDeclare(Parser.ParseCode(file));
+        }
+        public void LintLoad(ref Dictionary<string, ILintCommand> dict, string file, string path, bool preprocessor = false)
+        {
+            if (preprocessor)
+                file = Parser.Preprocessor(file);
+
+            LintLoad(ref dict, Parser.ParseCode(file), path);
+        }
+
+        public void LintLoad(ref Dictionary<string, ILintCommand> dict, Block code, string file)
+        {
+            if (code.Count == 0)
+                return;
+            Walker g = new(code);
+            do
+            {
+                if (g.Current == "new")
+                {
+                    if (!g.MoveNext()) throw new Exception();
+                    string datatype = g.Current;
+                    if (!g.MoveNext()) throw new Exception();
+                    string key = g.Current;
+                    g = Args.GetArgs(g, out Args args, 0, true);
+                    dict.Add($"{datatype}~{key}", new LintAdd(file, args));
+                    continue;
+                }
+                else if (TryGetVariable(g.Current, out IVariable? var))
+                {
+                    string vari = g.Current;
+                    if (!g.MoveNext()) throw new Exception();
+                    string oper = g.Current;
+                    if (!g.MoveNext()) throw new Exception();
+                    g = GetScope(g, out Block block);
+                    dict.Add($"lint_edit_{LintEdit.Edits}", new LintEdit(file, new()
+                    {
+                        vari,
+                        oper,
+                        block
+                    }));
+                    LintEdit.Edits++;
+                    continue;
+                }
+                else throw new Exception($"Invalid command in [Lint] Object Declaration: {g.Current}");
+            } while (g.MoveNext());
+        }
+        public void ObjectDeclare(Block code)
+        {
+            if (code.Count == 0)
+                return;
+
+            Walker g = new(code);
+            do
+            {
+                if (g.Current == "new")
+                {
+                    if (!g.MoveNext()) throw new Exception();
+                    g = (string)g.Current switch
+                    {
+                        "province" => Province.Call(g),
+                        "area" => Area.Call(g),
+                        "region" => Region.Call(g),
+                        "superregion" => Superregion.Call(g),
+                        "tradegood" => TradeGood.Call(g),
+                        "terrain" => Terrain.Call(g),
+                        "blessing" => Blessing.Call(g),
+                        "church_aspect" => ChurchAspect.Call(g),
+                        "inheritable" => Args.Call(g),
+                        "country" => Country.Call(g),
+                        "adjacency" => Adjacency.Call(g),
+                        "building" => Building.Call(g),
+                        "bookmark" => Bookmark.Call(g),
+                        "religion" => Religion.Call(g),
+                        "religious_group" => ReligionGroup.Call(g),
+                        "personal_deity" => PersonalDeity.Call(g),
+                        "advisor_type" => AdvisorType.Call(g),
+                        "tradenode" => TradeNode.Call(g),
+                        "idea_group" => IdeaGroup.Call(g),
+                        "event_modifier" => EventModifier.Call(g),
+                        "relation" => Relation.Call(g),
+                        "culture_group" => CultureGroup.Call(g),
+                        "culture" => Culture.Call(g),
+                        "mission_series" => MissionSeries.Call(g),
+                        "agenda" => EstateAgenda.Call(g),
+                        "privilege" => EstatePrivilege.Call(g),
+                        "estate" => Estate.Call(g),
+                        "government_reform" => GovernmentReform.Call(g),
+                        "country_event" => Event.Call(g, false),
+                        "province_event" => Event.Call(g, true),
+                        "incident" => Incident.Call(g),
+                        "unit" => Unit.Call(g),
+                        "great_project" => GreatProject.Call(g),
+                        "localisation" => DefineLoc(g),
+                        "mercenary_company" => MercenaryCompany.Call(g),
+                        "advisor" => Advisor.Call(g),
+                        _ => throw new Exception()
+                    };
+                    continue;
+                }
+                else if (TryGetVariable(g.Current, out IVariable? var))
+                {
+                    Block f = new();
+                    if (var == null) throw new Exception();
+                    g = var.Call(g, ref f, this);
+                }
+                else throw new Exception($"Invalid command in Object Declaration: {g.Current}");
+            } while (g.MoveNext());
+
+            Walker DefineLoc(Walker i)
+            {
+                if (!i.MoveNext()) throw new Exception();
+                string key = i.Current;
+                if (!i.MoveNext()) throw new Exception();
+                if (i.Current != "=") throw new Exception();
+                if (!i.MoveNext()) throw new Exception();
+                string value = i.Current;
+
+                Instance.Localisation.Add(key, value);
+
+                return i;
+            }
+        }
         public string Compile(Block code)
         {
             if (code.Count == 0)
                 return "";
 
-            List<string> result = new();
+            Block result = new();
             Dictionary<string, Func<Walker, Walker>> keywords = new()
             {
-                { "new", (Walker i)=>{
-                    if(!i.MoveNext()) throw new Exception();
-                    return (string)i.Current switch
+                { "csharp", (Walker i) =>
                     {
-                        "province" => Province.Call(i),
-                        "area" => Area.Call(i),
-                        "region" => Region.Call(i),
-                        "superregion" => Superregion.Call(i),
-                        "tradegood" => TradeGood.Call(i),
-                        "terrain" => Terrain.Call(i),
-                        "blessing" => Blessing.Call(i),
-                        "church_aspect" => ChurchAspect.Call(i),
-                        "inheritable" => Args.Call(i),
-                        "country" => Country.Call(i),
-                        "adjacency" => Adjacency.Call(i),
-                        "building" => Building.Call(i),
-                        "bookmark" => Bookmark.Call(i),
-                        "religion" => Religion.Call(i),
-                        "religious_group" => ReligionGroup.Call(i),
-                        "personal_deity" => PersonalDeity.Call(i),
-                        "advisor_type" => AdvisorType.Call(i),
-                        "tradenode" => TradeNode.Call(i),
-                        _ => throw new Exception()
-                    };
+                        if(!i.MoveNext()) throw new Exception();
+                        i = GetScope(i, out Block scope);
+
+                        string code = $@"
+                            using System;
+                            using System.Collections.Generic;
+                            using System.IO;
+                            using System.Linq;
+                            using System.Threading;
+                            using System.Threading.Tasks;
+
+                            using Arc;
+                            using ArcInstance;
+
+                            namespace ArcSharp
+                            {{
+                                public class ArcSharp
+                                {{
+                                    public void Run(ref Block result)
+                                    {{
+                                        {string.Join(' ', scope)}
+                                    }}
+                                }}
+                            }}";
+
+                        SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
+
+                        string assemblyName = "RuntimeCode";
+                        Assembly[] referencedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+                        MetadataReference[] references = new MetadataReference[referencedAssemblies.Length];
+
+                        for (int c = 0; c < referencedAssemblies.Length; c++)
+                        {
+                            references[c] = MetadataReference.CreateFromFile(referencedAssemblies[c].Location);
+                        }
+
+                        CSharpCompilation compilation = CSharpCompilation.Create(
+                            assemblyName,
+                            syntaxTrees: new[] { syntaxTree },
+                            references: references,
+                            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+                        using (var ms = new System.IO.MemoryStream())
+                        {
+                            EmitResult emitResult = compilation.Emit(ms);
+
+                            if (!emitResult.Success)
+                            {
+                                Console.WriteLine("Compilation errors:");
+                                foreach (var diagnostic in emitResult.Diagnostics)
+                                {
+                                    Console.WriteLine(diagnostic);
+                                }
+                            }
+                            else
+                            {
+                                ms.Seek(0, System.IO.SeekOrigin.Begin);
+
+                                Assembly assembly = AssemblyLoadContext.Default.LoadFromStream(ms);
+                                Type calculatorType = assembly.GetType("ArcSharp.ArcSharp");
+                                dynamic calculatorInstance = Activator.CreateInstance(calculatorType);
+
+                                calculatorInstance.Run(ref result);
+                            }
+                        }
+
+                        return i;
                 } },
+                { "quick_province_modifier", (Walker i) =>
+                {
+                    i = Args.GetArgs(i, out Args args);
+                    ArcString name = args.Get(ArcString.Constructor, "name");
+                    ArcInt duration = args.Get(ArcInt.Constructor, "duration", new(-1));
+                    ArcString desc = args.Get(ArcString.Constructor, "desc", new(""));
+                    ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
+                    ArcBlock modifier = args.Get(ArcBlock.Constructor, "modifier");
+
+                    new EventModifier($"qem_{QuickEventModifiers}", name, modifier);
+
+                    result.Add("add_permanent_province_modifier = { ");
+                    result.Add($"name = qem_{QuickEventModifiers} ");
+                    result.Add($"duration = {duration.Value} ");
+                    if(desc.Value.Count() != 0) {
+                        result.Add($"desc = qem_{QuickEventModifiers}_desc ");
+                        Instance.Localisation.Add($"qem_{QuickEventModifiers}_desc", desc.Value);
+                    }
+                    if(hidden.Value) result.Add("hidden = yes ");
+                    result.Add("} ");
+
+                    QuickEventModifiers++;
+                    return i;
+                } },
+                { "defineloc", (Walker i) =>
+                {
+                    if(!i.MoveNext()) throw new Exception();
+                    string key = i.Current;
+                    if(!i.MoveNext()) throw new Exception();
+                    if(i.Current != "=") throw new Exception();
+                    if(!i.MoveNext()) throw new Exception();
+                    string value = i.Current;
+
+                    Instance.Localisation.Add(key, value);
+
+                    return i;
+                } },
+                { "ags", (Walker i) =>
+                {
+                    if(!i.MoveNext()) throw new Exception();
+                    if(i.Current != "=") throw new Exception();
+                    if(!i.MoveNext()) throw new Exception();
+                    string value = i.Current;
+
+                    result.Add("is_year", "=", int.Parse(value) + 2500);
+
+                    return i;
+                } }
             };
 
             Walker g = new(code);
@@ -330,6 +589,35 @@ namespace Arc
                 {
                     g = keywords[g.Current].Invoke(g);
                     continue;
+                }
+                else if (g.Current.value.EndsWith(','))
+                {
+                    List<string> s = new();
+                    do
+                    {
+                        s.Add(g.Current.value[..^1]);
+                        if (!g.MoveNext()) throw new Exception();
+                    } while (g.Current.value.EndsWith(','));
+                     s.Add(g.Current.value);
+
+                    if (!g.MoveNext()) throw new Exception();
+                    if (g.Current.value != "=") throw new Exception();
+                    if (!g.MoveNext()) throw new Exception();
+
+                    g = GetScope(g, out Block scope);
+
+                    string compiled = Compile(scope);
+                    foreach(string k in s)
+                    {
+                        Block n = new()
+                        {
+                            Compile(k),
+                            "=",
+                            compiled
+                        };
+
+                        result.Add(n);
+                    }
                 }
                 else if (TryGetVariable(g.Current, out IVariable? var))
                 {
@@ -350,25 +638,14 @@ namespace Arc
                     result.Add(newValue);
                     continue;
                 }
-                else if (g.Current.value.StartsWith("p@"))
+                else if (g.Current.value.EndsWith('%'))
                 {
-                    result.Add(Province.Provinces[g.Current.value[2..]].Id.Value.ToString());
-                    continue;
-                }
-                else if (g.Current == "\\n")
-                {
-                    result.Add(Environment.NewLine);
+                    result.Add((double.Parse(g.Current.value[..^1]) / 100).ToString("0.000"));
                 }
                 else result.Add(g.Current);
             } while (g.MoveNext());
 
-            StringBuilder res = new();
-            foreach (string s in result)
-            {
-                res.Append($"{s} ");
-            }
-
-            return res.ToString();
+            return string.Join(' ', result);
         }
 
         [GeneratedRegex("{([^}]+)}", RegexOptions.Compiled)]

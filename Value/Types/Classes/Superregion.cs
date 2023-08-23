@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using ArcInstance;
+using System.Collections.Generic;
+using System.Text;
 
 namespace Arc;
 public class Superregion : IArcObject
@@ -50,8 +52,20 @@ public class Superregion : IArcObject
 
         return i;
     }
-
+    public static string Transpile()
+    {
+        StringBuilder sb = new();
+        foreach (Superregion superregion in Superregion.Superregions.Values())
+        {
+            sb.Append($"{superregion.Id} = {{ {string.Join(' ', from Region in Region.Regions.Values() where Region.Superregion == superregion select Region.Id)} }} ");
+            Instance.Localisation.Add($"{superregion.Id.Value}", superregion.Name.Value);
+            Instance.Localisation.Add($"{superregion.Id.Value}_name", superregion.Name.Value);
+            Instance.Localisation.Add($"{superregion.Id.Value}_adj", superregion.Adj.Value);
+        }
+        Instance.OverwriteFile("target/map/superregion.txt", sb.ToString());
+        return "Superregion";
+    }
     public override string ToString() => Name.Value;
 
-    public Walker Call(Walker i, ref List<string> result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
 }

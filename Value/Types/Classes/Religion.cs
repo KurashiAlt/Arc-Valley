@@ -180,5 +180,5 @@ public class Religion : IArcObject
         sb.Append("} ");
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref List<string> result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
 }

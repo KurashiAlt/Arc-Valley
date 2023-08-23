@@ -72,7 +72,7 @@ public class PersonalDeity : IArcObject
 
         return i;
     }
-    public static void Transpile()
+    public static string Transpile()
     {
         StringBuilder sb = new();
         foreach (PersonalDeity PersonalDeity in PersonalDeitys.Values())
@@ -81,15 +81,15 @@ public class PersonalDeity : IArcObject
             Instance.Localisation.Add($"{PersonalDeity.Id}_desc", PersonalDeity.Desc.Value);
 
             sb.Append($"{PersonalDeity.Id} = {{ sprite = {PersonalDeity.Sprite} {PersonalDeity.AiWillDo.Compile("ai_will_do")} ");
-            if (!PersonalDeity.Potential.IsEmpty()) sb.Append($"potential = {{ {PersonalDeity.Potential} }} ");
-            if (!PersonalDeity.Trigger.IsEmpty()) sb.Append($"trigger = {{ {PersonalDeity.Trigger} }} ");
-            if (!PersonalDeity.Effect.IsEmpty()) sb.Append($"effect = {{ {PersonalDeity.Effect} }} ");
-            if (!PersonalDeity.RemovedEffect.IsEmpty()) sb.Append($"removed_effect = {{ {PersonalDeity.RemovedEffect} }} ");
-            sb.Append($"{PersonalDeity.Modifiers} }} ");
+            if (!PersonalDeity.Potential.IsEmpty()) sb.Append(PersonalDeity.Potential.Compile("potential"));
+            if (!PersonalDeity.Trigger.IsEmpty()) sb.Append(PersonalDeity.Trigger.Compile("trigger"));
+            if (!PersonalDeity.Effect.IsEmpty()) sb.Append(PersonalDeity.Effect.Compile("effect"));
+            if (!PersonalDeity.RemovedEffect.IsEmpty()) sb.Append(PersonalDeity.RemovedEffect.Compile("removed_effect"));
+            sb.Append($"{PersonalDeity.Modifiers.Compile()} }} ");
         }
         Instance.OverwriteFile("target/common/personal_deities/arc.txt", sb.ToString());
-        Console.WriteLine($"Finished Transpiling Personal Deitys".Pastel(ConsoleColor.Cyan));
+        return "Personal Deitys";
     }
     public override string ToString() => Id.Value;
-    public Walker Call(Walker i, ref List<string> result, Compiler comp) { result.Add(Id.Value); return i; }
+    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
 }

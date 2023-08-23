@@ -20,6 +20,7 @@ public class Building : IArcObject
     public ArcBool OnMap { get; set; }
     public ArcBool InfluencingFort { get; set; }
     public ArcBlock Manufactory { get; set; }
+    public ArcBlock Potential { get; set; }
     public ArcBlock BuildTrigger { get; set; }
     public ArcBlock Modifier { get; set; }
     public ArcBlock AiWillDo { get; set; }
@@ -27,7 +28,7 @@ public class Building : IArcObject
     public ArcBlock OnDestroyed { get; set; }
     public ArcBlock OnObsolete { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public Building(ArcString id, ArcString name, ArcString desc, ArcInt cost, ArcInt time, Building? makeObsolete, ArcBool onePerCountry, ArcBool allowInGoldProvinces, ArcBool indestructible, ArcBool onMap, ArcBool influencingFort, ArcBlock manufactory, ArcBlock buildTrigger, ArcBlock modifier, ArcBlock aiWillDo, ArcBlock onBuilt, ArcBlock onDestroyed, ArcBlock onObsolete)
+    public Building(ArcString id, ArcString name, ArcString desc, ArcInt cost, ArcInt time, Building? makeObsolete, ArcBool onePerCountry, ArcBool allowInGoldProvinces, ArcBool indestructible, ArcBool onMap, ArcBool influencingFort, ArcBlock manufactory, ArcBlock potential, ArcBlock buildTrigger, ArcBlock modifier, ArcBlock aiWillDo, ArcBlock onBuilt, ArcBlock onDestroyed, ArcBlock onObsolete)
     {
         Id = id;
         Name = name;
@@ -41,6 +42,7 @@ public class Building : IArcObject
         OnMap = onMap;
         InfluencingFort = influencingFort;
         Manufactory = manufactory;
+        Potential = potential;
         BuildTrigger = buildTrigger;
         Modifier = modifier;
         AiWillDo = aiWillDo;
@@ -61,6 +63,7 @@ public class Building : IArcObject
             { "onmap", OnMap },
             { "influencing_fort", InfluencingFort },
             { "manufactory", Manufactory },
+            { "potential", Potential },
             { "build_trigger", BuildTrigger },
             { "modifier", Modifier },
             { "ai_will_do", AiWillDo },
@@ -91,6 +94,7 @@ public class Building : IArcObject
             args.Get         (ArcBool.Constructor,   "onmap", new(false)),
             args.Get         (ArcBool.Constructor,   "influencing_fort", new(false)),
             args.Get         (ArcBlock.Constructor,  "manufactory", new()),
+            args.Get         (ArcBlock.Constructor,  "potential", new()),
             args.Get         (ArcBlock.Constructor,  "build_trigger", new()),
             args.Get         (ArcBlock.Constructor,  "modifier", new()),
             args.Get         (ArcBlock.Constructor,  "ai_will_do", new("factor = 1")),
@@ -103,36 +107,36 @@ public class Building : IArcObject
 
         return i;
     }
-    public static void Transpile()
+    public static string Transpile()
     {
-        StringBuilder sb = new("");
+        Block b = new();
         foreach (Building building in Buildings.Values())
         {
-            sb.Append($"{building.Id} = {{ ");
-            if (building.Manufactory.Value.Count == 0) sb.Append($" cost = {building.Cost}");
-            if (building.Manufactory.Value.Count == 0) sb.Append($" time = {building.Time}");
-            if (building.MakeObsolete != null) sb.Append($" make_obsolete = {building.MakeObsolete.Id}");
-            if (building.OnePerCountry.Value) sb.Append($" one_per_country = yes");
-            if (building.AllowInGoldProvinces.Value) sb.Append($" allow_in_gold_provinces = yes");
-            if (building.Indestructible.Value) sb.Append($" indestructible = yes");
-            if (building.OnMap.Value) sb.Append($" onmap = yes");
-            if (building.InfluencingFort.Value) sb.Append($" influencing_fort = yes");
-            if (building.Manufactory.Value.Count != 0) sb.Append($" manufactory = {{ {building.Manufactory} }}");
-            if (building.BuildTrigger.Value.Count != 0) sb.Append($" build_trigger = {{ {building.BuildTrigger} }}");
-            sb.Append($" modifier = {{ {building.Modifier} }}");
-            if (building.AiWillDo.Value.Count != 0 && building.Id.Value != "manufactory") sb.Append($" ai_will_do = {{ {building.AiWillDo} }}");
-            if (building.OnBuilt.Value.Count != 0) sb.Append($" on_built = {{ {building.OnBuilt} }}");
-            if (building.OnDestroyed.Value.Count != 0) sb.Append($" on_destroyed = {{ {building.OnDestroyed} }}");
-            if (building.OnObsolete.Value.Count != 0) sb.Append($" on_obsolete = {{ {building.OnObsolete} }}");
-            sb.Append(" } ");
+            b.Add(building.Id, "=", "{");
+            if (building.Manufactory.Value.Count == 0) b.Add("cost", "=", building.Cost);
+            if (building.Manufactory.Value.Count == 0) b.Add("time", "=", building.Time);
+            if (building.MakeObsolete != null) b.Add("make_obsolete", "=", building.MakeObsolete.Id);
+            if (building.OnePerCountry.Value) b.Add("one_per_country", "=", "yes");
+            if (building.AllowInGoldProvinces.Value) b.Add("allow_in_gold_provinces", "=", "yes");
+            if (building.Indestructible.Value) b.Add("indestructible", "=", "yes");
+            if (building.OnMap.Value) b.Add("onmap", "=", "yes");
+            if (building.InfluencingFort.Value) b.Add("influencing_fort", "=", "yes");
+            building.Manufactory.Compile("manufactory", ref b);
+            building.BuildTrigger.Compile("build_trigger", ref b);
+            building.Modifier.Compile("modifier", ref b);
+            if (building.Id.Value != "manufactory") building.AiWillDo.Compile("ai_will_do", ref b);
+            building.OnBuilt.Compile("on_built", ref b);
+            building.OnDestroyed.Compile("on_destroyed", ref b);
+            building.OnObsolete.Compile("on_obsolete", ref b);
+            b.Add("}");
 
             Instance.Localisation.Add($"building_{building.Id}", building.Name.Value);
             Instance.Localisation.Add($"building_{building.Id}_desc", building.Desc.Value);
         }
-        Instance.OverwriteFile("target/common/buildings/arc.txt", sb.ToString());
-        Console.WriteLine($"Finished Transpiling Buildings".Pastel(ConsoleColor.Cyan));
+        Instance.OverwriteFile("target/common/buildings/arc.txt", string.Join(' ', b));
+        return "Buildings";
     }
 
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref List<string> result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
 }

@@ -27,8 +27,42 @@ public class ArcFloat : IArcNumber
         return Value.ToString();
     }
 
-    public Walker Call(Walker i, ref List<string> result, Compiler comp)
+    public Walker Call(Walker i, ref Block result, Compiler comp)
     {
-        throw new NotImplementedException();
+        if (i.MoveNext())
+        {
+            switch (i.Current)
+            {
+                case "+=":
+                    {
+                        if (!i.MoveNext())
+                            throw new Exception();
+
+                        string k = i.Current;
+
+                        Value += double.Parse(k);
+                    }
+                    break;
+                case ":=":
+                    {
+                        if (!i.MoveNext())
+                            throw new Exception();
+
+                        string k = i.Current;
+
+                        Value = double.Parse(k);
+                    }
+                    break;
+
+                default:
+                    {
+                        i.MoveBack();
+                        result.Add(Value.ToString());
+                    }
+                    break;
+            }
+        }
+        else result.Add(Value.ToString());
+        return i;
     }
 }

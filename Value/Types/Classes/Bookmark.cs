@@ -1,4 +1,7 @@
-﻿namespace Arc;
+﻿using ArcInstance;
+using System.Text;
+
+namespace Arc;
 public class Bookmark : IArcObject
 {
     public static readonly Dict<Bookmark> Bookmarks = new();
@@ -63,7 +66,32 @@ public class Bookmark : IArcObject
 
         return i;
     }
-
+    public static string Transpile()
+    {
+        int i = 0;
+        foreach (Bookmark bookmark in Bookmarks.Values())
+        {
+            StringBuilder sb = new("");
+            Instance.Localisation.Add($"{bookmark.Id}_name", bookmark.Name.Value);
+            Instance.Localisation.Add($"{bookmark.Id}_desc", bookmark.Desc.Value);
+            sb.Append($"bookmark = {{ name = {bookmark.Id}_name desc = {bookmark.Id}_desc date = {bookmark.Date} center = {bookmark.Center.Id} ");
+            foreach (Country? country in bookmark.Countries.Values)
+            {
+                if (country == null) continue;
+                sb.Append($"country = {country.Tag} ");
+            }
+            foreach (Country? country in bookmark.EasyCountries.Values)
+            {
+                if (country == null) continue;
+                sb.Append($"easy_country = {country.Tag} ");
+            }
+            if (bookmark.Default) sb.Append("default = yes ");
+            if (!bookmark.Effect.IsEmpty()) sb.Append($"effect = {{ {bookmark.Effect.Compile()} }} ");
+            sb.Append($"}} ");
+            Instance.OverwriteFile($"target/common/bookmarks/{bookmark.Id}.txt", sb.ToString());
+        }
+        return "Bookmarks";
+    }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref List<string> result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
 }

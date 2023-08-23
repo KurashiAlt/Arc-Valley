@@ -4,9 +4,20 @@ namespace Arc;
 
 public class Block : LinkedList<Word>
 {
+    public Block(params string[] s)
+    {
+        foreach(string s2 in s)
+        {
+            AddLast(s2);
+        }
+    }
     public Block(string s)
     {
         AddLast(s);
+    }
+    public void Prepend(string s)
+    {
+        AddFirst(s);
     }
     public Block()
     {
@@ -45,7 +56,24 @@ public class Block : LinkedList<Word>
         } while (i.MoveNext());
         return sb.ToString();
     }
+    public void Add(params object[] s)
+    {
+        foreach(object v in s)
+        {
+            string? c = v.ToString();
+            if (c == null) throw new Exception();
+            AddLast(c);
+        }
+    }
+    public void Add(params string[] s)
+    {
+        foreach(string v in s)
+        {
+            AddLast(v);
+        }
+    }
     public void Add(string s) => AddLast(s);
+    public void Add(ArcString s) => AddLast(s.Value);
     public void Add(Block s)
     {
         foreach (Word w in s)

@@ -1,4 +1,7 @@
-﻿namespace Arc;
+﻿using ArcInstance;
+using System.Text;
+
+namespace Arc;
 public class TradeGood : IArcObject
 {
     public static readonly Dict<TradeGood> TradeGoods = new();
@@ -65,5 +68,20 @@ public class TradeGood : IArcObject
         return i;
     }
     public override string ToString() => Id.Value;
-    public Walker Call(Walker i, ref List<string> result, Compiler comp) { result.Add(Id.Value); return i; }
+    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
+    public static string Transpile()
+    {
+        StringBuilder sb = new("unknown = { color = { 0.5 0.5 0.5 } } ");
+        StringBuilder sa = new("unknown = { base_price = 0 } ");
+        foreach (TradeGood tradeGood in TradeGood.TradeGoods.Values())
+        {
+            sb.Append($"{tradeGood.Id} = {{ color = {{ {tradeGood.Color} }} modifier = {{ {tradeGood.Modifier.Compile()} }} province = {{ {tradeGood.Province.Compile()} }} chance = {{ {tradeGood.Chance} }} }} ");
+            sa.Append($"{tradeGood.Id} = {{ base_price = {tradeGood.BasePrice} goldtype = {tradeGood.IsGold} }} ");
+            Instance.Localisation.Add(tradeGood.Id.Value, tradeGood.Name.Value);
+            Instance.Localisation.Add($"{tradeGood.Id}DESC", tradeGood.Description.Value);
+        }
+        Instance.OverwriteFile("target/common/tradegoods/00_tradegoods.txt", sb.ToString());
+        Instance.OverwriteFile("target/common/prices/00_prices.txt", sa.ToString());
+        return "Trade Goods";
+    }
 }

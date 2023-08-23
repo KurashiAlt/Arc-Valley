@@ -10,10 +10,18 @@ public class ArcBlock : IValue
     {
         Value = Parser.ParseCode(s);
     }
-    public ArcBlock(Block value)
+    public ArcBlock(params string[] s)
     {
-        if (Parser.HasEnclosingBrackets(value))
-            value = Compiler.RemoveEnclosingBrackets(value);
+        Value = new()
+        {
+            s
+        };
+    }
+    public ArcBlock(Block value, bool t = false)
+    {
+        if(!t)
+            if (Parser.HasEnclosingBrackets(value))
+                value = Compiler.RemoveEnclosingBrackets(value);
         Value = value;
     }
     public void Set(Block value)
@@ -24,7 +32,7 @@ public class ArcBlock : IValue
     }
     public bool IsEmpty() => Value.Count == 0;
     public bool IsBlock() => true;
-    public Walker Call(Walker i, ref List<string> result, Compiler comp)
+    public Walker Call(Walker i, ref Block result, Compiler comp)
     {
         if (i.MoveNext())
         {
@@ -79,6 +87,34 @@ public class ArcBlock : IValue
         if (s == "") return "";
         return $"{wrapper} = {{ {s} }}";
     }
+    public void Compile(ref Block b)
+    {
+        string s = Compile();
+        if (s == "") return;
+        b.Add(s);
+    }
+    public void Compile(string wrapper, ref Block b, bool CanBeEmpty, bool CanBeSingular = false)
+    {
+        string s = Compile();
+        if (CanBeEmpty && s == "") return;
+        b.Add(wrapper);
+        b.Add("=");
+        if (CanBeSingular)
+        {
+            b.Add(s);
+        }
+        else
+        {
+            b.Add("{");
+            b.Add(s);
+            b.Add("}");
+        }
+    }
+    public void Compile(string wrapper, ref Block b, bool CanBeSingular = false)
+    {
+        Compile(wrapper, ref b, true, CanBeSingular);
+    }
+
     public string Compile()
     {
         return new Compiler().Compile(Value);

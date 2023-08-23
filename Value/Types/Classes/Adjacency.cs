@@ -1,4 +1,8 @@
-﻿namespace Arc;
+﻿using ArcInstance;
+using Pastel;
+using System.Text;
+
+namespace Arc;
 public class Adjacency : IArcObject
 {
     public static readonly Dict<Adjacency> Adjacencies = new();
@@ -59,5 +63,16 @@ public class Adjacency : IArcObject
 
         return i;
     }
-    public Walker Call(Walker i, ref List<string> result, Compiler comp) => throw new Exception();
+    public static string Transpile()
+    {
+        StringBuilder sb = new("From;To;Type;Through;start_x;start_y;stop_x;stop_y;Comment;\n");
+        foreach (Adjacency adjacency in Adjacency.Adjacencies.Values())
+        {
+            sb.Append($"{adjacency.From.Id};{adjacency.To.Id};{adjacency.Type};{adjacency.Through.Id};{adjacency.StartX};{adjacency.StartY};{adjacency.StopX};{adjacency.StopY};{adjacency.From.Name.Value.Trim('"')} to {adjacency.To.Name.Value.Trim('"')} through {adjacency.Through.Name.Value.Trim('"')};\n");
+        }
+        sb.Append("-1;-1;;-1;-1;-1;-1;-1;-1;");
+        Instance.OverwriteFile("target/map/adjacencies.csv", sb.ToString(), false);
+        return "Adjacencies";
+    }
+    public Walker Call(Walker i, ref Block result, Compiler comp) => throw new Exception();
 }

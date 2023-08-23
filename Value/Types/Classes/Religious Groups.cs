@@ -64,7 +64,7 @@ public class ReligionGroup : IArcObject
 
         return i;
     }
-    public static void Transpile()
+    public static string Transpile()
     {
         string countryreligionview = ((ArcString)((Dict<IValue>)Compiler.global["interface"]).Get("countryreligionview")).Value;
         string church_aspects = ((ArcString)((Dict<IValue>)Compiler.global["interface"]).Get("church_aspects")).Value;
@@ -92,19 +92,19 @@ public class ReligionGroup : IArcObject
 
                 if (religion.UsesChurchPower)
                 {
-                    sa.Append(church_aspects.Replace("$id$", religion.Id.Value));
+                    sa.Append(church_aspects.Replace("$id$", religion.Id.Value).Trim('`'));
                     sa.Append(" ");
                 }
             }
             sb.Append("} ");
         }
-        countryreligionview = countryreligionview.Replace("$church_aspects$", sa.ToString());
+        countryreligionview = countryreligionview.Replace("$church_aspects$", sa.ToString()).Trim('`');
 
-        Instance.OverwriteFile("target/interface/countryreligionview.gui", countryreligionview);
+        Instance.OverwriteFile("target/interface/countryreligionview.gui", countryreligionview, false);
 
         Instance.OverwriteFile("target/common/religions/arc.txt", sb.ToString());
-        Console.WriteLine($"Finished Transpiling Religions".Pastel(ConsoleColor.Cyan));
+        return "Religions";
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref List<string> result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
 }

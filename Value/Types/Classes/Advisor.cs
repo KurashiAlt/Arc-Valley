@@ -6,6 +6,95 @@ using System.Runtime.Intrinsics.Arm;
 using System.Text;
 
 namespace Arc;
+public class Advisor : IArcObject
+{
+    public static readonly Dict<Advisor> Advisors = new();
+    public bool IsObject() => true;
+    public ArcInt Id { get; set; }
+    public ArcString Name { get; set; }
+    public Province Location { get; set; }
+    public ArcBool Discount { get; set; }
+    public ArcInt Skill { get; set; }
+    public AdvisorType Type { get; set; }
+    public ArcString Date { get; set; }
+    public ArcString DeathDate { get; set; }
+    public Dict<IVariable> KeyValuePairs { get; set; }
+    public Advisor(
+      ArcString name,
+      Province location,
+      ArcBool discount,
+      ArcInt skill,
+      AdvisorType type,
+      ArcString date,
+      ArcString deathDate
+    ) {
+        Advisors.Add($"{Advisors.Count + 1}", this);
+        Id = new(Advisors.Count + 1);
+        Name = name;
+        Location = location;
+        Discount = discount;
+        Skill = skill;
+        Type = type;
+        Date = date;
+        DeathDate = deathDate;
+        KeyValuePairs = new()
+        {
+            { "id", Id },
+            { "name", Name },
+            { "location", Location },
+            { "discount", Discount },
+            { "type", Type },
+            { "date", Date },
+            { "death_date", DeathDate },
+        };
+    }
+    public bool CanGet(string indexer) => KeyValuePairs.CanGet(indexer);
+    public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
+    public static Walker Call(Walker i)
+    {
+        i = Args.GetArgs(i, out Args args);
+
+        Advisor Advisor = new(
+            args.Get(ArcString.Constructor, "name"),
+            args.GetFromList(Province.Provinces, "location"),
+            args.Get(ArcBool.Constructor, "discount", new(false)),
+            args.Get(ArcInt.Constructor, "skill", new(1)),
+            args.GetFromList(AdvisorType.AdvisorTypes, "type"),
+            args.Get(ArcString.Constructor, "date"),
+            args.Get(ArcString.Constructor, "death_date")
+        );
+
+        return i;
+    }
+    public override string ToString() => Name.Value;
+    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
+    public void Transpile(ref Block s)
+    {
+        s.Add(
+            "advisor", "=", "{",
+                "advisor_id", "=", Id,
+                "name", "=", Name,
+                "location", "=", Location.Id,
+                "discount", "=", Discount,
+                "skill", "=", Skill,
+                "type", "=", Type.Id,
+                "date", "=", Date,
+                "death_date", "=", DeathDate,
+            "}"
+        );
+    }
+    public static string Transpile()
+    {
+        Block s = new();
+        foreach (Advisor Advisor in Advisors.Values())
+        {
+            Advisor.Transpile(ref s);
+        }
+        Instance.OverwriteFile("target/history/advisors/arc.txt", string.Join(' ', s));
+        return "Advisor Types";
+    }
+}
+
 public class AdvisorType : IArcObject
 {
     public static readonly Dict<AdvisorType> AdvisorTypes = new();
@@ -76,8 +165,8 @@ public class AdvisorType : IArcObject
         return i;
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref List<string> result, Compiler comp) { result.Add(Id.Value); return i; }
-    public static void Transpile()
+    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
+    public static string Transpile()
     {
         StringBuilder sb = new("");
         foreach (AdvisorType AdvisorType in AdvisorTypes.Values())
@@ -91,6 +180,6 @@ public class AdvisorType : IArcObject
             Instance.Localisation.Add($"{AdvisorType.Id}_desc", AdvisorType.Desc.Value);
         }
         Instance.OverwriteFile("target/common/advisortypes/arc.txt", sb.ToString());
-        Console.WriteLine($"Finished Transpiling Advisor Types".Pastel(ConsoleColor.Cyan));
+        return "Advisor Types";
     }
 }

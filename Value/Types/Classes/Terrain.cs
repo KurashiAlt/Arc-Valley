@@ -1,4 +1,7 @@
-﻿namespace Arc;
+﻿using ArcInstance;
+using System.Text;
+
+namespace Arc;
 public class Terrain : IArcObject
 {
     public static readonly Dict<Terrain> Terrains = new();
@@ -76,5 +79,20 @@ public class Terrain : IArcObject
         return i;
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref List<string> result, Compiler comp) { result.Add(Id.Value); return i; }
+    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
+    public static string Transpile()
+    {
+        StringBuilder sb = new("categories = { pti = { type = pti } ");
+        foreach (KeyValuePair<string, Terrain> terrain in Terrain.Terrains)
+        {
+            sb.Append($"{terrain.Key} = {{ color = {{ {terrain.Value.Color} }} sound_type = {terrain.Value.SoundType} {(terrain.Value.IsWater ? "is_water = yes" : "")}  {(terrain.Value.InlandSea ? "inland_sea = yes" : "")} {(terrain.Value.Type != null ? $"type = {terrain.Value.Type}" : "")} movement_cost = {terrain.Value.MovementCost} {(terrain.Value.Defence.Value == 0 ? "" : $"defence = {terrain.Value.Defence}")} {terrain.Value.Modifier.Compile()} terrain_override = {{ {(string.Join(' ', from Province in Province.Provinces.Values() where Province.Terrain == terrain.Value select Province.Id))} }} }} ");
+            Instance.Localisation.Add(terrain.Value.Id.Value, terrain.Value.Name.Value);
+            Instance.Localisation.Add($"{terrain.Value.Id}_desc", terrain.Value.Description.Value);
+        }
+        sb.Append(" } ");
+        sb.Append($"terrain = {{ {Compiler.global["terrain_declarations"]} }}");
+        sb.Append($"tree = {{ {Compiler.global["tree"]} }}");
+        Instance.OverwriteFile("target/map/terrain.txt", sb.ToString());
+        return "Terrains";
+    }
 }

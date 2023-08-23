@@ -62,8 +62,8 @@ public class Blessing : IArcObject
         return i;
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref List<string> result, Compiler comp) { result.Add(Id.Value); return i; }
-    public static void Transpile()
+    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
+    public static string Transpile()
     {
         StringBuilder sb = new("");
         foreach (Blessing blessing in Blessings.Values())
@@ -73,6 +73,6 @@ public class Blessing : IArcObject
             Instance.Localisation.Add($"desc_{blessing.Id}", blessing.Desc.Value);
         }
         Instance.OverwriteFile("target/common/church_aspects/blessings.txt", sb.ToString());
-        Console.WriteLine($"Finished Transpiling Blessings".Pastel(ConsoleColor.Cyan));
+        return "Blessings";
     }
 }
