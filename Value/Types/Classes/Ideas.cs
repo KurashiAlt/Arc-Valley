@@ -37,21 +37,49 @@ public class Idea : IArcObject
         sb.Append($"{Id} = {{ {Modifier.Compile()} }}");
 
         Instance.Localisation.Add($"{Id}", Name.Value);
-        IEnumerable<string> a = from idea 
-            in IdeaGroup.IdeaGroups 
-            where string.Join(' ', idea.Value.Trigger.Value).Contains(ideaGroup) 
-            orderby idea.Value.Name.Value 
-            select idea.Value.Name.Value.Trim('"');
-        if (Id.Value.EndsWith("7") && a.Any())
+        if (Id.Value.EndsWith("7"))
         {
-            if(a.Count() == 1)
+            bool addedSpacing = false;
+            StringBuilder desc = new(Desc.Value.Trim('"'));
+
+            IEnumerable<string> a = from idea 
+                in IdeaGroup.IdeaGroups 
+                where string.Join(' ', idea.Value.Trigger.Value).Contains(ideaGroup) 
+                orderby idea.Value.Name.Value 
+                select idea.Value.Name.Value.Trim('"');
+            if (a.Any())
             {
-                Instance.Localisation.Add($"{Id}_desc", Desc.Value.Trim('"') + $"\\n\\nUnlocks §O{a.First()}§! Ideas");
+                addedSpacing = true;
+                desc.Append("\\n");
+                if(a.Count() == 1)
+                {
+                    desc.Append($"\\nUnlocks §O{a.First()}§! Ideas");
+                }
+                else
+                {
+                    desc.Append($"\\nUnlocks §O{string.Join(", ", from c in a where c != a.Last() select c)}, and {a.Last()}§! Ideas");
+                }
             }
-            else
+
+            IEnumerable<string> b = from building 
+                in Building.Buildings 
+                where building.Key.EndsWith('1') && string.Join(' ', building.Value.BuildTrigger).Contains(ideaGroup) 
+                orderby building.Value.Name.Value 
+                select building.Key[..1].ToUpper() + building.Key[1..^2];
+            if (b.Any())
             {
-                Instance.Localisation.Add($"{Id}_desc", Desc.Value.Trim('"') + $"\\n\\nUnlocks §O{string.Join(", ", from c in a where c != a.Last() select c)}, and {a.Last()}§! Ideas");
+                if (!addedSpacing) desc.Append("\\n");
+                if(b.Count() == 1)
+                {
+                    desc.Append($"\\nUnlocks the next tier of §O{b.First()}§! Buildings");
+                }
+                else
+                {
+                    desc.Append($"\\nUnlocks the next tier of §O{string.Join(", ", from c in b where c != b.Last() select c)}, and {b.Last()}§! Buildings");
+                }
             }
+
+            Instance.Localisation.Add($"{Id}_desc", desc.ToString());
         }
         else
         {
@@ -80,7 +108,7 @@ public class Idea : IArcObject
 public class IdeaGroup : IArcObject
 {
     public static Dict<IdeaGroup> IdeaGroups = new();
-    public string Class => "Idea";
+    public bool IsObject() => true;
     public ArcString Id { get; set; }
     public ArcInt Priority { get; set; }
     public ArcString Name { get; set; }
@@ -88,10 +116,10 @@ public class IdeaGroup : IArcObject
     public ArcList<Idea> Ideas { get; set; }
     public ArcBlock Start { get; set; } 
     public ArcBlock Bonus { get; set; } 
-    public ArcBlock Trigger { get; set; }
+    public ArcTrigger Trigger { get; set; }
     public ArcBlock AiWillDo { get; set; }
     public Dict<IVariable> keyValuePairs { get; set; }
-    public IdeaGroup(string id, ArcInt priority, ArcString name, ArcString category, ArcList<Idea> ideas, ArcBlock start, ArcBlock bonus, ArcBlock trigger, ArcBlock aiWillDo)
+    public IdeaGroup(string id, ArcInt priority, ArcString name, ArcString category, ArcList<Idea> ideas, ArcBlock start, ArcBlock bonus, ArcTrigger trigger, ArcBlock aiWillDo)
     {
         Id = new(id);
         Priority = priority;
@@ -134,7 +162,7 @@ public class IdeaGroup : IArcObject
                 args.Get((Block s) => new ArcList<Idea>(s, (Block s, int num) => Idea.Constructor(s, id, num + 1)), "ideas"),
                 args.Get(ArcBlock.Constructor, "start", new()),
                 args.Get(ArcBlock.Constructor, "bonus"),
-                args.Get(ArcBlock.Constructor, "trigger", new()),
+                args.Get(ArcTrigger.Constructor, "trigger", new()),
                 args.Get(ArcBlock.Constructor, "ai_will_do", new())
             ));
             return i;

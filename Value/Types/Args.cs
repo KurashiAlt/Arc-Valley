@@ -33,6 +33,15 @@ public class Args
             return Constructor(keyValuePairs[key]);
         return defaultValue;
     }
+    public LazyPointer<T> GetLazyFromList<T>(Dict<T> List, string key) where T : IVariable
+    {
+        if (keyValuePairs == null) throw new Exception("Arguments for call were not of type [ArcObject]");
+        if (!keyValuePairs.ContainsKey(key)) throw new Exception();
+
+        string s = string.Join(' ', keyValuePairs[key]);
+
+        return new LazyPointer<T>(List, s);
+    }
     public T GetFromList<T>(Dict<T> List, string key) where T : IVariable
     {
         T? Item = GetFromListNullable(List, key);
@@ -88,7 +97,13 @@ public class Args
         }
         return dict;
     }
-    public static Walker GetArgs(Walker i, out Args args, int StartOffset = 0, bool noInherit = false, bool multiKey = false)
+    public static Args GetArgs(Block b, Args? inherit = null)
+    {
+        Walker i = new(b);
+        i = GetArgs(i, out Args args, 2, globalInherit: inherit);
+        return args;
+    }
+    public static Walker GetArgs(Walker i, out Args args, int StartOffset = 0, bool noInherit = false, bool multiKey = false, Args? globalInherit = null)
     {
         /*EXAMPLE
         western_sea_of_thule = {
@@ -179,6 +194,17 @@ public class Args
                     args.keyValuePairs.Add(Key, Value);
             }
         } while (q.MoveNext());
+
+        if (globalInherit != null)
+        {
+            if (globalInherit.keyValuePairs == null)
+                throw new Exception();
+            foreach (KeyValuePair<string, Block> kvp in globalInherit.keyValuePairs)
+            {
+                if (args.keyValuePairs.ContainsKey(kvp.Key)) continue;
+                args.keyValuePairs.Add(kvp.Key, kvp.Value);
+            }
+        }
 
         return i;
     }

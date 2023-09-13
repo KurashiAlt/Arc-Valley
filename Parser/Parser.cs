@@ -32,11 +32,12 @@ public static partial class Parser
         StringBuilder s = new();
         bool insideDoubleQuote = false;
         bool insideSpecialQuote = false;
-        int indent = 0;
+        int circleIndent = 0;
+        int squareIndent = 0;
 
         while (ndx < str.Length)
         {
-            if (!insideDoubleQuote && !insideSpecialQuote && indent == 0)
+            if (!insideDoubleQuote && !insideSpecialQuote && circleIndent == 0 && squareIndent == 0)
             {
                 if(str[ndx] == '{')
                 {
@@ -63,8 +64,10 @@ public static partial class Parser
             }
             if (str[ndx] == '`') insideSpecialQuote = !insideSpecialQuote;
             if (str[ndx] == '"') insideDoubleQuote = !insideDoubleQuote;
-            if (str[ndx] == '(') indent++;
-            if (str[ndx] == ')') indent--;
+            if (str[ndx] == '(') circleIndent++;
+            if (str[ndx] == '[') squareIndent++;
+            if (str[ndx] == ')') circleIndent--;
+            if (str[ndx] == ']') squareIndent--;
             s.Append(str[ndx]);
             ndx++;
         }

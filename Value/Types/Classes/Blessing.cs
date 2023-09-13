@@ -11,13 +11,13 @@ public class Blessing : IArcObject
     public string Class => "Blessing";
     public ArcString Name { get; set; }
     public ArcString Desc { get; set; }
-    public ArcBlock Potential { get; set; }
+    public ArcTrigger Potential { get; set; }
     public ArcBlock Modifier { get; set; }
     public ArcBlock Effect { get; set; }
     public ArcBlock AiWillDo { get; set; }
     public ArcString Id { get; set; }
     public Dict<IValue> KeyValuePairs { get; set; }
-    public Blessing(ArcString name, ArcString desc, ArcBlock potential, ArcBlock modifier, ArcBlock effect, ArcBlock aiWillDo, ArcString id)
+    public Blessing(ArcString name, ArcString desc, ArcTrigger potential, ArcBlock modifier, ArcBlock effect, ArcBlock aiWillDo, ArcString id)
     {
         Name = name;
         Desc = desc;
@@ -50,7 +50,7 @@ public class Blessing : IArcObject
         Blessing Blessing = new(
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "desc"),
-            args.Get(ArcBlock.Constructor, "potential"),
+            args.Get(ArcTrigger.Constructor, "potential"),
             args.Get(ArcBlock.Constructor, "modifier"),
             args.Get(ArcBlock.Constructor, "effect"),
             args.Get(ArcBlock.Constructor, "ai_will_do"),

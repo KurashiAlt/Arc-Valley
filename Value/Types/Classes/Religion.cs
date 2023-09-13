@@ -31,6 +31,7 @@ public class Religion : IArcObject
     public ArcBool UsesChurchPower { get; set; }
     public ArcBool UsesKarma { get; set; }
     public ArcBool UsesPiety { get; set; }
+    public ArcBool UsesAnglicanPower { get; set; }
 /* Disabled for now since each one has so many special implementations
     public ArcBlock Papacy { get; set; }
     public ArcBool Fervor { get; set; }                   
@@ -39,7 +40,6 @@ public class Religion : IArcObject
     public ArcBool Authority { get; set; }
     public ArcBool ReligiousReforms { get; set; }
     public ArcBool Doom { get; set; }
-    public ArcBool UsesAnglicanPower { get; set; }
     public ArcBool UsesIsolationism { get; set; }
     public ArcBool Ancestors { get; set; }
     public ArcBlock Gurus { get; set; }
@@ -49,7 +49,7 @@ public class Religion : IArcObject
     public ArcBool CanHaveSecondaryReligion { get; set; }
     public ReligionGroup ReligionGroup { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public Religion(ArcString name, ArcString desc, ArcString id, ArcInt icon, ArcBlock color, ArcBlock heretic, ArcBlock country, ArcBlock province, ArcBlock countryAsSecondary, ArcBlock allowedConversions, ArcBlock onConvert, ArcBool hreReligion, ArcBool hreHereticReligion, ArcString date, ArcBool misguidedHeretic, ArcBool declareWarInRegency, ArcBool canHaveSecondaryReligion, ReligionGroup religionGroup, ArcBool allowFemaleDefenderOfFaith, ArcBool personalDeity, ArcList<Province>? holySites, ArcList<Blessing>? blessings, ArcBool usesChurchPower, ArcList<ChurchAspect>? aspects, ArcBool usesKarma, ArcBool usesPiety)
+    public Religion(ArcString name, ArcString desc, ArcString id, ArcInt icon, ArcBlock color, ArcBlock heretic, ArcBlock country, ArcBlock province, ArcBlock countryAsSecondary, ArcBlock allowedConversions, ArcBlock onConvert, ArcBool hreReligion, ArcBool hreHereticReligion, ArcString date, ArcBool misguidedHeretic, ArcBool declareWarInRegency, ArcBool canHaveSecondaryReligion, ReligionGroup religionGroup, ArcBool allowFemaleDefenderOfFaith, ArcBool personalDeity, ArcList<Province>? holySites, ArcList<Blessing>? blessings, ArcBool usesChurchPower, ArcList<ChurchAspect>? aspects, ArcBool usesKarma, ArcBool usesPiety, ArcBool usesAnglicanPower)
     {
         Name = name;
         Desc = desc;
@@ -77,6 +77,7 @@ public class Religion : IArcObject
         Aspects = aspects;
         UsesKarma = usesKarma;
         UsesPiety = usesPiety;
+        UsesAnglicanPower = usesAnglicanPower;
         KeyValuePairs = new()
         {
             { "name", Name },
@@ -105,6 +106,7 @@ public class Religion : IArcObject
             { "aspects", Aspects },
             { "uses_karma", UsesKarma },
             { "uses_piety", UsesPiety },
+            { "uses_anglican_power", UsesAnglicanPower },
         };
     }
 
@@ -147,7 +149,8 @@ public class Religion : IArcObject
             args.Get(ArcBool.Constructor, "uses_church_power", new(false)),
             args.Get((Block s) => new ArcList<ChurchAspect>(s, ChurchAspect.ChurchAspects), "aspects", null),
             args.Get(ArcBool.Constructor, "uses_karma", new(false)),
-            args.Get(ArcBool.Constructor, "uses_piety", new(false))
+            args.Get(ArcBool.Constructor, "uses_piety", new(false)),
+            args.Get(ArcBool.Constructor, "uses_anglican_power", new(false))
         );
 
         Religions.Add(id, religion);
@@ -174,6 +177,7 @@ public class Religion : IArcObject
         if (UsesChurchPower) sb.Append("uses_church_power = yes ");
         if (UsesKarma) sb.Append("uses_karma = yes ");
         if (UsesPiety) sb.Append("uses_piety = yes ");
+        if (UsesAnglicanPower) sb.Append("uses_anglican_power = yes ");
         if (HolySites != null) sb.Append($"holy_sites = {{ {string.Join(' ', from b in HolySites.Values select b.Id)} }} ");
         if (Blessings != null) sb.Append($"blessings = {{ {string.Join(' ', from b in Blessings.Values select b.Id)} }} ");
         if (Aspects != null) sb.Append($"aspects = {{ {string.Join(' ', from b in Aspects.Values select b.Id)} }} ");

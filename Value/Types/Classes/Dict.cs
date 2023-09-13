@@ -2,6 +2,28 @@
 namespace Arc;
 public class Dict<Type> : IArcObject, IEnumerable<KeyValuePair<string, Type>> where Type : IVariable?
 {
+    //(Block s) => new Dict<Mission>(s, Mission.Constructor)
+    public static Func<Block, Dict<Type>> Constructor(Func<string, Args, Type> constructor)
+    {
+        return (Block s) =>
+        {
+            if (Parser.HasEnclosingBrackets(s)) s = Compiler.RemoveEnclosingBrackets(s);
+
+            Dict<Type> dict = new();
+
+            if (s.Count == 0) return dict;
+
+            Walker i = new(s);
+            do
+            {
+                string key = i.Current;
+                i = Args.GetArgs(i, out Args args);
+                dict.Add(key, constructor(key, args));
+            } while (i.MoveNext());
+
+            return dict;
+        };
+    }
     private readonly Dictionary<string, DictPointer<Type>> Kvps;
     public Dictionary<string, Type>.ValueCollection Values() => Kvps.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Value).Values;
     public Dict() { Kvps = new(); }

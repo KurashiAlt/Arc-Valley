@@ -1,7 +1,8 @@
 ﻿namespace Arc;
-public class ArcList<T> : IVariable where T : IVariable
+public class ArcList<T> : IArcObject where T : IVariable
 {
     public List<T?> Values { get; set; }
+    public bool IsObject() => true;
     public ArcList()
     {
         Values = new();
@@ -83,5 +84,28 @@ public class ArcList<T> : IVariable where T : IVariable
     public override string ToString()
     {
         return string.Join(' ', from value in Values select value.ToString());
+    }
+    public static Func<Block, ArcList<T>> GetConstructor(Dict<T> dict)
+    {
+        return (Block s) => new ArcList<T>(s, dict);
+    }
+    public virtual IVariable? Get(string indexer)
+    {
+        if(int.TryParse(indexer, out int res))
+        {
+            return Values[res];
+        }
+        throw new Exception();
+    }
+
+    public virtual bool CanGet(string indexer)
+    {
+        if (int.TryParse(indexer, out int res))
+        {
+            if(res < 0) return false;
+            if(res >= Values.Count) return false;
+            return true;
+        }
+        return false;
     }
 }

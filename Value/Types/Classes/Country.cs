@@ -24,7 +24,7 @@ public class Country : IArcObject
     public ArcInt GovernmentRank { get; set; }
     public ArcInt Mercantilism { get; set; }
     public ArcString TechnologyGroup { get; set; }
-    public ArcString Religion { get; set; }
+    public LazyPointer<Religion> iReligion { get; set; }
     public Culture PrimaryCulture { get; set; }
     public ArcString GraphicalCulture { get; set; }
     public ArcBlock Definitions { get; set; }
@@ -32,7 +32,7 @@ public class Country : IArcObject
     public Province Capital { get; set; }
     public GovernmentReform? StartingReform { get; set; }
     public Dict<IVariable?> keyValuePairs { get; set; }
-    public Country(string key, ArcBlock historicalIdeaGroups, ArcBlock historicalUnits, ArcBlock monarchNames, ArcBlock leaderNames, ArcBlock shipNames, ArcBlock armyNames, ArcBlock fleetNames, ArcString tag, ArcString name, ArcString adj, ArcBlock color, ArcString government, ArcInt governmentRank, ArcInt mercantilism, ArcString technologyGroup, ArcString religion, Culture primaryCulture, ArcString graphicalCulture, ArcBlock definitions, ArcBlock history, Province capital, GovernmentReform? startingReform)
+    public Country(string key, ArcBlock historicalIdeaGroups, ArcBlock historicalUnits, ArcBlock monarchNames, ArcBlock leaderNames, ArcBlock shipNames, ArcBlock armyNames, ArcBlock fleetNames, ArcString tag, ArcString name, ArcString adj, ArcBlock color, ArcString government, ArcInt governmentRank, ArcInt mercantilism, ArcString technologyGroup, LazyPointer<Religion> religion, Culture primaryCulture, ArcString graphicalCulture, ArcBlock definitions, ArcBlock history, Province capital, GovernmentReform? startingReform)
     {
         HistoricalIdeaGroups = historicalIdeaGroups;
         HistoricalUnits = historicalUnits;
@@ -73,7 +73,7 @@ public class Country : IArcObject
         GovernmentRank = governmentRank;
         Mercantilism = mercantilism;
         TechnologyGroup = technologyGroup;
-        Religion = religion;
+        iReligion = religion;
         PrimaryCulture = primaryCulture;
         GraphicalCulture = graphicalCulture;
         Definitions = definitions;
@@ -97,7 +97,7 @@ public class Country : IArcObject
             { "government_rank", GovernmentRank },
             { "mercantilism", Mercantilism },
             { "technology_group", TechnologyGroup },
-            { "religion", Religion },
+            { "religion", iReligion },
             { "primary_culture", PrimaryCulture },
             { "graphical_culture", GraphicalCulture },
             { "definitions", Definitions },
@@ -125,8 +125,8 @@ public class Country : IArcObject
             args.GetDefault(ArcBlock.Constructor, "monarch_names", new()),
             args.GetDefault(ArcBlock.Constructor, "leader_names", new()),
             args.GetDefault(ArcBlock.Constructor, "ship_names", new()),
-            args.GetDefault(ArcBlock.Constructor, "army_names", new("Army of $PROVINCE$")),
-            args.GetDefault(ArcBlock.Constructor, "fleet_names", new("Fleet of $PROVINCE$")),
+            args.GetDefault(ArcBlock.Constructor, "army_names", new("\"Army of $PROVINCE$\"")),
+            args.GetDefault(ArcBlock.Constructor, "fleet_names", new("\"Fleet of $PROVINCE$\"")),
             args.Get(ArcString.Constructor, "tag"),
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "adj"),
@@ -135,7 +135,7 @@ public class Country : IArcObject
             args.GetDefault(ArcInt.Constructor, "government_rank", new(1)),
             args.GetDefault(ArcInt.Constructor, "mercantilism", new(1)),
             args.Get(ArcString.Constructor, "technology_group"),
-            args.Get(ArcString.Constructor, "religion"),
+            args.GetLazyFromList(Religion.Religions, "religion"),
             args.GetFromList(Culture.Cultures, "primary_culture"),
             args.Get(ArcString.Constructor, "graphical_culture"),
             args.GetDefault(ArcBlock.Constructor, "definitions", new()),
@@ -170,11 +170,16 @@ public class Country : IArcObject
             "government_rank", "=", GovernmentRank,
             "mercantilism", "=", Mercantilism,
             "technology_group", "=", TechnologyGroup,
-            "religion", "=", Religion,
-            "primary_culture", "=", PrimaryCulture,
+            "religion", "=", iReligion.Get().Id,
+            "primary_culture", "=", PrimaryCulture.Id,
             "capital", "=", Capital.Id,
             History.Compile()
         };
+
+
+
+        if (GovernmentRank.Value > 6 || GovernmentRank.Value < 1) throw new Exception();
+
         if (StartingReform != null) countryHistory.Add("add_government_reform", "=", StartingReform.Id);
 
         Instance.OverwriteFile($"target/history/countries/{Tag}.txt", string.Join(' ', countryHistory));

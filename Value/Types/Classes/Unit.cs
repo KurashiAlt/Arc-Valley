@@ -18,7 +18,7 @@ public class Unit : IArcObject
     public ArcString? UnitType { get; set; }
      
     public ArcFloat? Manpower { get; set; }
-    public ArcBlock Trigger { get; set; }
+    public ArcTrigger Trigger { get; set; }
 
     public Dict<ArcBlock> Attributes { get; set; } //Used for non implemented Attributes
     public static string[] ImplementedAttributes = new string[]
@@ -33,7 +33,7 @@ public class Unit : IArcObject
         ArcString type,
         ArcString? unitType,
         ArcFloat? manpower,
-        ArcBlock trigger,
+        ArcTrigger trigger,
         Dict<ArcBlock> attributes
     ) {
         Id = new(id);
@@ -82,7 +82,7 @@ public class Unit : IArcObject
             args.Get(ArcString.Constructor, "type"),
             args.Get(ArcString.Constructor, "unit_type", null),
             args.Get(ArcFloat.Constructor, "manpower", null),
-            args.Get(ArcBlock.Constructor, "trigger", new()),
+            args.Get(ArcTrigger.Constructor, "trigger", new()),
             args.GetAttributes(ImplementedAttributes)
         );
     }

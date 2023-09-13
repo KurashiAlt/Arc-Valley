@@ -1,4 +1,6 @@
-﻿namespace Arc;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+
+namespace Arc;
 public partial class Compiler
 {
     public static Walker GetScope(Walker i, out Block scope)
@@ -152,6 +154,12 @@ public partial class Compiler
     }
     public static bool TryGetVariable(string locator, out IVariable? var, Func<string, IVariable> Get, Func<string, bool> CanGet)
     {
+        if (locator.StartsWith("trigger_value", "event_target"))
+        {
+            var = null;
+            return false;
+        }
+
         if (locator.Contains(':'))
         {
             string[] KeyLocator = locator.Split(':');
@@ -160,28 +168,20 @@ public partial class Compiler
             do
             {
                 currentKey = KeyLocator[f];
-                if (CanGet(currentKey))
+                if (KeyLocator.Length > f + 1)
                 {
-                    if (KeyLocator.Length > f + 1)
+                    IVariable v = Get(currentKey);
+                    if (v.IsObject())
                     {
-                        IVariable v = Get(currentKey);
-                        if (v.IsObject())
-                        {
-                            IArcObject n = (IArcObject)v;
-                            Get = n.Get;
-                            CanGet = n.CanGet;
-                        }
-                    }
-                    else
-                    {
-                        var = Get(currentKey);
-                        return true;
+                        IArcObject n = (IArcObject)v;
+                        Get = n.Get;
+                        CanGet = n.CanGet;
                     }
                 }
                 else
                 {
-                    var = null;
-                    return false;
+                    var = Get(currentKey);
+                    return true;
                 }
                 f++;
             } while (KeyLocator.Length > f);

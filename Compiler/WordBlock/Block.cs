@@ -56,6 +56,10 @@ public class Block : LinkedList<Word>
         } while (i.MoveNext());
         return sb.ToString();
     }
+    public void Add(string id, ArcBool value)
+    {
+        if (value.Value) Add(id, "=", "yes");
+    }
     public void Add(params object[] s)
     {
         foreach(object v in s)
@@ -95,6 +99,14 @@ public class Walker
         if (code.First == null)
             throw new Exception();
         node = code.First;
+    }
+    public void ForceMoveNext()
+    {
+        if (!MoveNext()) throw new Exception();
+    }
+    public void ForceMoveBack()
+    {
+        if (!MoveBack()) throw new Exception();
     }
     public bool MoveNext()
     {

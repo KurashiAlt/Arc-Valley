@@ -16,10 +16,10 @@ public class Mission : IArcObject
     public ArcString? CompletedBy { get; set; }
     public ArcBlock Required { get; set; }
     public ArcList<Province> ProvincesToHighlight { get; set; }
-    public ArcBlock Trigger { get; set; }
+    public ArcTrigger Trigger { get; set; }
     public ArcBlock Effect { get; set; }
     public Dict<IVariable?> keyValuePairs { get; set; }
-    public Mission(string key, ArcString name, ArcString desc, ArcString icon, ArcInt? position, ArcString? completedBy, ArcBlock required, ArcList<Province> provincesToHighlight, ArcBlock trigger, ArcBlock effect)
+    public Mission(string key, ArcString name, ArcString desc, ArcString icon, ArcInt? position, ArcString? completedBy, ArcBlock required, ArcList<Province> provincesToHighlight, ArcTrigger trigger, ArcBlock effect)
     {
         Name = name;
         Desc = desc;
@@ -88,7 +88,7 @@ public class Mission : IArcObject
             args.Get(ArcString.Constructor, "completed_by", null),
             args.Get(ArcBlock.Constructor, "required", new()),
             args.Get((Block s) => new ArcList<Province>(s, Province.Provinces), "provinces_to_highlight", new()),
-            args.Get(ArcBlock.Constructor, "trigger", new()),
+            args.Get(ArcTrigger.Constructor, "trigger", new()),
             args.Get(ArcBlock.Constructor, "effect", new())
         );
     }
@@ -102,11 +102,11 @@ public class MissionSeries : IArcObject
     public ArcBool Generic { get; set; }
     public ArcBool Ai { get; set; }
     public ArcBool HasCountryShield { get; set; }
-    public ArcBlock PotentialOnLoad { get; set; }
-    public ArcBlock Potential { get; set; }
+    public ArcTrigger PotentialOnLoad { get; set; }
+    public ArcTrigger Potential { get; set; }
     public Dict<Mission> Missions { get; set; }
     public Dict<IVariable?> keyValuePairs { get; set; }
-    public MissionSeries(string key, ArcInt? slot, ArcBool generic, ArcBool ai, ArcBool hasCountryShield, ArcBlock potentialOnLoad, ArcBlock potential, Dict<Mission> missions)
+    public MissionSeries(string key, ArcInt? slot, ArcBool generic, ArcBool ai, ArcBool hasCountryShield, ArcTrigger potentialOnLoad, ArcTrigger potential, Dict<Mission> missions)
     {
         Id = new($"{key}_series");
         Slot = slot;
@@ -148,8 +148,8 @@ public class MissionSeries : IArcObject
                 args.Get(ArcBool.Constructor, "generic", new(false)),
                 args.Get(ArcBool.Constructor, "ai", new(true)),
                 args.Get(ArcBool.Constructor, "has_country_shield", new(false)),
-                args.Get(ArcBlock.Constructor, "potential_on_load", new()),
-                args.Get(ArcBlock.Constructor, "potential", new()),
+                args.Get(ArcTrigger.Constructor, "potential_on_load", new()),
+                args.Get(ArcTrigger.Constructor, "potential", new()),
                 args.Get((Block s) => new Dict<Mission>(s, Mission.Constructor), "missions")
             );
             return i;

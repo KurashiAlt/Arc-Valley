@@ -198,9 +198,11 @@ object local = { }
             {
                 Func<string>[] Transpilers =
                 {
+                    TranspileOnActions,
                     ReligionGroup.Transpile,
                     PersonalDeity.Transpile,
                     Event.Transpile,
+                    Decision.Transpile,
                     Incident.Transpile,
                     Adjacency.Transpile,
                     Area.Transpile,
@@ -228,7 +230,7 @@ object local = { }
                     GreatProject.Transpile,
                     MercenaryCompany.Transpile,
                     Advisor.Transpile,
-                    TranspileOnActions,
+                    Age.Transpile,
                     SpecialUnitTranspile,
 
                     EventModifier.Transpile,
@@ -242,37 +244,119 @@ object local = { }
                     TimeSpan end = timer.Elapsed;
                     Console.WriteLine($"{$"Finished Transpiling {type}".PadRight(50).Pastel(ConsoleColor.Cyan)}{$"{(end - start).Milliseconds.ToString().PadLeft(5)} Milliseconds".Pastel(ConsoleColor.Red)}");
                 }
+
+                Block b = new("spriteTypes", "=", "{");
+
+                foreach(string c in GetFiles("target/gfx/event_pictures/arc"))
+                {
+                    string s = c.Split('\\').Last();
+
+                    b.Add(
+                        "spriteType", "=", "{",
+                            "name", "=", $"\"{s.Split('.').First()}\"",
+                            "texturefile", "=", $"\"gfx/event_pictures/arc/{s}\"",
+                        "}"
+                    );
+                }
+
+                foreach(string folder in GetFolders("target/gfx/interface/ages"))
+                {
+                    foreach(string file in GetFiles(folder))
+                    {
+                        string s = file.Split('\\').Last();
+                        b.Add(
+                            "spriteType", "=", "{",
+                                "name", "=", $"\"GFX_{s.Split('.').First()}\"",
+                                "texturefile", "=", $"\"{Path.GetRelativePath(directory + "target", file).Replace('\\','/')}\"",
+                            "}"
+                        );
+                    }
+                }
+
+                foreach(string c in GetFiles("target/gfx/interface/great_projects"))
+                {
+                    string s = c.Split('\\').Last();
+
+                    b.Add(
+                        "spriteType", "=", "{",
+                            "name", "=", $"\"GFX_great_project_{s.Split('.').First()}\"",
+                            "texturefile", "=", $"\"gfx/interface/great_projects/{s}\"",
+                        "}"
+                    );
+                }
+
+                b.Add("}");
+
+                OverwriteFile("target/interface/arc5.gfx", string.Join(' ', b));
             }
 
             return;
         }
+        public static IEnumerable<string> GetFolders(string path)
+        {
+            string location = Path.Combine(directory, path);
+
+            return from s in Directory.GetDirectories(location) select Path.GetRelativePath(directory, s);
+        }
+        public static string[] GetFiles(string path)
+        {
+            string location = Path.Combine(directory, path);
+
+            return Directory.GetFiles(location);
+        }
         public static string SpecialUnitTranspile()
         {
-            IArcObject carolean = (IArcObject)((IArcObject)Compiler.global["special_units"]).Get("carolean");
+            IArcObject specialUnits = (IArcObject)Compiler.global["special_units"];
 
-            OverwriteFile("target/common/static_modifiers/special_units.txt", string.Join(' ', new Block(
-                    ((ArcBlock)carolean.Get("modifier")).Compile("carolean_regiment")
-                )));
+            IArcObject galleass = (IArcObject)specialUnits.Get("galleass");
+            IArcObject musketeer = (IArcObject)specialUnits.Get("musketeer");
+
+            Block staticModifiers = new()
+            {
+                ((ArcBlock)galleass.Get("modifier")).Compile("galleass_modifier"),
+                ((ArcBlock)galleass.Get("ship")).Compile("galleass_ship"),
+                ((ArcBlock)musketeer.Get("modifier")).Compile("musketeer_modifier"),
+                ((ArcBlock)musketeer.Get("regiment")).Compile("musketeer_regiment"),
+            };
+
+            OverwriteFile("target/common/static_modifiers/special_units.txt", string.Join(' ', staticModifiers));
 
             Block defines = new()
             {
-                "NDefines.NMilitary.CAROLEAN_STARTING_STRENGTH", "=", carolean.Get("starting_strength"),
-                "NDefines.NMilitary.CAROLEAN_STARTING_MORALE", "=", carolean.Get("starting_morale"),
-                "NDefines.NMilitary.CAROLEAN_BASE_COST_MODIFIER", "=", carolean.Get("base_cost_modifier"),
-                "NDefines.NMilitary.CAROLEAN_USES_CONSTRUCTION", "=", carolean.Get("uses_construction"),
+                "NDefines.NMilitary.GALLEASS_USES_CONSTRUCTION", "=", galleass.Get("uses_construction"),
+                "NDefines.NMilitary.GALLEASS_BASE_COST_MODIFIER", "=", galleass.Get("base_cost_modifier"),
+                "NDefines.NMilitary.GALLEASS_SAILORS_COST_MODIFIER", "=", galleass.Get("sailors_cost_modifier"),
+                "NDefines.NMilitary.GALLEASS_STARTING_STRENGTH", "=", galleass.Get("starting_strength"),
+                "NDefines.NMilitary.GALLEASS_STARTING_MORALE", "=", galleass.Get("starting_morale"),
+
+                "NDefines.NMilitary.MUSKETEER_USES_CONSTRUCTION", "=", musketeer.Get("uses_construction"),
+                "NDefines.NMilitary.MUSKETEER_BASE_COST_MODIFIER", "=", musketeer.Get("base_cost_modifier"),
+                "NDefines.NMilitary.MUSKETEER_MANPOWER_COST_MODIFIER", "=", musketeer.Get("manpower_cost_modifier"),
+                "NDefines.NMilitary.MUSKETEER_PRESTIGE_COST", "=", musketeer.Get("prestige_cost"),
+                "NDefines.NMilitary.MUSKETEER_ABSOLUTISM_COST", "=", musketeer.Get("absolutism_cost"),
+                "NDefines.NMilitary.MUSKETEER_STARTING_STRENGTH", "=", musketeer.Get("starting_strength"),
+                "NDefines.NMilitary.MUSKETEER_STARTING_MORALE", "=", musketeer.Get("starting_morale"),
             };
             OverwriteFile("target/common/defines/special_units.lua", string.Join(' ', defines));
 
-            Walker i = new(((ArcBlock)carolean.Get("localisation")).Value);
-            do
+            Block LocBlock = new Block()
             {
-                string key = i.Current;
-                if (!i.MoveNext()) throw new Exception();
-                if (i.Current != "=") throw new Exception();
-                if (!i.MoveNext()) throw new Exception();
-                string value = i.Current;
-                Localisation.Add(key, value);
-            } while (i.MoveNext());
+                ((ArcBlock)galleass.Get("localisation")).Value,
+                ((ArcBlock)musketeer.Get("localisation")).Value,
+            };
+            if (LocBlock.Any())
+            {
+                Walker i = new(LocBlock);
+                do
+                {
+                    string key = i.Current;
+                    if (!i.MoveNext()) throw new Exception();
+                    if (i.Current != "=") throw new Exception();
+                    if (!i.MoveNext()) throw new Exception();
+                    string value = i.Current;
+                    Localisation.Add(key, value);
+                } while (i.MoveNext());
+            }
             return "Special Units";
         }
         public static string FormatArc(string s)
@@ -358,14 +442,52 @@ object local = { }
             StringBuilder sb = new("l_english:\n");
             foreach (KeyValuePair<string, string> loc in Localisation)
             {
-                sb.Append($" {loc.Key}: \"{loc.Value.Trim('"')}\"\n");
+                string value = loc.Value.Trim('"');
+                if(Environment.NewLine != "\n") value = value.Replace(Environment.NewLine, "\\n");
+                value = value.Replace("\n", "\\n");
+                value = value.Replace("\t", "    ");
+
+                sb.Append($" {loc.Key}: \"{value}\"\n");
             }
             OverwriteFile("target/localisation/replace/arc5_l_english.yml", Parser.ConvertStringToUtf8Bom(sb.ToString()), false);
             return "Localisations";
         }
         private static string TranspileOnActions()
         {
-            foreach (KeyValuePair<string, ArcBlock> OnAction in ((Dict<ArcBlock>)Compiler.global["on_actions"]))
+            Dict<ArcBlock> OnActions = (Dict<ArcBlock>)Compiler.global["on_actions"];
+
+            Block BiYearlyEvents = ((ArcBlock)Compiler.global["bi_yearly_events"]).Value;
+
+            int BiYearlySum = 0;
+
+            int? weight = null;
+            foreach(Word w in BiYearlyEvents)
+            {
+                if(w == "=") continue;
+
+                if(weight == null)
+                {
+                    weight = int.Parse(w);
+                    continue;
+                }
+                else
+                {
+                    if (!Event.Events.CanGet(w)) Console.WriteLine($"bi_yearly_events: {w} does not exist".Pastel(ConsoleColor.Magenta));
+                    BiYearlySum += (int)weight;
+                    weight = null;
+                    continue;
+                }
+            }
+
+            BiYearlyEvents.Add(BiYearlySum/10, "=", "0");
+
+            ArcBlock OnBiYearlyPulse = OnActions["on_bi_yearly_pulse"];
+
+            OnBiYearlyPulse.Value.Add("random_events", "=", "{");
+            OnBiYearlyPulse.Value.Add(BiYearlyEvents);
+            OnBiYearlyPulse.Value.Add("}");
+
+            foreach (KeyValuePair<string, ArcBlock> OnAction in OnActions)
             {
                 string s = $"{OnAction.Key} = {{ {OnAction.Value.Compile()}}} ";
                 OverwriteFile($"target/common/on_actions/{OnAction.Key}.txt", s);

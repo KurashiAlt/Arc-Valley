@@ -12,14 +12,15 @@ public class ChurchAspect : IArcObject
     public ArcString Name { get; set; }
     public ArcString Desc { get; set; }
     public ArcInt Cost { get; set; }
-    public ArcBlock Allow { get; set; }
-    public ArcBlock Potential { get; set; }
+    public ArcTrigger Allow { get; set; }
+    public ArcTrigger Trigger { get; set; }
+    public ArcTrigger Potential { get; set; }
     public ArcBlock Modifier { get; set; }
     public ArcBlock Effect { get; set; }
     public ArcBlock AiWillDo { get; set; }
     public ArcString Id { get; set; }
     public Dict<IValue> KeyValuePairs { get; set; }
-    public ChurchAspect(ArcString name, ArcString desc, ArcBlock potential, ArcBlock allow, ArcBlock modifier, ArcBlock effect, ArcBlock aiWillDo, ArcString id, ArcInt cost)
+    public ChurchAspect(ArcString name, ArcString desc, ArcTrigger potential, ArcTrigger allow, ArcBlock modifier, ArcBlock effect, ArcBlock aiWillDo, ArcString id, ArcInt cost, ArcTrigger trigger)
     {
         Name = name;
         Desc = desc;
@@ -30,6 +31,7 @@ public class ChurchAspect : IArcObject
         AiWillDo = aiWillDo;
         Id = id;
         Cost = cost;
+        Trigger = trigger;
         KeyValuePairs = new()
         {
             { "name", Name },
@@ -41,6 +43,7 @@ public class ChurchAspect : IArcObject
             { "ai_will_do", AiWillDo },
             { "id", Id },
             { "cost", Cost },
+            { "trigger", Trigger },
         };
     }
     public bool CanGet(string indexer) => KeyValuePairs.CanGet(indexer);
@@ -56,13 +59,14 @@ public class ChurchAspect : IArcObject
         ChurchAspect ChurchAspect = new(
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "desc"),
-            args.Get(ArcBlock.Constructor, "potential", new()),
-            args.Get(ArcBlock.Constructor, "allow", new()),
+            args.Get(ArcTrigger.Constructor, "potential", new()),
+            args.Get(ArcTrigger.Constructor, "allow", new()),
             args.Get(ArcBlock.Constructor, "modifier", new()),
             args.Get(ArcBlock.Constructor, "effect", new()),
             args.Get(ArcBlock.Constructor, "ai_will_do", new("factor = 1")),
             new(id),
-            args.Get(ArcInt.Constructor, "cost", new(100))
+            args.Get(ArcInt.Constructor, "cost", new(100)),
+            args.Get(ArcTrigger.Constructor, "trigger", new())
         );
 
         ChurchAspects.Add(id, ChurchAspect);
@@ -76,7 +80,7 @@ public class ChurchAspect : IArcObject
         StringBuilder sb = new("");
         foreach (ChurchAspect ChurchAspect in ChurchAspects.Values())
         {
-            sb.Append($"{ChurchAspect.Id} = {{ cost = {ChurchAspect.Cost} {ChurchAspect.Potential.Compile("potential")} {ChurchAspect.Allow.Compile("allow")} {ChurchAspect.Modifier.Compile("modifier")} {ChurchAspect.Effect.Compile("effect")} {ChurchAspect.AiWillDo.Compile("ai_will_do")} }}");
+            sb.Append($"{ChurchAspect.Id} = {{ cost = {ChurchAspect.Cost} {ChurchAspect.Potential.Compile("potential")} {ChurchAspect.Allow.Compile("allow")} {ChurchAspect.Trigger.Compile("trigger")} {ChurchAspect.Modifier.Compile("modifier")} {ChurchAspect.Effect.Compile("effect")} {ChurchAspect.AiWillDo.Compile("ai_will_do")} }}");
             Instance.Localisation.Add($"{ChurchAspect.Id}", ChurchAspect.Name.Value);
             Instance.Localisation.Add($"desc_{ChurchAspect.Id}", ChurchAspect.Desc.Value);
         }

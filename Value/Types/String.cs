@@ -1,22 +1,48 @@
-﻿namespace Arc;
+﻿using System.Text.RegularExpressions;
+
+namespace Arc;
 
 public class ArcString : IValue
 {
     //Regular Stuff
     public string Value { get; set; }
+    public string TrimOneQuote(string value)
+    {
+        if (value.StartsWith('"') && value.EndsWith('"')) return value[1..^1];
+        return value;
+    }
     public ArcString(string value)
     {
-        Value = value;
+        Value = TrimOneQuote(value);
     }
     public ArcString(Block b)
     {
-        Value = string.Join(' ', b);
+        string val = TrimOneQuote(string.Join(' ', b));
+
+        if (Compiler.TryTrimOne(val, '`', out string? newValue))
+        {
+            if (newValue == null)
+                throw new Exception();
+
+            Regex Replace = Compiler.TranspiledString();
+            newValue = Replace.Replace(newValue, delegate (Match m)
+            {
+                return new Compiler().Compile(m.Groups[1].Value).Trim();
+            });
+
+            val = newValue;
+        }
+
+        Value = val;
     }
     public void Set(Block value)
     {
         Value = string.Join(' ', value);
     }
-    public static ArcString Constructor(Block b) => new(b);
+    public static ArcString Constructor(Block b)
+    {
+        return new(b);
+    }
     //Type Finding
     public bool IsString() => true;
 

@@ -20,15 +20,16 @@ public class Advisor : IArcObject
     public ArcString DeathDate { get; set; }
     public Dict<IVariable> KeyValuePairs { get; set; }
     public Advisor(
-      ArcString name,
-      Province location,
-      ArcBool discount,
-      ArcInt skill,
-      AdvisorType type,
-      ArcString date,
-      ArcString deathDate
+        string key,
+        ArcString name,
+        Province location,
+        ArcBool discount,
+        ArcInt skill,
+        AdvisorType type,
+        ArcString date,
+        ArcString deathDate
     ) {
-        Advisors.Add($"{Advisors.Count + 1}", this);
+        Advisors.Add(key, this);
         Id = new(Advisors.Count + 1);
         Name = name;
         Location = location;
@@ -52,9 +53,14 @@ public class Advisor : IArcObject
     public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
     public static Walker Call(Walker i)
     {
+        if (!i.MoveNext()) throw new Exception();
+
+        string key = i.Current;
+
         i = Args.GetArgs(i, out Args args);
 
         Advisor Advisor = new(
+            key,
             args.Get(ArcString.Constructor, "name"),
             args.GetFromList(Province.Provinces, "location"),
             args.Get(ArcBool.Constructor, "discount", new(false)),

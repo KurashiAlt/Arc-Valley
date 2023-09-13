@@ -15,10 +15,10 @@ public class Option : IArcObject
     ArcBlock AiChance { get; set; }
     ArcBool Highlight { get; set; }
     Province? Goto { get; set; }
-    ArcBlock? Trigger { get; set; }
+    ArcTrigger? Trigger { get; set; }
     ArcBlock Effect { get; set; }
     public Dict<IVariable?> keyValuePairs { get; set; }
-    public Option(ArcString name, ArcBlock aiChance, ArcBool highlight, Province? @goto, ArcBlock? trigger, ArcBlock effect)
+    public Option(ArcString name, ArcBlock aiChance, ArcBool highlight, Province? @goto, ArcTrigger? trigger, ArcBlock effect)
     {
         Name = name;
         AiChance = aiChance;
@@ -67,7 +67,7 @@ public class Option : IArcObject
             args.Get(ArcBlock.Constructor, "ai_chance", new("factor", "=", "1")),
             args.Get(ArcBool.Constructor, "highlight", new(false)),
             args.GetFromListNullable(Province.Provinces, "goto"),
-            args.Get(ArcBlock.Constructor, "trigger", null),
+            args.Get(ArcTrigger.Constructor, "trigger", null),
             args.Get(ArcBlock.Constructor, "effect", new())
         );
     }
@@ -85,7 +85,7 @@ public class Event : IArcObject
     ArcBlock MajorTrigger { get; set; }
     ArcBool FireOnlyOnce { get; set; }
     ArcBool Hidden { get; set; }
-    ArcBlock Trigger { get; set; }
+    ArcTrigger Trigger { get; set; }
     ArcBlock Immediate { get; set; }
     ArcBlock After { get; set; }
     ArcBlock MeanTimeToHappen { get; set; }
@@ -102,7 +102,7 @@ public class Event : IArcObject
         ArcBlock majorTrigger,
         ArcBool fireOnlyOnce,
         ArcBool hidden,
-        ArcBlock trigger,
+        ArcTrigger trigger,
         ArcBlock immediate,
         ArcBlock after,
         ArcBlock meanTimeToHappen,
@@ -165,7 +165,7 @@ public class Event : IArcObject
             args.Get(ArcBlock.Constructor, "major_trigger", new()),
             args.Get(ArcBool.Constructor, "fire_only_once", new(false)),
             args.Get(ArcBool.Constructor, "hidden", new(false)),
-            args.Get(ArcBlock.Constructor, "trigger", new()),
+            args.Get(ArcTrigger.Constructor, "trigger", new()),
             args.Get(ArcBlock.Constructor, "immediate", new()),
             args.Get(ArcBlock.Constructor, "after", new()),
             args.Get(ArcBlock.Constructor, "mean_time_to_happen", new()),

@@ -1,23 +1,23 @@
 ﻿namespace Arc;
-public class ArcBlock : IValue
+public class ArcTrigger : IValue
 {
     public Block Value { get; set; }
-    public ArcBlock()
+    public ArcTrigger()
     {
         Value = new();
     }
-    public ArcBlock(string s)
+    public ArcTrigger(string s)
     {
         Value = Parser.ParseCode(s);
     }
-    public ArcBlock(params string[] s)
+    public ArcTrigger(params string[] s)
     {
         Value = new()
         {
             s
         };
     }
-    public ArcBlock(Block value, bool t = false)
+    public ArcTrigger(Block value, bool t = false)
     {
         if (!t)
             if (Parser.HasEnclosingBrackets(value))
@@ -117,9 +117,7 @@ public class ArcBlock : IValue
 
     public string Compile()
     {
-        return new Compiler().Compile(Value);
+        return new Compiler().CompileTrigger(Value);
     }
-    internal static ArcBlock Constructor(Block block) => new ArcBlock(block);
-
-    internal int Count() => Value.Count;
+    internal static ArcTrigger Constructor(Block block) => new ArcTrigger(block);
 }

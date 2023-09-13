@@ -44,7 +44,7 @@ public class Tier : IArcObject
     }
     public static Tier Constructor(Block b, int upgradeTime, int costToUpgrade)
     {
-        if(b.Count == 0)
+        if(!b.Any())
         {
             return new Tier(
                 new(upgradeTime),
@@ -56,8 +56,7 @@ public class Tier : IArcObject
             );
         }
 
-        Walker i = new(b);
-        i = Args.GetArgs(i, out Args args, 2);
+        Args args = Args.GetArgs(b);
         return Constructor(args, upgradeTime, costToUpgrade);
     }
     public static Tier Constructor(Args args, int upgradeTime, int costToUpgrade) => new(
@@ -102,12 +101,12 @@ public class GreatProject : IArcObject
     public ArcBool CanBeMoved { get; set; }
     public ArcInt StartingTier { get; set; }
     public ArcString Type { get; set; }
-    public ArcBlock BuildTrigger { get; set; }
+    public ArcTrigger BuildTrigger { get; set; }
     public ArcBlock OnBuilt { get; set; }
     public ArcBlock OnDestroyed { get; set; }
-    public ArcBlock CanUseModifiersTrigger { get; set; }
-    public ArcBlock CanUpgradeTrigger { get; set; }
-    public ArcBlock KeepTrigger { get; set; }
+    public ArcTrigger CanUseModifiersTrigger { get; set; }
+    public ArcTrigger CanUpgradeTrigger { get; set; }
+    public ArcTrigger KeepTrigger { get; set; }
     public Tier Tier0 { get; set; }
     public Tier Tier1 { get; set; }
     public Tier Tier2 { get; set; }
@@ -123,12 +122,12 @@ public class GreatProject : IArcObject
         ArcBool canBeMoved,
         ArcInt startingTier,
         ArcString type,
-        ArcBlock buildTrigger,
+        ArcTrigger buildTrigger,
         ArcBlock onBuilt,
         ArcBlock onDestroyed,
-        ArcBlock canUseModifiersTrigger,
-        ArcBlock canUpgradeTrigger,
-        ArcBlock keepTrigger,
+        ArcTrigger canUseModifiersTrigger,
+        ArcTrigger canUpgradeTrigger,
+        ArcTrigger keepTrigger,
         Tier tier0,
         Tier tier1,
         Tier tier2,
@@ -206,12 +205,12 @@ public class GreatProject : IArcObject
             args.Get(ArcBool.Constructor, "can_be_moved", new(true)),
             args.Get(ArcInt.Constructor, "starting_tier", new(0)),
             args.Get(ArcString.Constructor, "type", new("monument")),
-            args.Get(ArcBlock.Constructor, "build_trigger", args.Get(ArcBlock.Constructor, "trigger", new())),
+            args.Get(ArcTrigger.Constructor, "build_trigger", args.Get(ArcTrigger.Constructor, "trigger", new())),
             args.Get(ArcBlock.Constructor, "on_built", new()),
             args.Get(ArcBlock.Constructor, "on_destroyed", new()),
-            args.Get(ArcBlock.Constructor, "can_use_modifiers_trigger", args.Get(ArcBlock.Constructor, "trigger", new())),
-            args.Get(ArcBlock.Constructor, "can_upgrade_trigger", args.Get(ArcBlock.Constructor, "trigger", new())),
-            args.Get(ArcBlock.Constructor, "keep_trigger", new("always", "=", "yes")),
+            args.Get(ArcTrigger.Constructor, "can_use_modifiers_trigger", args.Get(ArcTrigger.Constructor, "trigger", new())),
+            args.Get(ArcTrigger.Constructor, "can_upgrade_trigger", args.Get(ArcTrigger.Constructor, "trigger", new())),
+            args.Get(ArcTrigger.Constructor, "keep_trigger", new("always", "=", "yes")),
             Tier.Constructor(args.Get("tier_0", new()), 0, 0),
             Tier.Constructor(args.Get("tier_1", new()), 120, 1000),
             Tier.Constructor(args.Get("tier_2", new()), 240, 2500),
@@ -230,7 +229,8 @@ public class GreatProject : IArcObject
                 "build_cost", "=", BuildCost,
                 "can_be_moved", "=", CanBeMoved,
                 "starting_tier", "=", StartingTier,
-                "type", "=", Type
+                "type", "=", Type,
+                "move_days_per_unit_distance", "=", "100"
         );
         BuildTrigger.Compile("build_trigger", ref b, CanBeEmpty: false);
         OnBuilt.Compile("on_built", ref b, CanBeEmpty: false);

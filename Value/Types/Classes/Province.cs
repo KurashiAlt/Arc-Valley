@@ -118,14 +118,22 @@ public class Province : IArcObject
                 LakeTiles.Append($"{id} ");
             }
 
-            string result = "";
-            if (history.Count > 0) result = (province.Value.IsLand() ? SplitToDev(province.Value.BaseDevelopment.Value) : "") + comp.Compile(history);
-
+            Block res = new();
+            if (province.Value.IsLand()) res.Add(SplitToDev(province.Value.BaseDevelopment.Value));
+            if (history.Count > 0)
+            {
+                res.Add(comp.Compile(history));
+            }
+            res.Add(
+                "1.1.1", "=", "{",
+                    string.Join(' ', from ctr in Country.Countries select $"discover_country = {ctr.Value.Tag.Value}"),
+                "}"
+            );
             Positions.Append($"{province.Value.Id} = {{ position = {{ {province.Value.Position} }} rotation = {{ {province.Value.Rotation} }} height = {{ {province.Value.Height} }} }} ");
 
             if (province.Value.IsLand() || province.Value.Impassible) Continent.Append($" {province.Value.Id}");
 
-            Instance.OverwriteFile($"target/history/provinces/{id} - ARC.txt", result);
+            Instance.OverwriteFile($"target/history/provinces/{id} - ARC.txt", res.ToString());
         }
         Continent.Append(" }");
 

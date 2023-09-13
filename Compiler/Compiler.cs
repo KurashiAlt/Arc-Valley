@@ -7,6 +7,7 @@ using System.Runtime.Loader;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
+using System.Collections.Concurrent;
 
 namespace Arc
 {
@@ -14,6 +15,7 @@ namespace Arc
     {
         public static readonly Dictionary<string, IVariable> global = new()
         {
+            { "bi_yearly_events", new ArcBlock() },
             { "on_actions", new Dict<ArcBlock>() {
                 { "on_startup", new() },
                 { "on_religion_change", new() },
@@ -277,6 +279,7 @@ namespace Arc
             { "church_aspects", ChurchAspect.ChurchAspects },
             { "countries", Country.Countries },
             { "culture_groups", CultureGroup.CultureGroups },
+            { "idea_groups", IdeaGroup.IdeaGroups },
             { "cultures", Culture.Cultures },
             { "estates", Estate.Estates },
             { "event_modifiers", EventModifier.EventModifiers },
@@ -297,16 +300,31 @@ namespace Arc
             } },
             { "special_units", new Dict<IVariable>()
             {
-                { "carolean", new Dict<IVariable>()
+                { "galleass", new Dict<IVariable>()
                 {
-                    { "id", new ArcString("carolean") },
-                    { "name", new ArcString("\"Carolean\"") },
+                    { "name", new ArcString("\"Galleass\"") },
                     { "modifier", new ArcBlock() },
-                    { "starting_strength", new ArcFloat(1.0) },
-                    { "starting_morale", new ArcFloat(0.1) },
-                    { "base_cost_modifier", new ArcFloat(1.0) },
+                    { "ship", new ArcBlock() },
                     { "uses_construction", new ArcInt(1) },
-                    { "localisation", new ArcBlock("carolean_name = \"$HOME$'s $NUM$$ORDER$ Carolean\"\r\n\tmodifier_has_carolean = \"Allows Carolean Infantry\"\r\n\tmodifier_local_has_carolean = \"Province Allows Carolean Infantry\"\r\n\tcarolean_cant_have = \"Your nation cannot raise Carolean Infantry.\"\r\n\tcarolean_forcelimit = \"We can recruit up to $VAL|%Y$ of our total Carolean Culture Provinces' development of $DEV$ as §GCarolean Infantry§! due to:\"\r\n\tcarolean_limit_culture = \"$PROVINCE$ is a $CULTURE$ province, so can not recruit Carolean Infantry here.\"\r\n\tcarolean_desc = \"The Carolean are the Swedish and Finnish infantry of the Swedish Empire. Recruited from the peasantry, the Carolean go under strict training and are renowned to invoke fear in the hearts of their enemies.\\nCarolean regiments can only be recruited in owned provinces of §YSwedish§! or §YFinnish§! culture, and the amount of possible units depends on the development of these provinces.\"\r\n\tregcat_carolean = \"Carolean\"\r\n\tadd_carolean_sub_unit_effect = \"Get '§GCarolean Infantry§!' $UNIT$ in $WHERE|Y$.\"\r\n\tcarolean_regiment = \"Carolean Regiment\\n$EFFECT$\"\r\n\thave_less_carolean_than = \"Have less Carolean Regiments than $VALUE|Y$.\\n\"\r\n\thave_at_least_carolean_than = \"Have at least $VALUE|Y$ Carolean Regiments.\\n\"\r\n\tmodifier_amount_of_carolean = \"Possible Carolean Infantry\"\r\n\tmodifier_local_amount_of_carolean = \"Possible Carolean Infantry\"\r\n\tonly_carolean_modifier = \"§YAffects only Carolean Regiments§!\"\r\n\tcarolean_regiment_type = \"Carolean\"") },
+                    { "base_cost_modifier", new ArcFloat(1.0) },
+                    { "sailors_cost_modifier", new ArcFloat(1.0) },
+                    { "starting_strength", new ArcFloat(1.0) },
+                    { "starting_morale", new ArcFloat(1.0) },
+                    { "localisation", new ArcBlock() },
+                } },
+                { "musketeer", new Dict<IVariable>()
+                {
+                    { "name", new ArcString("\"Musketeer\"") },
+                    { "modifier", new ArcBlock() },
+                    { "regiment", new ArcBlock() },
+                    { "uses_construction", new ArcInt(1) },
+                    { "base_cost_modifier", new ArcFloat(1.0) },
+                    { "manpower_cost_modifier", new ArcFloat(1.0) },
+                    { "prestige_cost", new ArcInt(0) },
+                    { "absolutism_cost", new ArcInt(0) },
+                    { "starting_strength", new ArcFloat(1.0) },
+                    { "starting_morale", new ArcFloat(1.0) },
+                    { "localisation", new ArcBlock() },
                 } },
             } },
         };
@@ -320,13 +338,6 @@ namespace Arc
 #pragma warning restore CS8618
 
         public Compiler() { }
-        public string Compile(string file, bool preprocessor = false)
-        {
-            if (preprocessor)
-                file = Parser.Preprocessor(file);
-
-            return Compile(Parser.ParseCode(file));
-        }
         public void ObjectDeclare(string file, bool preprocessor = false)
         {
             if (preprocessor)
@@ -341,7 +352,6 @@ namespace Arc
 
             LintLoad(ref dict, Parser.ParseCode(file), path);
         }
-
         public void LintLoad(ref Dictionary<string, ILintCommand> dict, Block code, string file)
         {
             if (code.Count == 0)
@@ -427,6 +437,9 @@ namespace Arc
                         "localisation" => DefineLoc(g),
                         "mercenary_company" => MercenaryCompany.Call(g),
                         "advisor" => Advisor.Call(g),
+                        "age" => Age.Call(g),
+                        "decision" => Decision.Call(g),
+                        "building_line" => BuildingLine.Call(g),
                         _ => throw new Exception()
                     };
                     continue;
@@ -453,6 +466,180 @@ namespace Arc
 
                 return i;
             }
+        }
+        public bool AllCompile(ref Walker g, ref Block result, Func<Block, string> compile)
+        {
+            if (g.Current == "defineloc") {
+                g.ForceMoveNext();
+                string key = g.Current;
+                g.ForceMoveNext();
+                if (g.Current != "=") throw new Exception();
+                g.ForceMoveNext();
+                string value = g.Current;
+
+                Instance.Localisation.Add(key, value);
+                return true;
+            }
+            else if (g.Current == "if") { result.Add("if", "="); return true; }
+            else if (g.Current == "else_if") { result.Add("else_if", "="); return true; }
+            else if (g.Current == "else") { result.Add("else", "="); return true; }
+            else if (g.Current.value.EndsWith(','))
+            {
+                List<string> s = new();
+                do
+                {
+                    s.Add(g.Current.value[..^1]);
+                    if (!g.MoveNext()) throw new Exception();
+                } while (g.Current.value.EndsWith(','));
+                s.Add(g.Current.value);
+
+                if (!g.MoveNext()) throw new Exception();
+
+                if (g.Current.value.StartsWith('[') && g.Current.value.EndsWith(']'))
+                {
+                    string trigger = g.Current.value[1..^1];
+
+                    if (!g.MoveNext()) throw new Exception();
+                    g = GetScope(g, out Block scope);
+
+                    if (Parser.HasEnclosingBrackets(scope)) scope = RemoveEnclosingBrackets(scope);
+
+                    Block n = new()
+                        {
+                            "=", "{",
+                                "limit", "=", "{",
+                                    Compile(trigger),
+                                "}",
+                                Compile(scope),
+                            "}"
+                        };
+
+                    foreach (string k in s)
+                    {
+                        result.Add(Compile(k));
+                        result.Add(n);
+                    }
+                }
+                else if (g.Current.value == "=")
+                {
+                    if (!g.MoveNext()) throw new Exception();
+
+                    g = GetScope(g, out Block scope);
+
+                    string compiled = Compile(scope);
+                    foreach (string k in s)
+                    {
+                        Block n = new()
+                            {
+                                Compile(k),
+                                "=",
+                                compiled
+                            };
+
+                        result.Add(n);
+                    }
+                }
+                else throw new Exception();
+                return true;
+            }
+            else if (TryTrimOne(g.Current, '`', out string? newValue))
+            {
+                if (newValue == null)
+                    throw new Exception();
+
+                Regex Replace = TranspiledString();
+                newValue = Replace.Replace(newValue, delegate (Match m)
+                {
+                    return Compile(m.Groups[1].Value).Trim();
+                });
+
+                result.Add(newValue);
+                return true;
+            }
+            else if (g.Current.value.EndsWith('%'))
+            {
+                result.Add((double.Parse(g.Current.value[..^1]) / 100).ToString("0.000"));
+                return true;
+            }
+            else if (g.Current.value.StartsWith('[') && g.Current.value.EndsWith(']'))
+            {
+                string trigger = g.Current.value[1..^1];
+
+                if (!g.MoveNext()) throw new Exception();
+                g = GetScope(g, out Block scope);
+
+                if (Parser.HasEnclosingBrackets(scope)) scope = RemoveEnclosingBrackets(scope);
+
+                if (result.Last.Value.value != "=") result.Add("=");
+
+                result.Add(
+                    "{",
+                        "limit", "=", "{",
+                            CompileTrigger(trigger),
+                        "}",
+                        compile(scope),
+                    "}"
+                );
+                return true;
+            }
+            else if (TryGetVariable(g.Current, out IVariable? var))
+            {
+                if (var == null) throw new Exception();
+                g = var.Call(g, ref result, this);
+                return true;
+            }
+            return false;
+        }
+        public static bool IsBaseScope(string v) => v == "ROOT" || v == "PREV" || v == "THIS" || v == "FROM";
+        public static bool IsDefaultScope(string v) => v == "REB" || v == "NAT" || v == "PIR";
+        public string CompileTrigger(string file, bool preprocessor = false)
+        {
+            if (preprocessor)
+                file = Parser.Preprocessor(file);
+
+            return CompileTrigger(Parser.ParseCode(file));
+        }
+        public string CompileTrigger(Block code)
+        {
+            if (code.Count == 0)
+                return "";
+
+            Block result = new();
+
+            Walker g = new(code);
+            do
+            {
+                if (AllCompile(ref g, ref result, CompileTrigger)) continue;
+                else if (g.Current == "ags")
+                {
+                    if (!g.MoveNext()) throw new Exception();
+                    if (g.Current != "=") throw new Exception();
+                    if (!g.MoveNext()) throw new Exception();
+                    string value = g.Current;
+
+                    result.Add("is_year", "=", int.Parse(value) + 2500);
+                }
+                else if (g.Current == "tag")
+                {
+                    if (!g.MoveNext()) throw new Exception();
+                    if (g.Current != "=") throw new Exception();
+                    if (!g.MoveNext()) throw new Exception();
+                    string value = g.Current;
+                    if(IsBaseScope(value) || IsDefaultScope(value)) result.Add("tag", "=", value);
+                    else if (Country.Countries.CanGet(value)) result.Add("tag", "=", Country.Countries[value].Tag);
+                    else throw new Exception($"Country: {value} does not exist");
+                }
+                else result.Add(g.Current);
+            } while (g.MoveNext());
+
+            return string.Join(' ', result);
+        }
+        public string Compile(string file, bool preprocessor = false)
+        {
+            if (preprocessor)
+                file = Parser.Preprocessor(file);
+
+            return Compile(Parser.ParseCode(file));
         }
         public string Compile(Block code)
         {
@@ -536,6 +723,7 @@ namespace Arc
                 {
                     i = Args.GetArgs(i, out Args args);
                     ArcString name = args.Get(ArcString.Constructor, "name");
+                    ArcBool permanent = args.Get(ArcBool.Constructor, "permanent", new(true));
                     ArcInt duration = args.Get(ArcInt.Constructor, "duration", new(-1));
                     ArcString desc = args.Get(ArcString.Constructor, "desc", new(""));
                     ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
@@ -543,40 +731,72 @@ namespace Arc
 
                     new EventModifier($"qem_{QuickEventModifiers}", name, modifier);
 
-                    result.Add("add_permanent_province_modifier = { ");
-                    result.Add($"name = qem_{QuickEventModifiers} ");
-                    result.Add($"duration = {duration.Value} ");
+                    if(permanent.Value) result.Add("add_permanent_province_modifier", "=", "{");
+                    else result.Add("add_province_modifier", "=", "{");
+                    result.Add("name", "=", $"qem_{QuickEventModifiers}");
+                    result.Add("duration", "=", duration.Value);
                     if(desc.Value.Count() != 0) {
-                        result.Add($"desc = qem_{QuickEventModifiers}_desc ");
+                        result.Add("desc", "=", $"qem_{QuickEventModifiers}_desc ");
                         Instance.Localisation.Add($"qem_{QuickEventModifiers}_desc", desc.Value);
                     }
-                    if(hidden.Value) result.Add("hidden = yes ");
-                    result.Add("} ");
+                    if(hidden.Value) result.Add("hidden", "=", "yes");
+                    result.Add("}");
 
                     QuickEventModifiers++;
                     return i;
                 } },
-                { "defineloc", (Walker i) =>
+                { "quick_country_modifier", (Walker i) =>
                 {
-                    if(!i.MoveNext()) throw new Exception();
-                    string key = i.Current;
-                    if(!i.MoveNext()) throw new Exception();
-                    if(i.Current != "=") throw new Exception();
-                    if(!i.MoveNext()) throw new Exception();
-                    string value = i.Current;
+                    i = Args.GetArgs(i, out Args args);
+                    ArcString name = args.Get(ArcString.Constructor, "name");
+                    ArcInt duration = args.Get(ArcInt.Constructor, "duration", new(-1));
+                    ArcString desc = args.Get(ArcString.Constructor, "desc", new(""));
+                    ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
+                    ArcBlock modifier = args.Get(ArcBlock.Constructor, "modifier");
 
-                    Instance.Localisation.Add(key, value);
+                    new EventModifier($"qem_{QuickEventModifiers}", name, modifier);
 
+                    result.Add("add_country_modifier", "=", "{");
+                    result.Add("name", "=", $"qem_{QuickEventModifiers}");
+                    result.Add("duration", "=", duration.Value);
+                    if(desc.Value.Count() != 0) {
+                        result.Add("desc", "=", $"qem_{QuickEventModifiers}_desc ");
+                        Instance.Localisation.Add($"qem_{QuickEventModifiers}_desc", desc.Value);
+                    }
+                    if(hidden.Value) result.Add("hidden", "=", "yes");
+                    result.Add("}");
+
+                    QuickEventModifiers++;
                     return i;
                 } },
-                { "ags", (Walker i) =>
+                { "ags", (Walker i) => { throw new Exception(string.Join(' ', code)); } },
+                { "tag", (Walker i) => { throw new Exception(string.Join(' ', code)); } },
+                { "create_flagship", (Walker i) =>
                 {
-                    if(!i.MoveNext()) throw new Exception();
-                    if(i.Current != "=") throw new Exception();
-                    if(!i.MoveNext()) throw new Exception();
-                    string value = i.Current;
+                    i = Args.GetArgs(i, out Args args);
 
-                    result.Add("is_year", "=", int.Parse(value) + 2500);
+                    Block traits = args.Get(ArcBlock.Constructor, "traits", new()).Value;
+
+                    if(Parser.HasEnclosingBrackets(traits)) traits = RemoveEnclosingBrackets(traits);
+
+                    foreach(Word trait in traits)
+                    {
+                        result.Add("set_country_flag", "=", trait);
+                    }
+                    if(traits.Any()) result.Add("set_country_flag", "=", "forced_trait");
+                    result.Add(
+                        args.GetFromList(Province.Provinces, "where").Id, "=", "{",
+                            "create_flagship", "=", "{",
+                                "name", "=", $"\"{args.Get(ArcString.Constructor, "name")}\"s",
+                                "type", "=", args.Get(ArcString.Constructor, "type"),
+                            "}",
+                        "}"
+                    );
+                    foreach(Word trait in traits)
+                    {
+                        result.Add("clr_country_flag", "=", trait);
+                    }
+                    if(traits.Any()) result.Add("clr_country_flag", "=", "forced_trait");
 
                     return i;
                 } }
@@ -585,70 +805,18 @@ namespace Arc
             Walker g = new(code);
             do
             {
-                if (keywords.ContainsKey(g.Current))
+                if (AllCompile(ref g, ref result, Compile)) continue;
+                else if (keywords.ContainsKey(g.Current))
                 {
                     g = keywords[g.Current].Invoke(g);
                     continue;
-                }
-                else if (g.Current.value.EndsWith(','))
-                {
-                    List<string> s = new();
-                    do
-                    {
-                        s.Add(g.Current.value[..^1]);
-                        if (!g.MoveNext()) throw new Exception();
-                    } while (g.Current.value.EndsWith(','));
-                     s.Add(g.Current.value);
-
-                    if (!g.MoveNext()) throw new Exception();
-                    if (g.Current.value != "=") throw new Exception();
-                    if (!g.MoveNext()) throw new Exception();
-
-                    g = GetScope(g, out Block scope);
-
-                    string compiled = Compile(scope);
-                    foreach(string k in s)
-                    {
-                        Block n = new()
-                        {
-                            Compile(k),
-                            "=",
-                            compiled
-                        };
-
-                        result.Add(n);
-                    }
-                }
-                else if (TryGetVariable(g.Current, out IVariable? var))
-                {
-                    if (var == null) throw new Exception();
-                    g = var.Call(g, ref result, this);
-                }
-                else if (TryTrimOne(g.Current, '`', out string? newValue))
-                {
-                    if (newValue == null)
-                        throw new Exception();
-
-                    Regex Replace = TranspiledString();
-                    newValue = Replace.Replace(newValue, delegate (Match m)
-                    {
-                        return Compile(m.Groups[1].Value).Trim();
-                    });
-
-                    result.Add(newValue);
-                    continue;
-                }
-                else if (g.Current.value.EndsWith('%'))
-                {
-                    result.Add((double.Parse(g.Current.value[..^1]) / 100).ToString("0.000"));
                 }
                 else result.Add(g.Current);
             } while (g.MoveNext());
 
             return string.Join(' ', result);
         }
-
         [GeneratedRegex("{([^}]+)}", RegexOptions.Compiled)]
-        private static partial Regex TranspiledString();
+        public static partial Regex TranspiledString();
     }
 }

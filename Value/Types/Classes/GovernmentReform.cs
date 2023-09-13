@@ -13,8 +13,8 @@ public class GovernmentReform : IArcObject
     public ArcString Name { get; set; }
     public ArcString Desc { get; set; }
     public ArcString Icon { get; set; }
-    public ArcBlock Potential { get; set; }
-    public ArcBlock Trigger { get; set; }
+    public ArcTrigger Potential { get; set; }
+    public ArcTrigger Trigger { get; set; }
     public ArcBlock Modifier { get; set; }
     public ArcBlock? CustomAttributes { get; set; }
     //public ArcList<ArcBlock>? Conditionals { get; set; }
@@ -81,7 +81,7 @@ public class GovernmentReform : IArcObject
         "name", "desc", "icon", "potential", "trigger", "modifier", "custom_attributes"
     };
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public GovernmentReform(string id, ArcString name, ArcString desc, ArcString icon, ArcBlock potential, ArcBlock trigger, ArcBlock modifier, ArcBlock? customAttributes, Dict<ArcBlock> attributes)
+    public GovernmentReform(string id, ArcString name, ArcString desc, ArcString icon, ArcTrigger potential, ArcTrigger trigger, ArcBlock modifier, ArcBlock? customAttributes, Dict<ArcBlock> attributes)
     {
         Id = new(id);
         Name = name;
@@ -112,7 +112,7 @@ public class GovernmentReform : IArcObject
     public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
     public static Walker Call(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string id = i.Current;
 
@@ -128,8 +128,8 @@ public class GovernmentReform : IArcObject
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "desc"),
             args.Get(ArcString.Constructor, "icon"),
-            args.Get(ArcBlock.Constructor, "potential", new()),
-            args.Get(ArcBlock.Constructor, "trigger", new()),
+            args.Get(ArcTrigger.Constructor, "potential", new()),
+            args.Get(ArcTrigger.Constructor, "trigger", new()),
             args.Get(ArcBlock.Constructor, "modifier", new()),
             args.Get(ArcBlock.Constructor, "custom_attributes", null),
             args.GetAttributes(ImplementedAttributes)
