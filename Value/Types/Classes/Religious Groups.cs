@@ -57,7 +57,7 @@ public class ReligionGroup : IArcObject
             args.GetFromList(Province.Provinces, "center_of_religion"),
             args.Get(ArcString.Constructor, "crusade_name", new("Crusade")),
             args.Get(ArcInt.Constructor, "flags_with_emblem_percentage", null),
-            args.Get(ArcBlock.Constructor, "flag_emblem_index_range", null)
+            args.Get(ArcCode.Constructor, "flag_emblem_index_range", null)
         );
 
         ReligionGroups.Add(id, ReligionGroup);
@@ -106,5 +106,5 @@ public class ReligionGroup : IArcObject
         return "Religions";
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }

@@ -54,12 +54,12 @@ public class TradeGood : IArcObject
         TradeGood TradeGood = new(
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "desc"),
-            args.Get(ArcBlock.Constructor, "color"),
-            args.Get(ArcBlock.Constructor, "modifier"),
-            args.Get(ArcBlock.Constructor, "province"),
+            args.Get(ArcCode.Constructor, "color"),
+            args.Get(ArcModifier.Constructor, "modifier"),
+            args.Get(ArcModifier.Constructor, "province"),
             args.Get(ArcFloat.Constructor, "base_price"),
             args.Get(ArcBool.Constructor, "is_gold"),
-            args.Get(ArcBlock.Constructor, "chance"),
+            args.Get(ArcCode.Constructor, "chance"),
             new(id)
         );
 
@@ -68,7 +68,7 @@ public class TradeGood : IArcObject
         return i;
     }
     public override string ToString() => Id.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value); return i; }
     public static string Transpile()
     {
         StringBuilder sb = new("unknown = { color = { 0.5 0.5 0.5 } } ");

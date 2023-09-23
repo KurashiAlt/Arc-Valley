@@ -21,16 +21,18 @@ public class BuildingLine : IArcObject
     }
     public static BuildingLine Constructor(string id, Args args)
     {
-        Dict<ArcBlock> tiers = args.GetAttributes(new string[] { "name" });
+        Dict<ArcCode> tiers = args.GetAttributes(new string[] { "name", "start_offset" });
 
         if (args.keyValuePairs == null) throw new Exception();
         if (!args.keyValuePairs.ContainsKey("unlock_tier")) args.keyValuePairs.Add("unlock_tier", new());
 
-        foreach (KeyValuePair<string, ArcBlock> tier in tiers)
+        int startOffset = args.Get(ArcInt.Constructor, "start_offset", new(0)).Value;
+
+        foreach (KeyValuePair<string, ArcCode> tier in tiers)
         {
             if (int.TryParse(tier.Key, out int i))
             {
-                args.keyValuePairs["unlock_tier"] = new($"{i}");
+                args.keyValuePairs["unlock_tier"] = new($"{i-startOffset}");
             }
             else continue;
             
@@ -57,7 +59,7 @@ public class BuildingLine : IArcObject
 
         return i;
     }
-    public Walker Call(Walker i, ref Block result, Compiler comp) => throw new NotImplementedException();
+    public Walker Call(Walker i, ref Block result) => throw new NotImplementedException();
     public bool CanGet(string indexer) => KeyValuePairs.CanGet(indexer);
     public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
 }
@@ -77,19 +79,19 @@ public class Building : IArcObject
     public ArcBool Indestructible { get; set; }
     public ArcBool OnMap { get; set; }
     public ArcBool InfluencingFort { get; set; }
-    public ArcBlock Manufactory { get; set; }
+    public ArcCode Manufactory { get; set; }
     public ArcTrigger Potential { get; set; }
     public ArcTrigger BuildTrigger { get; set; }
-    public ArcBlock Modifier { get; set; }
-    public ArcBlock AiWillDo { get; set; }
-    public ArcBlock OnBuilt { get; set; }
-    public ArcBlock OnDestroyed { get; set; }
-    public ArcBlock OnObsolete { get; set; }
+    public ArcModifier Modifier { get; set; }
+    public ArcCode AiWillDo { get; set; }
+    public ArcEffect OnBuilt { get; set; }
+    public ArcEffect OnDestroyed { get; set; }
+    public ArcEffect OnObsolete { get; set; }
     public ArcList<IdeaGroup>? IdeaGroupUnlocks { get; set; }
     public ArcList<GovernmentReform>? ReformUnlocks { get; set; }
     public ArcInt? UnlockTier { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public Building(string id, ArcString name, ArcString desc, ArcInt cost, ArcInt time, Building? makeObsolete, ArcBool onePerCountry, ArcBool allowInGoldProvinces, ArcBool indestructible, ArcBool onMap, ArcBool influencingFort, ArcBlock manufactory, ArcTrigger potential, ArcTrigger buildTrigger, ArcBlock modifier, ArcBlock aiWillDo, ArcBlock onBuilt, ArcBlock onDestroyed, ArcBlock onObsolete, ArcList<IdeaGroup>? ideaGroupUnlocks, ArcList<GovernmentReform>? reformUnlocks, ArcInt? unlockTier)
+    public Building(string id, ArcString name, ArcString desc, ArcInt cost, ArcInt time, Building? makeObsolete, ArcBool onePerCountry, ArcBool allowInGoldProvinces, ArcBool indestructible, ArcBool onMap, ArcBool influencingFort, ArcCode manufactory, ArcTrigger potential, ArcTrigger buildTrigger, ArcModifier modifier, ArcCode aiWillDo, ArcEffect onBuilt, ArcEffect onDestroyed, ArcEffect onObsolete, ArcList<IdeaGroup>? ideaGroupUnlocks, ArcList<GovernmentReform>? reformUnlocks, ArcInt? unlockTier)
     {
         Id = new(id);
         Name = name;
@@ -169,14 +171,14 @@ public class Building : IArcObject
             args.Get(ArcBool.Constructor, "indestructible", new(false)),
             args.Get(ArcBool.Constructor, "onmap", new(false)),
             args.Get(ArcBool.Constructor, "influencing_fort", new(false)),
-            args.Get(ArcBlock.Constructor, "manufactory", new()),
+            args.Get(ArcCode.Constructor, "manufactory", new()),
             args.Get(ArcTrigger.Constructor, "potential", new()),
             args.Get(ArcTrigger.Constructor, "build_trigger", new()),
-            args.Get(ArcBlock.Constructor, "modifier", new()),
-            args.Get(ArcBlock.Constructor, "ai_will_do", new("factor = 1")),
-            args.Get(ArcBlock.Constructor, "on_built", new()),
-            args.Get(ArcBlock.Constructor, "on_destroyed", new()),
-            args.Get(ArcBlock.Constructor, "on_obsolete", new()),
+            args.Get(ArcModifier.Constructor, "modifier", new()),
+            args.Get(ArcCode.Constructor, "ai_will_do", new("factor = 1")),
+            args.Get(ArcEffect.Constructor, "on_built", new()),
+            args.Get(ArcEffect.Constructor, "on_destroyed", new()),
+            args.Get(ArcEffect.Constructor, "on_obsolete", new()),
             args.Get(ArcList<IdeaGroup>.GetConstructor(IdeaGroup.IdeaGroups), "idea_group_unlocks", null),
             args.Get(ArcList<GovernmentReform>.GetConstructor(GovernmentReform.GovernmentReforms), "reform_unlocks", null),
             args.Get(ArcInt.Constructor, "unlock_tier", null)
@@ -201,7 +203,7 @@ public class Building : IArcObject
         {
             "build_trigger", "=", "{"
         };
-        if (UnlockTier != null && IdeaGroupUnlocks != null)
+        if (UnlockTier != null && IdeaGroupUnlocks != null && UnlockTier.Value > 0)
         {
             c.Add(
                 "FROM", "=", "{",
@@ -230,7 +232,7 @@ public class Building : IArcObject
         b.Add("}");
 
         string desc = Desc.Value;
-        if (UnlockTier != null)
+        if (UnlockTier != null && UnlockTier.Value > 0)
         {
             if (desc != "") desc += "\n\n";
             desc += $"At least {UnlockTier}:";
@@ -260,5 +262,5 @@ public class Building : IArcObject
     }
 
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }

@@ -9,17 +9,17 @@ public class Country : IArcObject
 {
     public static readonly Dict<Country> Countries = new();
     public bool IsObject() => true;
-    public ArcBlock HistoricalIdeaGroups { get; set; }
-    public ArcBlock HistoricalUnits { get; set; }
-    public ArcBlock MonarchNames { get; set; }
-    public ArcBlock LeaderNames { get; set; }
-    public ArcBlock ShipNames { get; set; }
-    public ArcBlock ArmyNames { get; set; }
-    public ArcBlock FleetNames { get; set; }
+    public ArcCode HistoricalIdeaGroups { get; set; }
+    public ArcCode HistoricalUnits { get; set; }
+    public ArcCode MonarchNames { get; set; }
+    public ArcCode LeaderNames { get; set; }
+    public ArcCode ShipNames { get; set; }
+    public ArcCode ArmyNames { get; set; }
+    public ArcCode FleetNames { get; set; }
     public ArcString Tag { get; set; }
     public ArcString Name { get; set; }
     public ArcString Adj { get; set; }
-    public ArcBlock Color { get; set; }
+    public ArcCode Color { get; set; }
     public ArcString Government { get; set; }
     public ArcInt GovernmentRank { get; set; }
     public ArcInt Mercantilism { get; set; }
@@ -27,31 +27,31 @@ public class Country : IArcObject
     public LazyPointer<Religion> iReligion { get; set; }
     public Culture PrimaryCulture { get; set; }
     public ArcString GraphicalCulture { get; set; }
-    public ArcBlock Definitions { get; set; }
-    public ArcBlock History { get; set; }
+    public ArcCode Definitions { get; set; }
+    public ArcEffect History { get; set; }
     public Province Capital { get; set; }
-    public GovernmentReform? StartingReform { get; set; }
+    public LazyPointer<GovernmentReform>? StartingReform { get; set; }
     public Dict<IVariable?> keyValuePairs { get; set; }
-    public Country(string key, ArcBlock historicalIdeaGroups, ArcBlock historicalUnits, ArcBlock monarchNames, ArcBlock leaderNames, ArcBlock shipNames, ArcBlock armyNames, ArcBlock fleetNames, ArcString tag, ArcString name, ArcString adj, ArcBlock color, ArcString government, ArcInt governmentRank, ArcInt mercantilism, ArcString technologyGroup, LazyPointer<Religion> religion, Culture primaryCulture, ArcString graphicalCulture, ArcBlock definitions, ArcBlock history, Province capital, GovernmentReform? startingReform)
+    public Country(string key, ArcCode historicalIdeaGroups, ArcCode historicalUnits, ArcCode monarchNames, ArcCode leaderNames, ArcCode shipNames, ArcCode armyNames, ArcCode fleetNames, ArcString tag, ArcString name, ArcString adj, ArcCode color, ArcString government, ArcInt governmentRank, ArcInt mercantilism, ArcString technologyGroup, LazyPointer<Religion> religion, Culture primaryCulture, ArcString graphicalCulture, ArcCode definitions, ArcEffect history, Province capital, LazyPointer<GovernmentReform>? startingReform)
     {
         HistoricalIdeaGroups = historicalIdeaGroups;
         HistoricalUnits = historicalUnits;
         if (monarchNames.IsEmpty())
         {
             Block names = new();
-            foreach (Word w in primaryCulture.MaleNames.Value)
+            foreach (Word w in primaryCulture.MaleNames.RemoveEnclosingBrackets().Value)
             {
                 names.Add($"\"{w.value.Trim('"')}\" = 1");
             }
-            foreach (Word w in primaryCulture.CultureGroup.MaleNames.Value)
+            foreach (Word w in primaryCulture.CultureGroup.MaleNames.RemoveEnclosingBrackets().Value)
             {
                 names.Add($"\"{w.value.Trim('"')}\" = 1");
             }
-            foreach (Word w in primaryCulture.FemaleNames.Value)
+            foreach (Word w in primaryCulture.FemaleNames.RemoveEnclosingBrackets().Value)
             {
                 names.Add($"\"{w.value.Trim('"')}\" = -1");
             }
-            foreach (Word w in primaryCulture.CultureGroup.FemaleNames.Value)
+            foreach (Word w in primaryCulture.CultureGroup.FemaleNames.RemoveEnclosingBrackets().Value)
             {
                 names.Add($"\"{w.value.Trim('"')}\" = -1");
             }
@@ -59,12 +59,12 @@ public class Country : IArcObject
         }
         else
         {
-            MonarchNames = monarchNames;
+            MonarchNames = (ArcCode)monarchNames.RemoveEnclosingBrackets();
         }
-        LeaderNames = leaderNames;
-        ShipNames = shipNames;
-        ArmyNames = armyNames;
-        FleetNames = fleetNames;
+        LeaderNames = (ArcCode)leaderNames.RemoveEnclosingBrackets();
+        ShipNames = (ArcCode)shipNames.RemoveEnclosingBrackets();
+        ArmyNames = (ArcCode)armyNames.RemoveEnclosingBrackets();
+        FleetNames = (ArcCode)fleetNames.RemoveEnclosingBrackets();
         Tag = tag;
         Name = name;
         Adj = adj;
@@ -120,17 +120,17 @@ public class Country : IArcObject
 
         Country countr = new(
             key,
-            args.GetDefault(ArcBlock.Constructor, "historical_idea_groups", new()),
-            args.GetDefault(ArcBlock.Constructor, "historical_units", new()),
-            args.GetDefault(ArcBlock.Constructor, "monarch_names", new()),
-            args.GetDefault(ArcBlock.Constructor, "leader_names", new()),
-            args.GetDefault(ArcBlock.Constructor, "ship_names", new()),
-            args.GetDefault(ArcBlock.Constructor, "army_names", new("\"Army of $PROVINCE$\"")),
-            args.GetDefault(ArcBlock.Constructor, "fleet_names", new("\"Fleet of $PROVINCE$\"")),
+            args.GetDefault(ArcCode.Constructor, "historical_idea_groups", new()),
+            args.GetDefault(ArcCode.Constructor, "historical_units", new()),
+            args.GetDefault(ArcCode.Constructor, "monarch_names", new()),
+            args.GetDefault(ArcCode.Constructor, "leader_names", new()),
+            args.GetDefault(ArcCode.Constructor, "ship_names", new()),
+            args.GetDefault(ArcCode.Constructor, "army_names", new("\"Army of $PROVINCE$\"")),
+            args.GetDefault(ArcCode.Constructor, "fleet_names", new("\"Fleet of $PROVINCE$\"")),
             args.Get(ArcString.Constructor, "tag"),
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "adj"),
-            args.Get(ArcBlock.Constructor, "color"),
+            args.Get(ArcCode.Constructor, "color"),
             args.GetDefault(ArcString.Constructor, "government", new("monarchy")),
             args.GetDefault(ArcInt.Constructor, "government_rank", new(1)),
             args.GetDefault(ArcInt.Constructor, "mercantilism", new(1)),
@@ -138,10 +138,10 @@ public class Country : IArcObject
             args.GetLazyFromList(Religion.Religions, "religion"),
             args.GetFromList(Culture.Cultures, "primary_culture"),
             args.Get(ArcString.Constructor, "graphical_culture"),
-            args.GetDefault(ArcBlock.Constructor, "definitions", new()),
-            args.GetDefault(ArcBlock.Constructor, "history", new()),
+            args.GetDefault(ArcCode.Constructor, "definitions", new()),
+            args.GetDefault(ArcEffect.Constructor, "history", new()),
             args.GetFromList(Province.Provinces, "capital"),
-            args.GetFromListNullable(GovernmentReform.GovernmentReforms, "starting_reform")
+            args.GetLazyFromListNullable(GovernmentReform.GovernmentReforms, "starting_reform")
         );
 
         return i;
@@ -173,14 +173,15 @@ public class Country : IArcObject
             "religion", "=", iReligion.Get().Id,
             "primary_culture", "=", PrimaryCulture.Id,
             "capital", "=", Capital.Id,
-            History.Compile()
         };
 
 
 
         if (GovernmentRank.Value > 6 || GovernmentRank.Value < 1) throw new Exception();
 
-        if (StartingReform != null) countryHistory.Add("add_government_reform", "=", StartingReform.Id);
+        if (StartingReform != null) countryHistory.Add("add_government_reform", "=", StartingReform.Get().Id);
+
+        countryHistory.Add(History.Compile());
 
         Instance.OverwriteFile($"target/history/countries/{Tag}.txt", string.Join(' ', countryHistory));
 
@@ -190,7 +191,7 @@ public class Country : IArcObject
     public static string Transpile()
     {
         Block countryDefinitions = new();
-        foreach (Country ctr in Country.Countries.Values())
+        foreach (Country ctr in Countries.Values())
         {
             ctr.Transpile(ref countryDefinitions);
         }
@@ -198,5 +199,5 @@ public class Country : IArcObject
         return "Countries";
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) => Tag.Call(i, ref result, comp);
+    public Walker Call(Walker i, ref Block result) => Tag.Call(i, ref result);
 }

@@ -74,5 +74,5 @@ public class Adjacency : IArcObject
         Instance.OverwriteFile("target/map/adjacencies.csv", sb.ToString(), false);
         return "Adjacencies";
     }
-    public Walker Call(Walker i, ref Block result, Compiler comp) => throw new Exception();
+    public Walker Call(Walker i, ref Block result) => throw new Exception();
 }

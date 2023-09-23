@@ -14,11 +14,12 @@ public class Decision : IArcObject
     ArcString Name { get; set; }
     ArcString Desc { get; set; }
     ArcBool Major { get; set; }
-    ArcBlock? Color { get; set; }
+    ArcCode? Color { get; set; }
+    ArcTrigger ProvincesToHighlight { get; set; }
     ArcTrigger Potential { get; set; }
     ArcTrigger Allow { get; set; }
-    ArcBlock Effect { get; set; }
-    ArcBlock AiWillDo { get; set; }
+    ArcEffect Effect { get; set; }
+    ArcCode AiWillDo { get; set; }
     ArcInt AiImportance { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
     public Decision(
@@ -26,11 +27,12 @@ public class Decision : IArcObject
         ArcString name,
         ArcString desc,
         ArcBool major,
-        ArcBlock? color,
+        ArcCode? color,
+        ArcTrigger provincesToHighlight,
         ArcTrigger potential,
         ArcTrigger allow,
-        ArcBlock effect,
-        ArcBlock aiWillDo,
+        ArcEffect effect,
+        ArcCode aiWillDo,
         ArcInt aiImportance
     )
     {
@@ -40,6 +42,7 @@ public class Decision : IArcObject
         Desc = desc;
         Major = major;
         Color = color;
+        ProvincesToHighlight = provincesToHighlight;
         Potential = potential;
         Allow = allow;
         Effect = effect;
@@ -52,6 +55,7 @@ public class Decision : IArcObject
             { "desc", Desc },
             { "major", Major },
             { "color", Color },
+            { "provinces_to_highlight", ProvincesToHighlight },
             { "potential", Potential },
             { "allow", Allow },
             { "effect", Effect },
@@ -79,16 +83,17 @@ public class Decision : IArcObject
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "desc", new("")),
             args.Get(ArcBool.Constructor, "major", new(false)),
-            args.Get(ArcBlock.Constructor, "color", null),
+            args.Get(ArcCode.Constructor, "color", null),
+            args.Get(ArcTrigger.Constructor, "provinces_to_highlight", new()),
             args.Get(ArcTrigger.Constructor, "potential", new()),
             args.Get(ArcTrigger.Constructor, "allow", new()),
-            args.Get(ArcBlock.Constructor, "effect", new()),
-            args.Get(ArcBlock.Constructor, "ai_will_do", new()),
+            args.Get(ArcEffect.Constructor, "effect", new()),
+            args.Get(ArcCode.Constructor, "ai_will_do", new()),
             args.Get(ArcInt.Constructor, "ai_importance", new(400))
         );
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value); return i; }
     public void Transpile(ref Block s)
     {
         Instance.Localisation.Add($"{Id}_title", Name.Value);
@@ -98,6 +103,7 @@ public class Decision : IArcObject
                 "major", "=", Major
         );
         Color?.Compile("color", ref s);
+        ProvincesToHighlight.Compile("provinces_to_highlight", ref s);
         Potential.Compile("potential", ref s);
         Allow.Compile("allow", ref s);
         Effect.Compile("effect", ref s);

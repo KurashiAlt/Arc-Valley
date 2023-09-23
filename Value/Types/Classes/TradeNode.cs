@@ -47,7 +47,7 @@ public class Outgoing : IArcObject
         return sb.ToString();
     }
 
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public Walker Call(Walker i, ref Block result)
     {
         throw new NotImplementedException();
     }
@@ -61,7 +61,7 @@ public class Outgoing : IArcObject
         return new Outgoing(
             args.GetFromList(TradeNode.TradeNodes, "node"),
             args.Get((Block s) => new ArcList<Province>(s, Province.Provinces), "path", new()),
-            args.Get(ArcBlock.Constructor, "control", new())
+            args.Get(ArcCode.Constructor, "control", new())
         );
     }
 }
@@ -152,7 +152,7 @@ public class TradeNode : IArcObject
         Instance.OverwriteFile("target/common/tradenodes/arc.txt", sb.ToString());
         return "Trade Nodes";
     }
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public Walker Call(Walker i, ref Block result)
     {
         throw new NotImplementedException();
     }

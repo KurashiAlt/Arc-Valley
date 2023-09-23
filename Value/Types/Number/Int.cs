@@ -1,6 +1,6 @@
 ﻿namespace Arc;
 
-public class ArcInt : IArcNumber
+public class ArcInt : IArcNumber, IValue
 {
     public int Value { get; set; }
     public ArcInt(int value)
@@ -9,15 +9,15 @@ public class ArcInt : IArcNumber
     }
     public ArcInt(string value)
     {
-        Value = int.Parse(value);
+        Value = (int)Calculator.Calculate(value);
     }
     public ArcInt(Block b)
     {
-        Value = int.Parse(string.Join(' ', b));
+        Value = (int)Calculator.Calculate(string.Join(' ', b));
     }
     public void Set(Block value)
     {
-        Value = int.Parse(string.Join(' ', value));
+        Value = (int)Calculator.Calculate(string.Join(' ', value));
     }
     public static ArcInt Constructor(Block b) => new ArcInt(b);
     public double GetNum() => Value;
@@ -28,7 +28,7 @@ public class ArcInt : IArcNumber
         return Value.ToString();
     }
 
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public Walker Call(Walker i, ref Block result)
     {
         if (i.MoveNext())
         {

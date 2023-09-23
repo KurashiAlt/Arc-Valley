@@ -10,14 +10,18 @@ public class MercenaryCompany : IArcObject
     public ArcString Id { get; set; }
     public ArcString Name { get; set; }
     public Province? HomeProvince { get; set; }
-    public Dict<ArcBlock> Attributes { get; set; }
+    public Dict<ArcCode> Attributes { get; set; }
     public static string[] Implemented = new string[]
     {
         "name", "home_province"
     };
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public MercenaryCompany(string id, ArcString name, Province? homeProvince, Dict<ArcBlock> attributes)
-    {
+    public MercenaryCompany(
+        string id, 
+        ArcString name, 
+        Province? homeProvince, 
+        Dict<ArcCode> attributes
+    ) {
         Id = new(id);
         Name = name;
         HomeProvince = homeProvince;
@@ -56,9 +60,9 @@ public class MercenaryCompany : IArcObject
         {
             s.Add(company.Id, "=", "{");
             if(company.HomeProvince != null) s.Add("home_province", "=", company.HomeProvince.Id);
-            foreach(KeyValuePair<string, ArcBlock> attribute in company.Attributes)
+            foreach(KeyValuePair<string, ArcCode> attribute in company.Attributes)
             {
-                attribute.Value.Compile(attribute.Key, ref s, true);
+                attribute.Value.Compile(attribute.Key, ref s, true, true);
             }
             s.Add("}");
             Instance.Localisation.Add(company.Id.Value, company.Name.Value);
@@ -67,5 +71,5 @@ public class MercenaryCompany : IArcObject
         Instance.OverwriteFile("target/common/mercenary_companies/arc.txt", string.Join(' ', s));
         return "Mercenary Companies";
     }
-    public Walker Call(Walker i, ref Block result, Compiler comp) => throw new Exception();
+    public Walker Call(Walker i, ref Block result) => throw new Exception();
 }

@@ -1,21 +1,9 @@
 ﻿namespace Arc;
-public class ArcTrigger : IValue
+public class ArcTrigger : ArcBlock
 {
-    public Block Value { get; set; }
     public ArcTrigger()
     {
         Value = new();
-    }
-    public ArcTrigger(string s)
-    {
-        Value = Parser.ParseCode(s);
-    }
-    public ArcTrigger(params string[] s)
-    {
-        Value = new()
-        {
-            s
-        };
     }
     public ArcTrigger(Block value, bool t = false)
     {
@@ -24,100 +12,94 @@ public class ArcTrigger : IValue
                 value = Compiler.RemoveEnclosingBrackets(value);
         Value = value;
     }
-    public void Set(Block value)
+    public ArcTrigger(params string[] s)
     {
-        if (Parser.HasEnclosingBrackets(value))
-            value = Compiler.RemoveEnclosingBrackets(value);
+        Value = new()
+        {
+            s
+        };
+    }
+    public override string Compile()
+    {
+        return Compiler.CompileTrigger(Value);
+    }
+    internal static ArcTrigger Constructor(Block block) => new(block);
+}
+public class ArcEffect : ArcBlock
+{
+    public ArcEffect()
+    {
+        Value = new();
+    }
+    public ArcEffect(Block value, bool t = false)
+    {
+        if (!t)
+            if (Parser.HasEnclosingBrackets(value))
+                value = Compiler.RemoveEnclosingBrackets(value);
         Value = value;
     }
-    public bool IsEmpty() => Value.Count == 0;
-    public bool IsBlock() => true;
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public ArcEffect(params string[] s)
     {
-        if (i.MoveNext())
+        Value = new()
         {
-            switch (i.Current)
-            {
-                case "+=":
-                    {
-                        if (!i.MoveNext())
-                            throw new Exception();
-
-                        i = Compiler.GetScope(i, out Block newbv);
-
-                        if (Parser.HasEnclosingBrackets(newbv)) newbv = Compiler.RemoveEnclosingBrackets(newbv);
-
-                        foreach (string s in newbv)
-                        {
-                            Value.Add(s);
-                        }
-                    }
-                    break;
-                case ":=":
-                    {
-                        if (!i.MoveNext())
-                            throw new Exception();
-
-                        i = Compiler.GetScope(i, out Block newbv);
-
-                        if (Parser.HasEnclosingBrackets(newbv)) newbv = Compiler.RemoveEnclosingBrackets(newbv);
-
-                        Value = newbv;
-                    }
-                    break;
-
-                default:
-                    {
-                        i.MoveBack();
-                        result.Add(comp.Compile(Value));
-                    }
-                    break;
-            }
-        }
-        else result.Add(comp.Compile(Value));
-        return i;
+            s
+        };
     }
-    public override string ToString()
+    public override string Compile()
     {
-        return string.Join(' ', Value);
+        return Compiler.Compile(Value);
     }
-    public string Compile(string wrapper)
+    internal static ArcEffect Constructor(Block block) => new(block);
+}
+public class ArcModifier : ArcBlock
+{
+    public ArcModifier()
     {
-        string s = Compile();
-        if (s == "") return "";
-        return $"{wrapper} = {{ {s} }}";
+        Value = new();
     }
-    public void Compile(ref Block b)
+    public ArcModifier(Block value, bool t = false)
     {
-        string s = Compile();
-        if (s == "") return;
-        b.Add(s);
+        if (!t)
+            if (Parser.HasEnclosingBrackets(value))
+                value = Compiler.RemoveEnclosingBrackets(value);
+        Value = value;
     }
-    public void Compile(string wrapper, ref Block b, bool CanBeEmpty, bool CanBeSingular = false)
+    public ArcModifier(params string[] s)
     {
-        string s = Compile();
-        if (CanBeEmpty && s == "") return;
-        b.Add(wrapper);
-        b.Add("=");
-        if (CanBeSingular)
+        Value = new()
         {
-            b.Add(s);
-        }
-        else
+            s
+        };
+    }
+    public override string Compile()
+    {
+        return Compiler.Compile(Value);
+    }
+    internal static ArcModifier Constructor(Block block) => new(block);
+}
+public class ArcCode : ArcBlock
+{
+    public ArcCode()
+    {
+        Value = new();
+    }
+    public ArcCode(params string[] s)
+    {
+        Value = new()
         {
-            b.Add("{");
-            b.Add(s);
-            b.Add("}");
-        }
+            s
+        };
     }
-    public void Compile(string wrapper, ref Block b, bool CanBeSingular = false)
+    public ArcCode(Block value, bool t = false)
     {
-        Compile(wrapper, ref b, true, CanBeSingular);
+        if (!t)
+            if (Parser.HasEnclosingBrackets(value))
+                value = Compiler.RemoveEnclosingBrackets(value);
+        Value = value;
     }
-
-    public string Compile()
+    public override string Compile()
     {
-        return new Compiler().CompileTrigger(Value);
+        return Compiler.Compile(Value);
     }
-    internal static ArcTrigger Constructor(Block block) => new ArcTrigger(block);
+    internal static ArcCode Constructor(Block block) => new(block);
 }

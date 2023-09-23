@@ -171,7 +171,7 @@ public partial class Compiler
                 if (KeyLocator.Length > f + 1)
                 {
                     IVariable v = Get(currentKey);
-                    if (v.IsObject())
+                    if (v is IArcObject)
                     {
                         IArcObject n = (IArcObject)v;
                         Get = n.Get;

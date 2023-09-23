@@ -12,12 +12,12 @@ public class Blessing : IArcObject
     public ArcString Name { get; set; }
     public ArcString Desc { get; set; }
     public ArcTrigger Potential { get; set; }
-    public ArcBlock Modifier { get; set; }
-    public ArcBlock Effect { get; set; }
-    public ArcBlock AiWillDo { get; set; }
+    public ArcModifier Modifier { get; set; }
+    public ArcEffect Effect { get; set; }
+    public ArcCode AiWillDo { get; set; }
     public ArcString Id { get; set; }
     public Dict<IValue> KeyValuePairs { get; set; }
-    public Blessing(ArcString name, ArcString desc, ArcTrigger potential, ArcBlock modifier, ArcBlock effect, ArcBlock aiWillDo, ArcString id)
+    public Blessing(ArcString name, ArcString desc, ArcTrigger potential, ArcModifier modifier, ArcEffect effect, ArcCode aiWillDo, ArcString id)
     {
         Name = name;
         Desc = desc;
@@ -51,9 +51,9 @@ public class Blessing : IArcObject
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "desc"),
             args.Get(ArcTrigger.Constructor, "potential"),
-            args.Get(ArcBlock.Constructor, "modifier"),
-            args.Get(ArcBlock.Constructor, "effect"),
-            args.Get(ArcBlock.Constructor, "ai_will_do"),
+            args.Get(ArcModifier.Constructor, "modifier"),
+            args.Get(ArcEffect.Constructor, "effect"),
+            args.Get(ArcCode.Constructor, "ai_will_do"),
             new(id)
         );
 
@@ -62,7 +62,7 @@ public class Blessing : IArcObject
         return i;
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value); return i; }
     public static string Transpile()
     {
         StringBuilder sb = new("");

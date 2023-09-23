@@ -62,5 +62,5 @@ public class Region : IArcObject
         return "Regions";
     }
     public override string ToString() => Name.Value;
-	public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
+	public Walker Call(Walker i, ref Block result) { result.Add(Id.Value); return i; }
 }

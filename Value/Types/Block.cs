@@ -24,6 +24,12 @@ public class ArcBlock : IValue
                 value = Compiler.RemoveEnclosingBrackets(value);
         Value = value;
     }
+    public ArcBlock RemoveEnclosingBrackets()
+    {
+        if(Parser.HasEnclosingBrackets(Value)) Value = Compiler.RemoveEnclosingBrackets(Value);
+
+        return this;
+    }
     public void Set(Block value)
     {
         if (Parser.HasEnclosingBrackets(value))
@@ -32,7 +38,7 @@ public class ArcBlock : IValue
     }
     public bool IsEmpty() => Value.Count == 0;
     public bool IsBlock() => true;
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public Walker Call(Walker i, ref Block result)
     {
         if (i.MoveNext())
         {
@@ -69,12 +75,12 @@ public class ArcBlock : IValue
                 default:
                     {
                         i.MoveBack();
-                        result.Add(comp.Compile(Value));
+                        result.Add(Compiler.Compile(Value));
                     }
                     break;
             }
         }
-        else result.Add(comp.Compile(Value));
+        else result.Add(Compiler.Compile(Value));
         return i;
     }
     public override string ToString()
@@ -93,13 +99,13 @@ public class ArcBlock : IValue
         if (s == "") return;
         b.Add(s);
     }
-    public void Compile(string wrapper, ref Block b, bool CanBeEmpty, bool CanBeSingular = false)
+    public void Compile(string wrapper, ref Block b, bool CanBeEmpty = true, bool CanBeSingular = false)
     {
         string s = Compile();
         if (CanBeEmpty && s == "") return;
         b.Add(wrapper);
         b.Add("=");
-        if (CanBeSingular)
+        if (CanBeSingular && Parser.ParseCode(s).Count == 1)
         {
             b.Add(s);
         }
@@ -110,16 +116,10 @@ public class ArcBlock : IValue
             b.Add("}");
         }
     }
-    public void Compile(string wrapper, ref Block b, bool CanBeSingular = false)
-    {
-        Compile(wrapper, ref b, true, CanBeSingular);
-    }
 
-    public string Compile()
+    public virtual string Compile()
     {
-        return new Compiler().Compile(Value);
+        return Compiler.Compile(Value);
     }
-    internal static ArcBlock Constructor(Block block) => new ArcBlock(block);
-
     internal int Count() => Value.Count;
 }

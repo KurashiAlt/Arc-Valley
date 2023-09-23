@@ -13,20 +13,20 @@ public class EstateAgenda : IArcObject
 
     public ArcString Id { get; set; }
     public ArcFloat? MaxDaysActive { get; set; }
-    public ArcBlock CanSelect { get; set; }
-    public ArcBlock ProvincesToHighlight { get; set; }
-    public ArcBlock SelectionWeight { get; set; }
-    public ArcBlock PreEffect { get; set; }
-    public ArcBlock ImmediateEffect { get; set; }
-    public ArcBlock TaskRequirements { get; set; }
-    public ArcBlock TaskCompletedEffect { get; set; }
-    public ArcBlock FailingEffect { get; set; }
-    public ArcBlock FailIf { get; set; }
-    public ArcBlock OnInvalid { get; set; }
-    public ArcBlock InvalidTrigger { get; set; }
-    public ArcBlock Modifier { get; set; }
+    public ArcTrigger CanSelect { get; set; }
+    public ArcCode ProvincesToHighlight { get; set; }
+    public ArcCode SelectionWeight { get; set; }
+    public ArcEffect PreEffect { get; set; }
+    public ArcEffect ImmediateEffect { get; set; }
+    public ArcTrigger TaskRequirements { get; set; }
+    public ArcEffect TaskCompletedEffect { get; set; }
+    public ArcEffect FailingEffect { get; set; }
+    public ArcTrigger FailIf { get; set; }
+    public ArcEffect OnInvalid { get; set; }
+    public ArcTrigger InvalidTrigger { get; set; }
+    public ArcModifier Modifier { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public EstateAgenda(string id, ArcString name, ArcString desc, ArcFloat? maxDaysActive, ArcBlock canSelect, ArcBlock provincesToHighlight, ArcBlock selectionWeight, ArcBlock preEffect, ArcBlock immediateEffect, ArcBlock taskRequirements, ArcBlock taskCompletedEffect, ArcBlock failingEffect, ArcBlock failIf, ArcBlock onInvalid, ArcBlock invalidTrigger, ArcBlock modifier)
+    public EstateAgenda(string id, ArcString name, ArcString desc, ArcFloat? maxDaysActive, ArcTrigger canSelect, ArcCode provincesToHighlight, ArcCode selectionWeight, ArcEffect preEffect, ArcEffect immediateEffect, ArcTrigger taskRequirements, ArcEffect taskCompletedEffect, ArcEffect failingEffect, ArcTrigger failIf, ArcEffect onInvalid, ArcTrigger invalidTrigger, ArcModifier modifier)
     {
         Id = new($"{id}_agenda");
         Name = name;
@@ -78,18 +78,18 @@ public class EstateAgenda : IArcObject
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "desc"),
             args.Get(ArcFloat.Constructor, "max_days_active", null),
-            args.Get(ArcBlock.Constructor, "can_select"),
-            args.Get(ArcBlock.Constructor, "provinces_to_highlight"),
-            args.Get(ArcBlock.Constructor, "selection_weight"),
-            args.Get(ArcBlock.Constructor, "pre_effect"),
-            args.Get(ArcBlock.Constructor, "immediate_effect"),
-            args.Get(ArcBlock.Constructor, "task_requirements"),
-            args.Get(ArcBlock.Constructor, "task_completed_effect"),
-            args.Get(ArcBlock.Constructor, "failing_effect"),
-            args.Get(ArcBlock.Constructor, "fail_if"),
-            args.Get(ArcBlock.Constructor, "on_invalid"),
-            args.Get(ArcBlock.Constructor, "invalid_trigger"),
-            args.Get(ArcBlock.Constructor, "modifier")
+            args.Get(ArcTrigger.Constructor, "can_select"),
+            args.Get(ArcCode.Constructor, "provinces_to_highlight"),
+            args.Get(ArcCode.Constructor, "selection_weight"),
+            args.Get(ArcEffect.Constructor, "pre_effect"),
+            args.Get(ArcEffect.Constructor, "immediate_effect"),
+            args.Get(ArcTrigger.Constructor, "task_requirements"),
+            args.Get(ArcEffect.Constructor, "task_completed_effect"),
+            args.Get(ArcEffect.Constructor, "failing_effect"),
+            args.Get(ArcTrigger.Constructor, "fail_if"),
+            args.Get(ArcEffect.Constructor, "on_invalid"),
+            args.Get(ArcTrigger.Constructor, "invalid_trigger"),
+            args.Get(ArcModifier.Constructor, "modifier")
         );
 
         return i;
@@ -131,7 +131,7 @@ public class EstateAgenda : IArcObject
         return "Agendas";
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }
 public class EstatePrivilege : IArcObject
 {
@@ -146,23 +146,45 @@ public class EstatePrivilege : IArcObject
     public ArcFloat MaxAbsolutism { get; set; }
     public ArcFloat Loyalty { get; set; }
     public ArcFloat Influence { get; set; }
-    public ArcBlock IsValid { get; set; }
+    public ArcTrigger IsValid { get; set; }
     public ArcTrigger CanSelect { get; set; }
-    public ArcBlock OnGranted { get; set; }
+    public ArcEffect OnGranted { get; set; }
     public ArcTrigger CanRevoke { get; set; }
-    public ArcBlock OnRevoked { get; set; }
-    public ArcBlock OnInvalid { get; set; }
-    public ArcBlock Penalties { get; set; }
-    public ArcBlock Benefits { get; set; }
-    public ArcList<ArcBlock> ConditionalModifiers { get; set; }
-    public ArcBlock ModifierByLandOwnership { get; set; }
-    public ArcBlock Mechanics { get; set; }
+    public ArcEffect OnRevoked { get; set; }
+    public ArcEffect OnInvalid { get; set; }
+    public ArcModifier Penalties { get; set; }
+    public ArcModifier Benefits { get; set; }
+    public ArcList<ArcCode> ConditionalModifiers { get; set; }
+    public ArcModifier ModifierByLandOwnership { get; set; }
+    public ArcCode Mechanics { get; set; }
     public ArcInt CooldownYears { get; set; }
-    public ArcBlock OnCooldownExpires { get; set; }
-    public ArcBlock AiWillDo { get; set; }
+    public ArcEffect OnCooldownExpires { get; set; }
+    public ArcCode AiWillDo { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public EstatePrivilege(string id, ArcString name, ArcString desc, ArcString icon, ArcFloat landShare, ArcFloat maxAbsolutism, ArcFloat loyalty, ArcFloat influence, ArcBlock isValid, ArcTrigger canSelect, ArcBlock onGranted, ArcTrigger canRevoke, ArcBlock onInvalid, ArcBlock onRevoked, ArcBlock penalties, ArcBlock benefits, ArcList<ArcBlock> conditionalModifiers, ArcBlock modifierByLandOwnership, ArcBlock mechanics, ArcInt cooldownYears, ArcBlock onCooldownExpires, ArcBlock aiWillDo)
-    {
+    public EstatePrivilege(
+        string id, 
+        ArcString name, 
+        ArcString desc, 
+        ArcString icon, 
+        ArcFloat landShare, 
+        ArcFloat maxAbsolutism, 
+        ArcFloat loyalty, 
+        ArcFloat influence, 
+        ArcTrigger isValid, 
+        ArcTrigger canSelect, 
+        ArcEffect onGranted, 
+        ArcTrigger canRevoke, 
+        ArcEffect onInvalid, 
+        ArcEffect onRevoked, 
+        ArcModifier penalties, 
+        ArcModifier benefits, 
+        ArcList<ArcCode> conditionalModifiers, 
+        ArcModifier modifierByLandOwnership, 
+        ArcCode mechanics, 
+        ArcInt cooldownYears,
+        ArcEffect onCooldownExpires, 
+        ArcCode aiWillDo
+    ) {
         Name = name;
         Desc = desc;
         Id = new($"{id}_privelege");
@@ -236,20 +258,20 @@ public class EstatePrivilege : IArcObject
         args.Get(ArcFloat.Constructor, "max_absolutism", new(0)),
         args.Get(ArcFloat.Constructor, "loyalty", new(0)),
         args.Get(ArcFloat.Constructor, "influence", new(0)),
-        args.Get(ArcBlock.Constructor, "is_valid", new()),
+        args.Get(ArcTrigger.Constructor, "is_valid", new()),
         args.Get(ArcTrigger.Constructor, "can_select", new()),
-        args.Get(ArcBlock.Constructor, "on_granted", new()),
+        args.Get(ArcEffect.Constructor, "on_granted", new()),
         args.Get(ArcTrigger.Constructor, "can_revoke", new()),
-        args.Get(ArcBlock.Constructor, "on_revoked", new()),
-        args.Get(ArcBlock.Constructor, "on_invalid", new()),
-        args.Get(ArcBlock.Constructor, "penalties", new()),
-        args.Get(ArcBlock.Constructor, "benefits", new()),
-        args.Get((Block s) => new ArcList<ArcBlock>(s, (Block s) => ArcBlock.Constructor(s)), "conditional_modifiers", new()),
-        args.Get(ArcBlock.Constructor, "modifier_by_land_ownership", new()),
-        args.Get(ArcBlock.Constructor, "mechanics", new()),
+        args.Get(ArcEffect.Constructor, "on_revoked", new()),
+        args.Get(ArcEffect.Constructor, "on_invalid", new()),
+        args.Get(ArcModifier.Constructor, "penalties", new()),
+        args.Get(ArcModifier.Constructor, "benefits", new()),
+        args.Get((Block s) => new ArcList<ArcCode>(s, (Block s) => ArcCode.Constructor(s)), "conditional_modifiers", new()),
+        args.Get(ArcModifier.Constructor, "modifier_by_land_ownership", new()),
+        args.Get(ArcCode.Constructor, "mechanics", new()),
         args.Get(ArcInt.Constructor, "cooldown_years", new(10)),
-        args.Get(ArcBlock.Constructor, "on_cooldown_expires", new()),
-        args.Get(ArcBlock.Constructor, "ai_will_do", new("factor", "=", "1"))
+        args.Get(ArcEffect.Constructor, "on_cooldown_expires", new()),
+        args.Get(ArcCode.Constructor, "ai_will_do", new("factor", "=", "1"))
     );
     public static string Transpile()
     {
@@ -274,7 +296,7 @@ public class EstatePrivilege : IArcObject
             privilege.OnInvalid.Compile("on_invalid", ref b);
             privilege.Penalties.Compile("penalties", ref b);
             privilege.Benefits.Compile("benefits", ref b);
-            foreach(ArcBlock? s in privilege.ConditionalModifiers.Values)
+            foreach(ArcCode? s in privilege.ConditionalModifiers.Values)
             {
                 if (s == null) continue;
                 s.Compile("conditional_modifier", ref b);
@@ -291,7 +313,7 @@ public class EstatePrivilege : IArcObject
         return "Privileges";
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }
 public class Estate : IArcObject
 {
@@ -302,24 +324,43 @@ public class Estate : IArcObject
 
     public ArcString Id { get; set; }
     public ArcInt Icon { get; set; }
-    public ArcBlock Color { get; set; }
-    public ArcBlock Trigger { get; set; }
-    public ArcBlock CountryModifierHappy { get; set; }
-    public ArcBlock CountryModifierNeutral { get; set; }
-    public ArcBlock CountryModifierAngry { get; set; }
-    public ArcBlock LandOwnershipModifier { get; set; }
-    public ArcBlock ProvinceIndependenceWeight { get; set; }
+    public ArcCode Color { get; set; }
+    public ArcTrigger Trigger { get; set; }
+    public ArcModifier CountryModifierHappy { get; set; }
+    public ArcModifier CountryModifierNeutral { get; set; }
+    public ArcModifier CountryModifierAngry { get; set; }
+    public ArcModifier LandOwnershipModifier { get; set; }
+    public ArcCode ProvinceIndependenceWeight { get; set; }
     public ArcFloat BaseInfluence { get; set; }
-    public ArcList<ArcBlock> InfluenceModifiers { get; set; }
-    public ArcList<ArcBlock> LoyaltyModifiers { get; set; }
-    public ArcList<ArcBlock> CustomNames { get; set; }
+    public ArcList<ArcCode> InfluenceModifiers { get; set; }
+    public ArcList<ArcCode> LoyaltyModifiers { get; set; }
+    public ArcList<ArcCode> CustomNames { get; set; }
     public ArcBool ContributesToCuriaTreasury { get; set; }
     public PrivilegeList Privileges { get; set; }
     public ArcList<EstateAgenda> Agendas { get; set; }
     public ArcFloat InfluenceFromDevModifier { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public Estate(string id, ArcString name, ArcString desc, ArcInt icon, ArcBlock color, ArcBlock trigger, ArcBlock countryModifierHappy, ArcBlock countryModifierNeutral, ArcBlock countryModifierAngry, ArcBlock landOwnershipModifier, ArcBlock provinceIndependenceWeight, ArcFloat baseInfluence, ArcList<ArcBlock> influenceModifiers, ArcList<ArcBlock> loyaltyModifiers, ArcList<ArcBlock> customNames, ArcBool contributesToCuriaTreasury, PrivilegeList privileges, ArcList<EstateAgenda> agendas, ArcFloat influenceFromDevModifier)
-    {
+    public Estate(
+        string id, 
+        ArcString name, 
+        ArcString desc, 
+        ArcInt icon, 
+        ArcCode color, 
+        ArcTrigger trigger, 
+        ArcModifier countryModifierHappy, 
+        ArcModifier countryModifierNeutral, 
+        ArcModifier countryModifierAngry, 
+        ArcModifier landOwnershipModifier, 
+        ArcCode provinceIndependenceWeight, 
+        ArcFloat baseInfluence, 
+        ArcList<ArcCode> influenceModifiers, 
+        ArcList<ArcCode> loyaltyModifiers, 
+        ArcList<ArcCode> customNames, 
+        ArcBool contributesToCuriaTreasury, 
+        PrivilegeList privileges, 
+        ArcList<EstateAgenda> agendas, 
+        ArcFloat influenceFromDevModifier
+    ) {
         Id = new($"estate_{id}");
         Icon = icon;
         Name = name; 
@@ -380,17 +421,17 @@ public class Estate : IArcObject
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "desc"),
             args.Get(ArcInt.Constructor, "icon"),
-            args.Get(ArcBlock.Constructor, "color"),
-            args.Get(ArcBlock.Constructor, "trigger"),
-            args.Get(ArcBlock.Constructor, "country_modifier_happy"),
-            args.Get(ArcBlock.Constructor, "country_modifier_neutral"),
-            args.Get(ArcBlock.Constructor, "country_modifier_angry"),
-            args.Get(ArcBlock.Constructor, "land_ownership_modifier"),
-            args.Get(ArcBlock.Constructor, "province_independence_weight", new("factor", "=", "1")),
+            args.Get(ArcCode.Constructor, "color"),
+            args.Get(ArcTrigger.Constructor, "trigger"),
+            args.Get(ArcModifier.Constructor, "country_modifier_happy"),
+            args.Get(ArcModifier.Constructor, "country_modifier_neutral"),
+            args.Get(ArcModifier.Constructor, "country_modifier_angry"),
+            args.Get(ArcModifier.Constructor, "land_ownership_modifier"),
+            args.Get(ArcCode.Constructor, "province_independence_weight", new("factor", "=", "1")),
             args.Get(ArcFloat.Constructor, "base_influence"),
-            args.Get((Block s) => new ArcList<ArcBlock>(s, (Block s) => ArcBlock.Constructor(s)), "influence_modifiers", new()),
-            args.Get((Block s) => new ArcList<ArcBlock>(s, (Block s) => ArcBlock.Constructor(s)), "loyalty_modifiers", new()),
-            args.Get((Block s) => new ArcList<ArcBlock>(s, (Block s) => ArcBlock.Constructor(s)), "custom_names", new()),
+            args.Get((Block s) => new ArcList<ArcCode>(s, (Block s) => ArcCode.Constructor(s)), "influence_modifiers", new()),
+            args.Get((Block s) => new ArcList<ArcCode>(s, (Block s) => ArcCode.Constructor(s)), "loyalty_modifiers", new()),
+            args.Get((Block s) => new ArcList<ArcCode>(s, (Block s) => ArcCode.Constructor(s)), "custom_names", new()),
             args.Get(ArcBool.Constructor, "contributes_to_curia_treasury", new(false)),
             args.Get((Block s) => new PrivilegeList(s, (string key, Args s) => EstatePrivilege.Constructor(key, s), EstatePrivilege.EstatePrivileges), "privileges", new()),
             args.Get((Block s) => new ArcList<EstateAgenda>(s, EstateAgenda.EstateAgendas), "agendas", new()),
@@ -467,23 +508,23 @@ public class Estate : IArcObject
             estateFile.Add("icon", "=", estate.Icon);
             estate.Color.Compile("color", ref estateFile);
             estate.Trigger.Compile("trigger", ref estateFile);
-            estate.CountryModifierHappy.Compile("country_modifier_happy", ref estateFile);
-            estate.CountryModifierNeutral.Compile("country_modifier_neutral", ref estateFile);
-            estate.CountryModifierAngry.Compile("country_modifier_angry", ref estateFile);
-            estate.LandOwnershipModifier.Compile("land_ownership_modifier", ref estateFile);
+            estate.CountryModifierHappy.Compile("country_modifier_happy", ref estateFile, false);
+            estate.CountryModifierNeutral.Compile("country_modifier_neutral", ref estateFile, false);
+            estate.CountryModifierAngry.Compile("country_modifier_angry", ref estateFile, false);
+            estate.LandOwnershipModifier.Compile("land_ownership_modifier", ref estateFile, false);
             estate.ProvinceIndependenceWeight.Compile("province_independence_weight", ref estateFile);
             estateFile.Add("base_influence", "=", estate.BaseInfluence);
-            foreach(ArcBlock? s in estate.InfluenceModifiers.Values)
+            foreach(ArcCode? s in estate.InfluenceModifiers.Values)
             {
                 if (s == null) continue;
                 s.Compile("influence_modifier", ref estateFile);
             }
-            foreach(ArcBlock? s in estate.LoyaltyModifiers.Values)
+            foreach(ArcCode? s in estate.LoyaltyModifiers.Values)
             {
                 if (s == null) continue;
                 s.Compile("loyalty_modifier", ref estateFile);
             }
-            foreach(ArcBlock? s in estate.CustomNames.Values)
+            foreach(ArcCode? s in estate.CustomNames.Values)
             {
                 if (s == null) continue;
                 s.Compile("custom_name", ref estateFile);
@@ -542,7 +583,7 @@ public class Estate : IArcObject
         return "Estates";
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }
 public class PrivilegeList : ArcList<EstatePrivilege>
 {

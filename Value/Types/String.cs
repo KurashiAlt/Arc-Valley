@@ -27,7 +27,7 @@ public class ArcString : IValue
             Regex Replace = Compiler.TranspiledString();
             newValue = Replace.Replace(newValue, delegate (Match m)
             {
-                return new Compiler().Compile(m.Groups[1].Value).Trim();
+                return Compiler.StringCompile(m.Groups[1].Value, Compiler.Compile).Trim();
             });
 
             val = newValue;
@@ -51,7 +51,7 @@ public class ArcString : IValue
         return Value.ToString();
     }
 
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public Walker Call(Walker i, ref Block result)
     {
         if (i.MoveNext())
         {
@@ -85,12 +85,12 @@ public class ArcString : IValue
                 default:
                     {
                         i.MoveBack();
-                        result.Add(comp.Compile(Value));
+                        result.Add(Compiler.StringCompile(Value, Compiler.Compile));
                     }
                     break;
             }
         }
-        else result.Add(comp.Compile(Value));
+        else result.Add(Compiler.StringCompile(Value, Compiler.Compile));
         return i;
     }
 }

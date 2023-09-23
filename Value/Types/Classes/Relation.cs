@@ -44,5 +44,5 @@ public class Relation : ArcBlock
     }
 
     public override string ToString() => "[Arc Relation]";
-    public Walker Call(Walker i, ref List<string> result, Compiler comp) => throw new Exception();
+    public Walker Call(Walker i, ref List<string> result) => throw new Exception();
 }

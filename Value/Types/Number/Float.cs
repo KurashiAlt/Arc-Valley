@@ -1,5 +1,5 @@
 ﻿namespace Arc;
-public class ArcFloat : IArcNumber
+public class ArcFloat : IArcNumber, IValue
 {
     public double Value { get; set; }
     public ArcFloat(double value)
@@ -8,15 +8,15 @@ public class ArcFloat : IArcNumber
     }
     public ArcFloat(string value)
     {
-        Value = double.Parse(value);
+        Value = Calculator.Calculate(value);
     }
     public ArcFloat(Block b)
     {
-        Value = double.Parse(string.Join(' ', b));
+        Value = Calculator.Calculate(string.Join(' ', b));
     }
     public void Set(Block value)
     {
-        Value = double.Parse(string.Join(' ', value));
+        Value = Calculator.Calculate(string.Join(' ', value));
     }
     public static ArcFloat Constructor(Block b) => new ArcFloat(b);
     public double GetNum() => Value;
@@ -27,7 +27,7 @@ public class ArcFloat : IArcNumber
         return Value.ToString();
     }
 
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public Walker Call(Walker i, ref Block result)
     {
         if (i.MoveNext())
         {

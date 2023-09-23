@@ -4,6 +4,51 @@ using System.IO;
 using System.Text;
 
 namespace Arc;
+public class AspectsName : IArcObject
+{
+    public bool IsObject() => true;
+    public ArcString Id { get; set; }
+    public ArcString Short { get; set; }
+    public ArcString Long { get; set; }
+    public Dict<IVariable?> KeyValuePairs { get; set; }
+    public AspectsName(ArcString id, ArcString @short, ArcString @long)
+    {
+        Id = id;
+        Short = @short;
+        Long = @long;
+        KeyValuePairs = new()
+        {
+            { "id", Id },
+            { "short", Short },
+            { "long", Long },
+        };
+    }
+    public bool CanGet(string indexer) => KeyValuePairs.CanGet(indexer);
+    public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
+    public void Transpile(ref StringBuilder b)
+    {
+        Instance.Localisation.Add($"{Id}_SHORT", Short.Value);
+        Instance.Localisation.Add($"{Id}_LONG", Long.Value);
+        b.Append($"aspects_name = {Id} ");
+    }
+    public static AspectsName Constructor(Block block, string id)
+    {
+        Walker i = new(block);
+
+        i = Args.GetArgs(i, out Args args, 2);
+
+        return new AspectsName(
+            new(id.ToUpper()),
+            args.Get(ArcString.Constructor, "short"),
+            args.Get(ArcString.Constructor, "long")
+        );
+    }
+    public Walker Call(Walker i, ref Block result)
+    {
+        result.Add(Id);
+        return i;
+    }
+}
 public class Religion : IArcObject
 {
     public static readonly Dict<Religion> Religions = new();
@@ -48,8 +93,10 @@ public class Religion : IArcObject
     public ArcBool DeclareWarInRegency { get; set; }
     public ArcBool CanHaveSecondaryReligion { get; set; }
     public ReligionGroup ReligionGroup { get; set; }
+    public AspectsName? AspectsName { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public Religion(ArcString name, ArcString desc, ArcString id, ArcInt icon, ArcBlock color, ArcBlock heretic, ArcBlock country, ArcBlock province, ArcBlock countryAsSecondary, ArcBlock allowedConversions, ArcBlock onConvert, ArcBool hreReligion, ArcBool hreHereticReligion, ArcString date, ArcBool misguidedHeretic, ArcBool declareWarInRegency, ArcBool canHaveSecondaryReligion, ReligionGroup religionGroup, ArcBool allowFemaleDefenderOfFaith, ArcBool personalDeity, ArcList<Province>? holySites, ArcList<Blessing>? blessings, ArcBool usesChurchPower, ArcList<ChurchAspect>? aspects, ArcBool usesKarma, ArcBool usesPiety, ArcBool usesAnglicanPower)
+    public Religion(ArcString name, ArcString desc, ArcString id, ArcInt icon, ArcBlock color, ArcBlock heretic, ArcBlock country, ArcBlock province, ArcBlock countryAsSecondary, ArcBlock allowedConversions, ArcBlock onConvert, ArcBool hreReligion, ArcBool hreHereticReligion, ArcString date, ArcBool misguidedHeretic, ArcBool declareWarInRegency, ArcBool canHaveSecondaryReligion, ReligionGroup religionGroup, ArcBool allowFemaleDefenderOfFaith, ArcBool personalDeity, ArcList<Province>? holySites, ArcList<Blessing>? blessings, ArcBool usesChurchPower, ArcList<ChurchAspect>? aspects, ArcBool usesKarma, ArcBool usesPiety, ArcBool usesAnglicanPower
+        , AspectsName? aspectsName)
     {
         Name = name;
         Desc = desc;
@@ -78,6 +125,7 @@ public class Religion : IArcObject
         UsesKarma = usesKarma;
         UsesPiety = usesPiety;
         UsesAnglicanPower = usesAnglicanPower;
+        AspectsName = aspectsName;
         KeyValuePairs = new()
         {
             { "name", Name },
@@ -107,6 +155,7 @@ public class Religion : IArcObject
             { "uses_karma", UsesKarma },
             { "uses_piety", UsesPiety },
             { "uses_anglican_power", UsesAnglicanPower },
+            { "aspects_name", AspectsName },
         };
     }
 
@@ -119,7 +168,7 @@ public class Religion : IArcObject
         string id = i.Current;
 
         i = Args.GetArgs(i, out Args args);
-        ArcBlock country = args.Get(ArcBlock.Constructor, "country");
+        ArcModifier country = args.Get(ArcModifier.Constructor, "country");
 
         var a = args.Get((Block s) => new ArcList<Province>(s, Province.Provinces), "holy_sites", null);
 
@@ -128,13 +177,13 @@ public class Religion : IArcObject
             args.Get(ArcString.Constructor, "desc"),
             new(id),
             args.Get(ArcInt.Constructor, "icon"),
-            args.Get(ArcBlock.Constructor, "color"),
-            args.Get(ArcBlock.Constructor, "heretic"),
+            args.Get(ArcCode.Constructor, "color"),
+            args.Get(ArcCode.Constructor, "heretic"),
             country,
-            args.Get(ArcBlock.Constructor, "province"),
-            args.Get(ArcBlock.Constructor, "country_as_secondary", country),
-            args.Get(ArcBlock.Constructor, "allowed_conversions", new()),
-            args.Get(ArcBlock.Constructor, "on_convert", new()),
+            args.Get(ArcModifier.Constructor, "province"),
+            args.Get(ArcModifier.Constructor, "country_as_secondary", country),
+            args.Get(ArcCode.Constructor, "allowed_conversions", new()),
+            args.Get(ArcEffect.Constructor, "on_convert", new()),
             args.Get(ArcBool.Constructor, "hre_religion", new(false)),
             args.Get(ArcBool.Constructor, "hre_heretic_religion", new(false)),
             args.Get(ArcString.Constructor, "date", new("")),
@@ -150,7 +199,8 @@ public class Religion : IArcObject
             args.Get((Block s) => new ArcList<ChurchAspect>(s, ChurchAspect.ChurchAspects), "aspects", null),
             args.Get(ArcBool.Constructor, "uses_karma", new(false)),
             args.Get(ArcBool.Constructor, "uses_piety", new(false)),
-            args.Get(ArcBool.Constructor, "uses_anglican_power", new(false))
+            args.Get(ArcBool.Constructor, "uses_anglican_power", new(false)),
+            args.Get((Block b) => AspectsName.Constructor(b, id), "aspects_name", null)
         );
 
         Religions.Add(id, religion);
@@ -181,8 +231,9 @@ public class Religion : IArcObject
         if (HolySites != null) sb.Append($"holy_sites = {{ {string.Join(' ', from b in HolySites.Values select b.Id)} }} ");
         if (Blessings != null) sb.Append($"blessings = {{ {string.Join(' ', from b in Blessings.Values select b.Id)} }} ");
         if (Aspects != null) sb.Append($"aspects = {{ {string.Join(' ', from b in Aspects.Values select b.Id)} }} ");
+        AspectsName?.Transpile(ref sb);
         sb.Append("} ");
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }

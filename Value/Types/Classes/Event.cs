@@ -12,13 +12,13 @@ public class Option : IArcObject
 {
     public string Class => "Option";
     ArcString Name { get; set; }
-    ArcBlock AiChance { get; set; }
+    ArcCode AiChance { get; set; }
     ArcBool Highlight { get; set; }
     Province? Goto { get; set; }
     ArcTrigger? Trigger { get; set; }
-    ArcBlock Effect { get; set; }
+    ArcEffect Effect { get; set; }
     public Dict<IVariable?> keyValuePairs { get; set; }
-    public Option(ArcString name, ArcBlock aiChance, ArcBool highlight, Province? @goto, ArcTrigger? trigger, ArcBlock effect)
+    public Option(ArcString name, ArcCode aiChance, ArcBool highlight, Province? @goto, ArcTrigger? trigger, ArcEffect effect)
     {
         Name = name;
         AiChance = aiChance;
@@ -52,7 +52,7 @@ public class Option : IArcObject
         Effect.Compile(ref sb);
         sb.Add("}");
     }
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public Walker Call(Walker i, ref Block result)
     {
         throw new NotImplementedException();
     }
@@ -64,11 +64,11 @@ public class Option : IArcObject
 
         return new Option(
             args.Get(ArcString.Constructor, "name"),
-            args.Get(ArcBlock.Constructor, "ai_chance", new("factor", "=", "1")),
+            args.Get(ArcCode.Constructor, "ai_chance", new("factor", "=", "1")),
             args.Get(ArcBool.Constructor, "highlight", new(false)),
             args.GetFromListNullable(Province.Provinces, "goto"),
             args.Get(ArcTrigger.Constructor, "trigger", null),
-            args.Get(ArcBlock.Constructor, "effect", new())
+            args.Get(ArcEffect.Constructor, "effect", new())
         );
     }
 }
@@ -82,13 +82,13 @@ public class Event : IArcObject
     ArcString Desc { get; set; }
     ArcString Picture { get; set; }
     ArcBool Major { get; set; }
-    ArcBlock MajorTrigger { get; set; }
+    ArcTrigger MajorTrigger { get; set; }
     ArcBool FireOnlyOnce { get; set; }
     ArcBool Hidden { get; set; }
     ArcTrigger Trigger { get; set; }
-    ArcBlock Immediate { get; set; }
-    ArcBlock After { get; set; }
-    ArcBlock MeanTimeToHappen { get; set; }
+    ArcEffect Immediate { get; set; }
+    ArcEffect After { get; set; }
+    ArcCode MeanTimeToHappen { get; set; }
     ArcBool IsTriggeredOnly { get; set; }
     ArcList<Option> Options { get; set; }
     public Dict<IVariable> keyValuePairs { get; set; }
@@ -99,13 +99,13 @@ public class Event : IArcObject
         ArcString desc,
         ArcString picture,
         ArcBool major,
-        ArcBlock majorTrigger,
+        ArcTrigger majorTrigger,
         ArcBool fireOnlyOnce,
         ArcBool hidden,
         ArcTrigger trigger,
-        ArcBlock immediate,
-        ArcBlock after,
-        ArcBlock meanTimeToHappen,
+        ArcEffect immediate,
+        ArcEffect after,
+        ArcCode meanTimeToHappen,
         ArcBool isTriggeredOnly,
         ArcList<Option> options
     ) {
@@ -162,13 +162,13 @@ public class Event : IArcObject
             args.Get(ArcString.Constructor, "desc"),
             args.Get(ArcString.Constructor, "picture"),
             args.Get(ArcBool.Constructor, "major", new(false)),
-            args.Get(ArcBlock.Constructor, "major_trigger", new()),
+            args.Get(ArcTrigger.Constructor, "major_trigger", new()),
             args.Get(ArcBool.Constructor, "fire_only_once", new(false)),
             args.Get(ArcBool.Constructor, "hidden", new(false)),
             args.Get(ArcTrigger.Constructor, "trigger", new()),
-            args.Get(ArcBlock.Constructor, "immediate", new()),
-            args.Get(ArcBlock.Constructor, "after", new()),
-            args.Get(ArcBlock.Constructor, "mean_time_to_happen", new()),
+            args.Get(ArcEffect.Constructor, "immediate", new()),
+            args.Get(ArcEffect.Constructor, "after", new()),
+            args.Get(ArcCode.Constructor, "mean_time_to_happen", new()),
             args.Get(ArcBool.Constructor, "is_triggered_only", new(true)),
             args.Get((Block s) => new ArcList<Option>(s, Option.Constructor), "options")
         );
@@ -234,7 +234,7 @@ public class Event : IArcObject
         Instance.OverwriteFile("target/events/arc.txt", string.Join(' ', b));
         return "Events";
     }
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public Walker Call(Walker i, ref Block result)
     {
         throw new NotImplementedException();
     }

@@ -15,10 +15,10 @@ public class GovernmentReform : IArcObject
     public ArcString Icon { get; set; }
     public ArcTrigger Potential { get; set; }
     public ArcTrigger Trigger { get; set; }
-    public ArcBlock Modifier { get; set; }
-    public ArcBlock? CustomAttributes { get; set; }
+    public ArcModifier Modifier { get; set; }
+    public ArcCode? CustomAttributes { get; set; }
     //public ArcList<ArcBlock>? Conditionals { get; set; }
-    public Dict<ArcBlock> Attributes { get; set; } //Used for non implemented Attributes
+    public Dict<ArcCode> Attributes { get; set; } //Used for non implemented Attributes
     /*
     public ArcBool? BasicReform { get; set; }
     public ArcBool? Monarchy { get; set; }
@@ -74,14 +74,14 @@ public class GovernmentReform : IArcObject
     public ArcList<Faction>? Factions { get; set; }
     public Dict<ArcBlock>? AssimilationCultures { get; set; }
     public Dict<ArcBlock>? StatesGeneralMechanic { get; set; }
-    public ArcBlock? GovernmentAbilities { get; set; }
     */
+    public ArcCode? GovernmentAbilities { get; set; }
     public static string[] ImplementedAttributes = new string[]
     {
-        "name", "desc", "icon", "potential", "trigger", "modifier", "custom_attributes"
+        "name", "desc", "icon", "potential", "trigger", "modifier", "custom_attributes", "government_abilities"
     };
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public GovernmentReform(string id, ArcString name, ArcString desc, ArcString icon, ArcTrigger potential, ArcTrigger trigger, ArcBlock modifier, ArcBlock? customAttributes, Dict<ArcBlock> attributes)
+    public GovernmentReform(string id, ArcString name, ArcString desc, ArcString icon, ArcTrigger potential, ArcTrigger trigger, ArcModifier modifier, ArcCode? customAttributes, Dict<ArcCode> attributes, ArcCode? governmentAbilities)
     {
         Id = new(id);
         Name = name;
@@ -92,6 +92,7 @@ public class GovernmentReform : IArcObject
         Modifier = modifier;
         CustomAttributes = customAttributes;
         Attributes = attributes;
+        GovernmentAbilities = governmentAbilities;
         KeyValuePairs = new()
         {
             { "id", Id },
@@ -130,9 +131,10 @@ public class GovernmentReform : IArcObject
             args.Get(ArcString.Constructor, "icon"),
             args.Get(ArcTrigger.Constructor, "potential", new()),
             args.Get(ArcTrigger.Constructor, "trigger", new()),
-            args.Get(ArcBlock.Constructor, "modifier", new()),
-            args.Get(ArcBlock.Constructor, "custom_attributes", null),
-            args.GetAttributes(ImplementedAttributes)
+            args.Get(ArcModifier.Constructor, "modifier", new()),
+            args.Get(ArcCode.Constructor, "custom_attributes", null),
+            args.GetAttributes(ImplementedAttributes),
+            args.Get(ArcCode.Constructor, "government_abilities", null)
         );
     }
     public static string Transpile()
@@ -145,10 +147,11 @@ public class GovernmentReform : IArcObject
             reform.Potential.Compile("potential", ref file);
             reform.Trigger.Compile("trigger", ref file);
             reform.Modifier.Compile("modifiers", ref file);
+            reform.GovernmentAbilities?.Compile("government_abilities", ref file);
             if(reform.CustomAttributes != null) reform.CustomAttributes.Compile("custom_attributes", ref file);
             foreach(var v in reform.Attributes)
             {
-                v.Value.Compile(v.Key, ref file, true);
+                v.Value.Compile(v.Key, ref file, true, true);
             }
             file.Add("}");
 
@@ -159,5 +162,5 @@ public class GovernmentReform : IArcObject
         return "Government Reforms";
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }

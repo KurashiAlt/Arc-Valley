@@ -62,14 +62,14 @@ public class Terrain : IArcObject
         Terrain Terrain = new(
             args.Get(ArcString.Constructor, "name"),
             args.GetDefault(ArcString.Constructor, "desc", new("")),
-            args.Get(ArcBlock.Constructor, "color"),
+            args.Get(ArcCode.Constructor, "color"),
             args.Get(ArcString.Constructor, "sound_type"),
             args.GetDefault(ArcBool.Constructor, "is_water", new(false)),
             args.GetDefault(ArcBool.Constructor, "inland_sea", new(false)),
             args.GetDefault(ArcString.Constructor, "type", null),
             args.GetDefault(ArcFloat.Constructor, "movement_cost", new(1)),
             args.GetDefault(ArcInt.Constructor, "defence", new(0)),
-            args.GetDefault(ArcBlock.Constructor, "modifier", new()),
+            args.GetDefault(ArcModifier.Constructor, "modifier", new()),
             new(id),
             args.GetDefault(ArcInt.Constructor, "base_development", new(0))
         );
@@ -79,7 +79,7 @@ public class Terrain : IArcObject
         return i;
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value); return i; }
     public static string Transpile()
     {
         StringBuilder sb = new("categories = { pti = { type = pti } ");

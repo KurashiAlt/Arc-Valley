@@ -56,5 +56,5 @@ public class Area : IArcObject
         Instance.OverwriteFile("target/map/area.txt", sb.ToString());
         return "Areas";
     }
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }

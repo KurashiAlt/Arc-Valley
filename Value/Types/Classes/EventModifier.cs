@@ -9,9 +9,9 @@ public class EventModifier : IArcObject
     public bool IsObject() => true;
     public ArcString Id { get; set; }
     public ArcString Name { get; set; }
-    public ArcBlock Modifier { get; set; }
+    public ArcModifier Modifier { get; set; }
     public Dict<IVariable> KeyValuePairs { get; set; }
-    public EventModifier(string key, ArcString name, ArcBlock modifier)
+    public EventModifier(string key, ArcString name, ArcModifier modifier)
     {
         Id = new(key);
         Name = name;
@@ -37,12 +37,12 @@ public class EventModifier : IArcObject
         EventModifier mod = new(
             id,
             args.Get(ArcString.Constructor, "name"),
-            args.Get(ArcBlock.Constructor, "modifier")
+            args.Get(ArcModifier.Constructor, "modifier")
         );
 
         return i;
     }
-    public Walker Call(Walker i, ref Block result, Compiler comp) => throw new Exception();
+    public Walker Call(Walker i, ref Block result) => throw new Exception();
     public static string Transpile()
     {
         StringBuilder sb = new();

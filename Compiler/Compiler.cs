@@ -8,10 +8,11 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using System.Collections.Concurrent;
+using System.Linq.Expressions;
 
 namespace Arc
 {
-    public partial class Compiler
+    public static partial class Compiler
     {
         public static readonly Dictionary<string, IVariable> global = new()
         {
@@ -336,23 +337,21 @@ namespace Arc
         public static Instance owner;
 #pragma warning restore CA2211
 #pragma warning restore CS8618
-
-        public Compiler() { }
-        public void ObjectDeclare(string file, bool preprocessor = false)
+        public static void ObjectDeclare(string file, bool preprocessor = false)
         {
             if (preprocessor)
                 file = Parser.Preprocessor(file);
 
             ObjectDeclare(Parser.ParseCode(file));
         }
-        public void LintLoad(ref Dictionary<string, ILintCommand> dict, string file, string path, bool preprocessor = false)
+        public static void LintLoad(ref Dictionary<string, ILintCommand> dict, string file, string path, bool preprocessor = false)
         {
             if (preprocessor)
                 file = Parser.Preprocessor(file);
 
             LintLoad(ref dict, Parser.ParseCode(file), path);
         }
-        public void LintLoad(ref Dictionary<string, ILintCommand> dict, Block code, string file)
+        public static void LintLoad(ref Dictionary<string, ILintCommand> dict, Block code, string file)
         {
             if (code.Count == 0)
                 return;
@@ -388,7 +387,7 @@ namespace Arc
                 else throw new Exception($"Invalid command in [Lint] Object Declaration: {g.Current}");
             } while (g.MoveNext());
         }
-        public void ObjectDeclare(Block code)
+        public static void ObjectDeclare(Block code)
         {
             if (code.Count == 0)
                 return;
@@ -448,7 +447,7 @@ namespace Arc
                 {
                     Block f = new();
                     if (var == null) throw new Exception();
-                    g = var.Call(g, ref f, this);
+                    g = var.Call(g, ref f);
                 }
                 else throw new Exception($"Invalid command in Object Declaration: {g.Current}");
             } while (g.MoveNext());
@@ -467,7 +466,7 @@ namespace Arc
                 return i;
             }
         }
-        public bool AllCompile(ref Walker g, ref Block result, Func<Block, string> compile)
+        public static bool AllCompile(ref Walker g, ref Block result, Func<Block, string> compile)
         {
             if (g.Current == "defineloc") {
                 g.ForceMoveNext();
@@ -478,11 +477,10 @@ namespace Arc
                 string value = g.Current;
 
                 Instance.Localisation.Add(key, value);
-                return true;
             }
-            else if (g.Current == "if") { result.Add("if", "="); return true; }
-            else if (g.Current == "else_if") { result.Add("else_if", "="); return true; }
-            else if (g.Current == "else") { result.Add("else", "="); return true; }
+            else if (g.Current == "if") { result.Add("if", "="); }
+            else if (g.Current == "else_if") { result.Add("else_if", "="); }
+            else if (g.Current == "else") { result.Add("else", "="); }
             else if (g.Current.value.EndsWith(','))
             {
                 List<string> s = new();
@@ -508,7 +506,7 @@ namespace Arc
                         {
                             "=", "{",
                                 "limit", "=", "{",
-                                    Compile(trigger),
+                                    StringCompile(trigger, CompileTrigger),
                                 "}",
                                 Compile(scope),
                             "}"
@@ -516,7 +514,7 @@ namespace Arc
 
                     foreach (string k in s)
                     {
-                        result.Add(Compile(k));
+                        result.Add(StringCompile(k, Compile));
                         result.Add(n);
                     }
                 }
@@ -531,16 +529,17 @@ namespace Arc
                     {
                         Block n = new()
                             {
-                                Compile(k),
+                                StringCompile(k, Compile),
                                 "=",
-                                compiled
+                                "{",
+                                compiled,
+                                "}"
                             };
 
                         result.Add(n);
                     }
                 }
                 else throw new Exception();
-                return true;
             }
             else if (TryTrimOne(g.Current, '`', out string? newValue))
             {
@@ -550,11 +549,10 @@ namespace Arc
                 Regex Replace = TranspiledString();
                 newValue = Replace.Replace(newValue, delegate (Match m)
                 {
-                    return Compile(m.Groups[1].Value).Trim();
+                    return StringCompile(m.Groups[1].Value, Compile).Trim();
                 });
 
                 result.Add(newValue);
-                return true;
             }
             else if (g.Current.value.EndsWith('%'))
             {
@@ -570,36 +568,42 @@ namespace Arc
 
                 if (Parser.HasEnclosingBrackets(scope)) scope = RemoveEnclosingBrackets(scope);
 
+                if (result.Last == null) throw new Exception();
                 if (result.Last.Value.value != "=") result.Add("=");
 
                 result.Add(
                     "{",
                         "limit", "=", "{",
-                            CompileTrigger(trigger),
+                            StringCompile(trigger, CompileTrigger),
                         "}",
                         compile(scope),
                     "}"
                 );
-                return true;
+            }
+            else if (g.Current.value.StartsWith('(') && g.Current.value.EndsWith(')'))
+            {
+                string calc = g.Current.value[1..^1];
+
+                result.Add(Calculator.Calculate(calc));
             }
             else if (TryGetVariable(g.Current, out IVariable? var))
             {
                 if (var == null) throw new Exception();
-                g = var.Call(g, ref result, this);
-                return true;
+                g = var.Call(g, ref result);
             }
-            return false;
+            else return false;
+            return true;
         }
         public static bool IsBaseScope(string v) => v == "ROOT" || v == "PREV" || v == "THIS" || v == "FROM";
         public static bool IsDefaultScope(string v) => v == "REB" || v == "NAT" || v == "PIR";
-        public string CompileTrigger(string file, bool preprocessor = false)
+        public static string StringCompile(string file, Func<Block, string> compiler, bool preprocessor = false)
         {
             if (preprocessor)
                 file = Parser.Preprocessor(file);
 
-            return CompileTrigger(Parser.ParseCode(file));
+            return compiler(Parser.ParseCode(file));
         }
-        public string CompileTrigger(Block code)
+        public static string CompileTrigger(Block code)
         {
             if (code.Count == 0)
                 return "";
@@ -632,16 +636,11 @@ namespace Arc
                 else result.Add(g.Current);
             } while (g.MoveNext());
 
+            if (Parser.HasEnclosingBrackets(result)) result = RemoveEnclosingBrackets(result);
+
             return string.Join(' ', result);
         }
-        public string Compile(string file, bool preprocessor = false)
-        {
-            if (preprocessor)
-                file = Parser.Preprocessor(file);
-
-            return Compile(Parser.ParseCode(file));
-        }
-        public string Compile(Block code)
+        public static string Compile(Block code)
         {
             if (code.Count == 0)
                 return "";
@@ -727,7 +726,7 @@ namespace Arc
                     ArcInt duration = args.Get(ArcInt.Constructor, "duration", new(-1));
                     ArcString desc = args.Get(ArcString.Constructor, "desc", new(""));
                     ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
-                    ArcBlock modifier = args.Get(ArcBlock.Constructor, "modifier");
+                    ArcModifier modifier = args.Get(ArcModifier.Constructor, "modifier");
 
                     new EventModifier($"qem_{QuickEventModifiers}", name, modifier);
 
@@ -752,7 +751,7 @@ namespace Arc
                     ArcInt duration = args.Get(ArcInt.Constructor, "duration", new(-1));
                     ArcString desc = args.Get(ArcString.Constructor, "desc", new(""));
                     ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
-                    ArcBlock modifier = args.Get(ArcBlock.Constructor, "modifier");
+                    ArcModifier modifier = args.Get(ArcModifier.Constructor, "modifier");
 
                     new EventModifier($"qem_{QuickEventModifiers}", name, modifier);
 
@@ -775,7 +774,7 @@ namespace Arc
                 {
                     i = Args.GetArgs(i, out Args args);
 
-                    Block traits = args.Get(ArcBlock.Constructor, "traits", new()).Value;
+                    Block traits = args.Get(ArcCode.Constructor, "traits", new()).Value;
 
                     if(Parser.HasEnclosingBrackets(traits)) traits = RemoveEnclosingBrackets(traits);
 
@@ -787,7 +786,7 @@ namespace Arc
                     result.Add(
                         args.GetFromList(Province.Provinces, "where").Id, "=", "{",
                             "create_flagship", "=", "{",
-                                "name", "=", $"\"{args.Get(ArcString.Constructor, "name")}\"s",
+                                "name", "=", $"\"{args.Get(ArcString.Constructor, "name")}\"",
                                 "type", "=", args.Get(ArcString.Constructor, "type"),
                             "}",
                         "}"
@@ -813,6 +812,8 @@ namespace Arc
                 }
                 else result.Add(g.Current);
             } while (g.MoveNext());
+
+            if (Parser.HasEnclosingBrackets(result)) result = RemoveEnclosingBrackets(result);
 
             return string.Join(' ', result);
         }

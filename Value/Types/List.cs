@@ -77,7 +77,7 @@ public class ArcList<T> : IArcObject where T : IVariable
             Values.Add((T?)Dictionary.Get(i.Current));
         } while (i.MoveNext());
     }
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public Walker Call(Walker i, ref Block result)
     {
         throw new Exception();
     }

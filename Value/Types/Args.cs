@@ -35,8 +35,14 @@ public class Args
     }
     public LazyPointer<T> GetLazyFromList<T>(Dict<T> List, string key) where T : IVariable
     {
+        LazyPointer<T>? Item = GetLazyFromListNullable(List, key);
+        if (Item == null) throw new Exception();
+        return Item;
+    }
+    public LazyPointer<T>? GetLazyFromListNullable<T>(Dict<T> List, string key) where T : IVariable
+    {
         if (keyValuePairs == null) throw new Exception("Arguments for call were not of type [ArcObject]");
-        if (!keyValuePairs.ContainsKey(key)) throw new Exception();
+        if (!keyValuePairs.ContainsKey(key)) return null;
 
         string s = string.Join(' ', keyValuePairs[key]);
 
@@ -86,11 +92,11 @@ public class Args
 
         return i;
     }
-    public Dict<ArcBlock> GetAttributes(string[] ImplementedAttributes) => GetAttributes(this, ImplementedAttributes);
-    public static Dict<ArcBlock> GetAttributes(Args args, string[] ImplementedAttributes)
+    public Dict<ArcCode> GetAttributes(string[] ImplementedAttributes) => GetAttributes(this, ImplementedAttributes);
+    public static Dict<ArcCode> GetAttributes(Args args, string[] ImplementedAttributes)
     {
-        Dict<ArcBlock> dict = new();
-        IEnumerable<(string Key, ArcBlock)> c = from a in args.keyValuePairs where !ImplementedAttributes.Contains(a.Key) select (a.Key, new ArcBlock(a.Value, true));
+        Dict<ArcCode> dict = new();
+        IEnumerable<(string Key, ArcCode)> c = from a in args.keyValuePairs where !ImplementedAttributes.Contains(a.Key) select (a.Key, new ArcCode(a.Value, true));
         foreach (var kv in c)
         {
             dict.Add(kv);

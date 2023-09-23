@@ -1,5 +1,5 @@
 ﻿namespace Arc;
-public interface IArcNumber : IValue
+public interface IArcNumber
 {
     public double GetNum();
 }

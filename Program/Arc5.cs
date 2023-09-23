@@ -23,20 +23,13 @@ namespace ArcInstance
 /replace r@ with regions:
 /replace s@ with superregions:
 ";
-        /*
-/replace $ with local:
-delete local
-object local = { }
-        */
         public static Dictionary<string, ILintCommand> linterCommands = new();
         public static bool Lint = true;
         public void Run(string[] args, ref Stopwatch timer)
         {
-            //args = new string[] { "--lint", "--nudge", "C:\\Users\\Jesse\\Documents\\Paradox Interactive\\Europa Universalis IV" };
-
             Args = args;
             Lint = Args.Contains("--lint");
-            System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en");
+            CultureInfo.CurrentCulture = CultureInfo.CreateSpecificCulture("en");
 
             Compiler.directory = directory;
             Compiler.owner = this;
@@ -498,17 +491,29 @@ object local = { }
         {
             string fileLocation = Path.Combine(directory, path);
 
-            if (fileLocation.EndsWith("/"))
+            if (fileLocation.EndsWith("/*"))
+            {
+                string current = fileLocation[..^1];
+
+                LoadTarget(current);
+
+                foreach(string folder in Directory.GetDirectories(current))
+                {
+                    string next = Path.GetRelativePath(directory, folder) + "/*";
+
+                    LoadTarget(next);
+                }
+            }
+            else if (fileLocation.EndsWith("/"))
             {
                 string[] files = Directory.GetFiles(fileLocation);
                 foreach (string file in files)
                 {
                     try
                     {
-                        Compiler comp = new();
                         string fileContent = File.ReadAllText(file);
-                        if (Lint) comp.LintLoad(ref linterCommands, fileContent + headers, file, true);
-                        else comp.ObjectDeclare(fileContent + headers, true);
+                        if (Lint) Compiler.LintLoad(ref linterCommands, fileContent + headers, file, true);
+                        else Compiler.ObjectDeclare(fileContent + headers, true);
                     }
                     catch (Exception)
                     {
@@ -521,10 +526,9 @@ object local = { }
             {
                 try
                 {
-                    Compiler comp = new();
                     string file = File.ReadAllText(fileLocation);
-                    if (Lint) comp.LintLoad(ref linterCommands, file + headers, path, true);
-                    else comp.ObjectDeclare(file + headers, true);
+                    if (Lint) Compiler.LintLoad(ref linterCommands, file + headers, path, true);
+                    else Compiler.ObjectDeclare(file + headers, true);
                 }
                 catch (Exception)
                 {

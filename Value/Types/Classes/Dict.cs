@@ -63,7 +63,7 @@ public class Dict<Type> : IArcObject, IEnumerable<KeyValuePair<string, Type>> wh
 
     public override string ToString() => "Arc Dict";
 
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public Walker Call(Walker i, ref Block result)
     {
         Console.Write(i.Current);
         throw new NotImplementedException();

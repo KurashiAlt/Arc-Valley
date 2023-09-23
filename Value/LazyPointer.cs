@@ -12,5 +12,5 @@ public class LazyPointer<T> : IVariable where T : IVariable
        Get = () => dict[key];
     }
 
-    public Walker Call(Walker i, ref Block result, Compiler comp) => Get().Call(i, ref result, comp);
+    public Walker Call(Walker i, ref Block result) => Get().Call(i, ref result);
 }

@@ -7,8 +7,8 @@ public class Province : IArcObject
     public static readonly Dict<Province> Provinces = new();
     public bool IsObject() => true;
     public ArcString Name { get; set; }
-    public ArcBlock Color { get; set; }
-    public ArcBlock History { get; set; }
+    public ArcCode Color { get; set; }
+    public ArcEffect History { get; set; }
     public ArcBool Sea { get; set; }
     public ArcBool Lake { get; set; }
     public ArcBool Impassible { get; set; }
@@ -16,13 +16,25 @@ public class Province : IArcObject
     public Area? Area { get; set; }
     public ArcInt Id { get; set; }
     public ArcInt BaseDevelopment { get; set; }
-    public ArcBlock Position { get; set; }
-    public ArcBlock Rotation { get; set; }
-    public ArcBlock Height { get; set; }
+    public ArcCode Position { get; set; }
+    public ArcCode Rotation { get; set; }
+    public ArcCode Height { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
     public bool IsLand() => !(Sea.Value || Lake.Value || Impassible.Value);
-    public Province(ArcString Name, ArcBlock Color, ArcBlock History, ArcBool Sea, ArcBool Lake, ArcBool Impassible, Area? Area, Terrain terrain, ArcInt basedevelopment, ArcBlock position, ArcBlock rotation, ArcBlock height)
-    {
+    public Province(
+        ArcString Name, 
+        ArcCode Color, 
+        ArcEffect History, 
+        ArcBool Sea, 
+        ArcBool Lake, 
+        ArcBool Impassible, 
+        Area? Area, 
+        Terrain terrain, 
+        ArcInt basedevelopment, 
+        ArcCode position, 
+        ArcCode rotation, 
+        ArcCode height
+    ) {
         if ((from s in Provinces where string.Join(' ',s.Value.Color) == string.Join(' ', Color) select s.Key).Any())
         {
             throw new Exception($"Existing Color {string.Join(' ', Color)}, on creating province: {Name}");
@@ -66,17 +78,17 @@ public class Province : IArcObject
         Terrain terrain = Terrain.Terrains[args.GetDefault(ArcString.Constructor, "terrain", new("grasslands")).Value];
         Province prov = new(
             args.Get(ArcString.Constructor, "name"),
-            args.Get(ArcBlock.Constructor, "color"),
-            args.Get(ArcBlock.Constructor, "history"),
+            args.Get(ArcCode.Constructor, "color"),
+            args.Get(ArcEffect.Constructor, "history"),
             args.GetDefault(ArcBool.Constructor, "sea", new(false)),
             args.GetDefault(ArcBool.Constructor, "lake", new(false)),
             args.GetDefault(ArcBool.Constructor, "impassible", new(false)),
             args.GetFromListNullable(Area.Areas, "area"),
             terrain,
             args.GetDefault(ArcInt.Constructor, "base_development", terrain.BaseDevelopment),
-            args.Get(ArcBlock.Constructor, "position"),
-            args.Get(ArcBlock.Constructor, "rotation"),
-            args.Get(ArcBlock.Constructor, "height")
+            args.Get(ArcCode.Constructor, "position"),
+            args.Get(ArcCode.Constructor, "rotation"),
+            args.Get(ArcCode.Constructor, "height")
         );
 
         Provinces.Add(id, prov);
@@ -85,10 +97,9 @@ public class Province : IArcObject
     }
 
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
     public static string Transpile()
     {
-        Compiler comp = new();
         StringBuilder Positions = new();
         StringBuilder ProvinceDefines = new();
         StringBuilder Impassibles = new();
@@ -99,7 +110,7 @@ public class Province : IArcObject
         {
             int id = province.Value.Id.Value;
             string name = province.Value.Name.Value;
-            Block color = province.Value.Color.Value;
+            Block color = province.Value.Color.RemoveEnclosingBrackets().Value;
             Block history = province.Value.History.Value;
             Instance.Localisation.Add($"PROV{id}", name);
             Instance.Localisation.Add($"PROV_ADJ{id}", name);
@@ -122,10 +133,10 @@ public class Province : IArcObject
             if (province.Value.IsLand()) res.Add(SplitToDev(province.Value.BaseDevelopment.Value));
             if (history.Count > 0)
             {
-                res.Add(comp.Compile(history));
+                res.Add(Compiler.Compile(history));
             }
             res.Add(
-                "1.1.1", "=", "{",
+                "2500.1.1", "=", "{",
                     string.Join(' ', from ctr in Country.Countries select $"discover_country = {ctr.Value.Tag.Value}"),
                 "}"
             );

@@ -11,13 +11,13 @@ public class CultureGroup : IArcObject
     public ArcString Id { get; set; }
     public ArcString GraphicalCulture { get; set; }
     public ArcString Name { get; set; }
-    public ArcBlock MaleNames { get; set; }
-    public ArcBlock FemaleNames { get; set; }
-    public ArcBlock DynastyNames { get; set; }
-    public ArcBlock CountryModifier { get; set; }
-    public ArcBlock ProvinceModifier { get; set; }
+    public ArcCode MaleNames { get; set; }
+    public ArcCode FemaleNames { get; set; }
+    public ArcCode DynastyNames { get; set; }
+    public ArcModifier CountryModifier { get; set; }
+    public ArcModifier ProvinceModifier { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public CultureGroup(string key, ArcString graphicalCulture, ArcString name, ArcBlock maleNames, ArcBlock femaleNames, ArcBlock dynastyNames, ArcBlock country, ArcBlock province)
+    public CultureGroup(string key, ArcString graphicalCulture, ArcString name, ArcCode maleNames, ArcCode femaleNames, ArcCode dynastyNames, ArcModifier country, ArcModifier province)
     {
         Id = new($"{key}_culture_group");
         GraphicalCulture = graphicalCulture;
@@ -57,11 +57,11 @@ public class CultureGroup : IArcObject
             id,
             args.Get(ArcString.Constructor, "graphical_culture"),
             args.Get(ArcString.Constructor, "name"),
-            args.Get(ArcBlock.Constructor, "male_names", new()),
-            args.Get(ArcBlock.Constructor, "female_names", new()),
-            args.Get(ArcBlock.Constructor, "dynasty_names", new()),
-            args.Get(ArcBlock.Constructor, "country", new()),
-            args.Get(ArcBlock.Constructor, "province", new())
+            args.Get(ArcCode.Constructor, "male_names", new()),
+            args.Get(ArcCode.Constructor, "female_names", new()),
+            args.Get(ArcCode.Constructor, "dynasty_names", new()),
+            args.Get(ArcModifier.Constructor, "country", new()),
+            args.Get(ArcModifier.Constructor, "province", new())
         );
 
         return i;
@@ -85,5 +85,5 @@ public class CultureGroup : IArcObject
         return "Cultures";
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }

@@ -14,12 +14,12 @@ public class Mission : IArcObject
     public ArcString Icon { get; set; }
     public ArcInt? Position { get; set; }
     public ArcString? CompletedBy { get; set; }
-    public ArcBlock Required { get; set; }
+    public ArcCode Required { get; set; }
     public ArcList<Province> ProvincesToHighlight { get; set; }
     public ArcTrigger Trigger { get; set; }
-    public ArcBlock Effect { get; set; }
+    public ArcEffect Effect { get; set; }
     public Dict<IVariable?> keyValuePairs { get; set; }
-    public Mission(string key, ArcString name, ArcString desc, ArcString icon, ArcInt? position, ArcString? completedBy, ArcBlock required, ArcList<Province> provincesToHighlight, ArcTrigger trigger, ArcBlock effect)
+    public Mission(string key, ArcString name, ArcString desc, ArcString icon, ArcInt? position, ArcString? completedBy, ArcCode required, ArcList<Province> provincesToHighlight, ArcTrigger trigger, ArcEffect effect)
     {
         Name = name;
         Desc = desc;
@@ -73,7 +73,7 @@ public class Mission : IArcObject
         Instance.Localisation.Add($"{Id}_desc", Desc.Value);
         return sb.ToString();
     }
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public Walker Call(Walker i, ref Block result)
     {
         throw new NotImplementedException();
     }
@@ -86,10 +86,10 @@ public class Mission : IArcObject
             args.Get(ArcString.Constructor, "icon"),
             args.Get(ArcInt.Constructor, "position", null),
             args.Get(ArcString.Constructor, "completed_by", null),
-            args.Get(ArcBlock.Constructor, "required", new()),
+            args.Get(ArcCode.Constructor, "required", new()),
             args.Get((Block s) => new ArcList<Province>(s, Province.Provinces), "provinces_to_highlight", new()),
             args.Get(ArcTrigger.Constructor, "trigger", new()),
-            args.Get(ArcBlock.Constructor, "effect", new())
+            args.Get(ArcEffect.Constructor, "effect", new())
         );
     }
 }
@@ -178,7 +178,7 @@ public class MissionSeries : IArcObject
         Instance.OverwriteFile("target/missions/arc.txt", sb.ToString());
         return "Missions";
     }
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public Walker Call(Walker i, ref Block result)
     {
         throw new NotImplementedException();
     }

@@ -11,15 +11,15 @@ public class PersonalDeity : IArcObject
     public ArcString Name { get; set; }
     public ArcString Desc { get; set; }
     public ArcInt Sprite { get; set; }
-    public ArcBlock Modifiers { get; set; }
+    public ArcModifier Modifiers { get; set; }
     public ArcTrigger Potential { get; set; }
     public ArcTrigger Trigger { get; set; }
-    public ArcBlock Effect { get; set; }
-    public ArcBlock RemovedEffect { get; set; }
-    public ArcBlock AiWillDo { get; set; }
+    public ArcEffect Effect { get; set; }
+    public ArcEffect RemovedEffect { get; set; }
+    public ArcCode AiWillDo { get; set; }
 
     public Dict<IVariable> KeyValuePairs { get; set; }
-    public PersonalDeity(ArcString id, ArcString name, ArcString desc, ArcInt sprite, ArcBlock modifiers, ArcTrigger potential, ArcTrigger trigger, ArcBlock effect, ArcBlock removedEffect, ArcBlock aiWillDo) 
+    public PersonalDeity(ArcString id, ArcString name, ArcString desc, ArcInt sprite, ArcModifier modifiers, ArcTrigger potential, ArcTrigger trigger, ArcEffect effect, ArcEffect removedEffect, ArcCode aiWillDo) 
     {
         Id = id; 
         Name = name; 
@@ -60,12 +60,12 @@ public class PersonalDeity : IArcObject
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "desc"),
             args.Get(ArcInt.Constructor, "sprite"),
-            args.Get(ArcBlock.Constructor, "modifiers"),
+            args.Get(ArcModifier.Constructor, "modifiers"),
             args.Get(ArcTrigger.Constructor, "potential", new()),
             args.Get(ArcTrigger.Constructor, "trigger", new()),
-            args.Get(ArcBlock.Constructor, "effect", new()),
-            args.Get(ArcBlock.Constructor, "removed_effect", new()),
-            args.Get(ArcBlock.Constructor, "ai_will_do", new("factor = 1"))
+            args.Get(ArcEffect.Constructor, "effect", new()),
+            args.Get(ArcEffect.Constructor, "removed_effect", new()),
+            args.Get(ArcCode.Constructor, "ai_will_do", new("factor = 1"))
         );
 
         PersonalDeitys.Add(id, PersonalDeity);
@@ -91,5 +91,5 @@ public class PersonalDeity : IArcObject
         return "Personal Deitys";
     }
     public override string ToString() => Id.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value); return i; }
 }

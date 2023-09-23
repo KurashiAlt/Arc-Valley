@@ -14,10 +14,10 @@ public class Bookmark : IArcObject
     public ArcList<Country> Countries { get; set; }
     public ArcList<Country> EasyCountries { get; set; }
     public ArcBool Default { get; set; }
-    public ArcBlock Effect { get; set; }
+    public ArcEffect Effect { get; set; }
 
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public Bookmark(ArcString id, ArcString name, ArcString desc, ArcString date, Province center, ArcList<Country> countries, ArcList<Country> easyCountries, ArcBool @default, ArcBlock effect)
+    public Bookmark(ArcString id, ArcString name, ArcString desc, ArcString date, Province center, ArcList<Country> countries, ArcList<Country> easyCountries, ArcBool @default, ArcEffect effect)
     {
         Id = id;
         Name = name;
@@ -59,7 +59,7 @@ public class Bookmark : IArcObject
             args.GetDefault((Block s) => new ArcList<Country>(s, Country.Countries), "countries", new()),
             args.GetDefault((Block s) => new ArcList<Country>(s, Country.Countries), "easy_countries", new()),
             args.GetDefault(ArcBool.Constructor, "default", new(false)),
-            args.GetDefault(ArcBlock.Constructor, "effect", new())
+            args.GetDefault(ArcEffect.Constructor, "effect", new())
         );
 
         Bookmarks.Add(id, bookmark);
@@ -93,5 +93,5 @@ public class Bookmark : IArcObject
         return "Bookmarks";
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }

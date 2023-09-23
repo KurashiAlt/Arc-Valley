@@ -40,7 +40,7 @@ public class ArcBool : IValue
         return Value?"yes":"no";
     }
     public static implicit operator bool(ArcBool b) => b.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public Walker Call(Walker i, ref Block result)
     {
         throw new NotImplementedException();
     }

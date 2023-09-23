@@ -20,7 +20,7 @@ public class Unit : IArcObject
     public ArcFloat? Manpower { get; set; }
     public ArcTrigger Trigger { get; set; }
 
-    public Dict<ArcBlock> Attributes { get; set; } //Used for non implemented Attributes
+    public Dict<ArcCode> Attributes { get; set; } //Used for non implemented Attributes
     public static string[] ImplementedAttributes = new string[]
     {
         "name", "desc", "type", "unit_type", "manpower", "trigger"
@@ -34,7 +34,7 @@ public class Unit : IArcObject
         ArcString? unitType,
         ArcFloat? manpower,
         ArcTrigger trigger,
-        Dict<ArcBlock> attributes
+        Dict<ArcCode> attributes
     ) {
         Id = new(id);
         Name = name; 
@@ -97,9 +97,9 @@ public class Unit : IArcObject
         Trigger.Compile("trigger", ref b);
         if (Manpower != null) b.Add("manpower", "=", Manpower);
         if (UnitType != null) b.Add("unit_type", "=", UnitType);
-        foreach(KeyValuePair<string, ArcBlock> attribute in Attributes)
+        foreach(KeyValuePair<string, ArcCode> attribute in Attributes)
         {
-            attribute.Value.Compile(attribute.Key, ref b, true);
+            attribute.Value.Compile(attribute.Key, ref b, true, true);
         }
         Instance.OverwriteFile($"target/common/units/{Id}.txt", string.Join(' ', b));
     }
@@ -112,5 +112,5 @@ public class Unit : IArcObject
         return "Units";
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }

@@ -11,10 +11,14 @@ public class Idea : IArcObject
     public ArcString Id { get; set; }
     public ArcString Name { get; set; }
     public ArcString Desc { get; set; }
-    public ArcBlock Modifier { get; set; }
+    public ArcModifier Modifier { get; set; }
     public Dict<IVariable> keyValuePairs { get; set; }
-    public Idea(string key, ArcString name, ArcString desc, ArcBlock modifier)
-    {
+    public Idea(
+        string key, 
+        ArcString name, 
+        ArcString desc, 
+        ArcModifier modifier
+    ) {
         Name = name;
         Desc = desc;
         Modifier = modifier;
@@ -87,7 +91,7 @@ public class Idea : IArcObject
         }
         return sb.ToString();
     }
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public Walker Call(Walker i, ref Block result)
     {
         throw new NotImplementedException();
     }
@@ -101,7 +105,7 @@ public class Idea : IArcObject
             $"{key}_{num}",
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "desc"),
-            args.Get(ArcBlock.Constructor, "modifier", new())
+            args.Get(ArcModifier.Constructor, "modifier", new())
         );
     }
 }
@@ -114,13 +118,22 @@ public class IdeaGroup : IArcObject
     public ArcString Name { get; set; }
     public ArcString Category { get; set; }
     public ArcList<Idea> Ideas { get; set; }
-    public ArcBlock Start { get; set; } 
-    public ArcBlock Bonus { get; set; } 
+    public ArcModifier Start { get; set; } 
+    public ArcModifier Bonus { get; set; } 
     public ArcTrigger Trigger { get; set; }
-    public ArcBlock AiWillDo { get; set; }
+    public ArcCode AiWillDo { get; set; }
     public Dict<IVariable> keyValuePairs { get; set; }
-    public IdeaGroup(string id, ArcInt priority, ArcString name, ArcString category, ArcList<Idea> ideas, ArcBlock start, ArcBlock bonus, ArcTrigger trigger, ArcBlock aiWillDo)
-    {
+    public IdeaGroup(
+        string id, 
+        ArcInt priority, 
+        ArcString name, 
+        ArcString category, 
+        ArcList<Idea> ideas, 
+        ArcModifier start, 
+        ArcModifier bonus, 
+        ArcTrigger trigger, 
+        ArcCode aiWillDo
+    ) {
         Id = new(id);
         Priority = priority;
         Name = name;
@@ -160,13 +173,13 @@ public class IdeaGroup : IArcObject
                 args.Get(ArcString.Constructor, "name"),
                 args.Get(ArcString.Constructor, "category"),
                 args.Get((Block s) => new ArcList<Idea>(s, (Block s, int num) => Idea.Constructor(s, id, num + 1)), "ideas"),
-                args.Get(ArcBlock.Constructor, "start", new()),
-                args.Get(ArcBlock.Constructor, "bonus"),
+                args.Get(ArcModifier.Constructor, "start", new()),
+                args.Get(ArcModifier.Constructor, "bonus"),
                 args.Get(ArcTrigger.Constructor, "trigger", new()),
-                args.Get(ArcBlock.Constructor, "ai_will_do", new())
+                args.Get(ArcCode.Constructor, "ai_will_do", new())
             ));
             return i;
-        }
+        }   
         catch(Exception e)
         {
             throw;
@@ -218,7 +231,7 @@ public class IdeaGroup : IArcObject
         Instance.OverwriteFile("target/common/ideas/arc.txt", sb.ToString());
         return "Idea Groups";
     }
-    public Walker Call(Walker i, ref Block result, Compiler comp)
+    public Walker Call(Walker i, ref Block result)
     {
         throw new NotImplementedException();
     }

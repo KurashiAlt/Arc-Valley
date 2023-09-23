@@ -11,14 +11,17 @@ public class Incident : IArcObject
     public bool IsObject() => true;
     public ArcString Id { get; set; }
     public ArcString Name { get; set; }
-    public Dict<ArcBlock> Attributes { get; set; } 
+    public Dict<ArcCode> Attributes { get; set; } 
     public static string[] ImplementedAttributes = new string[]
     {
         "name"
     };
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public Incident(string id, ArcString name, Dict<ArcBlock> attributes)
-    {
+    public Incident(
+        string id, 
+        ArcString name, 
+        Dict<ArcCode> attributes
+    ) {
         Id = new(id);
         Name = name;
         Attributes = attributes;
@@ -61,7 +64,7 @@ public class Incident : IArcObject
             file.Add(reform.Id, "=", "{");
             foreach (var v in reform.Attributes)
             {
-                v.Value.Compile(v.Key, ref file, true);
+                v.Value.Compile(v.Key, ref file, true, true);
             }
             file.Add("}");
 
@@ -71,5 +74,5 @@ public class Incident : IArcObject
         return "Incidents";
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }

@@ -10,15 +10,15 @@ public class Culture : IArcObject
     public bool IsObject() => true;
     public ArcString Id { get; set; }
     public ArcString Name { get; set; }
-    public ArcBlock MaleNames { get; set; }
-    public ArcBlock FemaleNames { get; set; }
-    public ArcBlock DynastyNames { get; set; }
-    public ArcBlock CountryModifier { get; set; }
-    public ArcBlock ProvinceModifier { get; set; }
+    public ArcCode MaleNames { get; set; }
+    public ArcCode FemaleNames { get; set; }
+    public ArcCode DynastyNames { get; set; }
+    public ArcModifier CountryModifier { get; set; }
+    public ArcModifier ProvinceModifier { get; set; }
     public Country? Primary { get; set; }
     public CultureGroup CultureGroup { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public Culture(string key, ArcString name, ArcBlock maleNames, ArcBlock femaleNames, ArcBlock dynastyNames, ArcBlock country, ArcBlock province, Country? primary, CultureGroup cultureGroup)
+    public Culture(string key, ArcString name, ArcCode maleNames, ArcCode femaleNames, ArcCode dynastyNames, ArcModifier country, ArcModifier province, Country? primary, CultureGroup cultureGroup)
     {
         Id = new($"{key}_culture");
         Name = name;
@@ -59,11 +59,11 @@ public class Culture : IArcObject
         Culture Culture = new(
             id,
             args.Get(ArcString.Constructor, "name"),
-            args.Get(ArcBlock.Constructor, "male_names", new()),
-            args.Get(ArcBlock.Constructor, "female_names", new()),
-            args.Get(ArcBlock.Constructor, "dynasty_names", new()),
-            args.Get(ArcBlock.Constructor, "country", new()),
-            args.Get(ArcBlock.Constructor, "province", new()),
+            args.Get(ArcCode.Constructor, "male_names", new()),
+            args.Get(ArcCode.Constructor, "female_names", new()),
+            args.Get(ArcCode.Constructor, "dynasty_names", new()),
+            args.Get(ArcModifier.Constructor, "country", new()),
+            args.Get(ArcModifier.Constructor, "province", new()),
             args.GetFromListNullable(Country.Countries, "primary"),
             args.GetFromList(CultureGroup.CultureGroups, "culture_group")
         );
@@ -79,5 +79,5 @@ public class Culture : IArcObject
         sb.Append($" {MaleNames.Compile("male_names")} {FemaleNames.Compile("female_names")} {DynastyNames.Compile("dynasty_names")} }}");
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }

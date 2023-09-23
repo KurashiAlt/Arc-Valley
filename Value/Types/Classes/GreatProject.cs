@@ -11,18 +11,18 @@ public class Tier : IArcObject
     public bool IsObject() => true;
     public ArcInt UpgradeTime { get; set; }
     public ArcInt CostToUpgrade { get; set; }
-    public ArcBlock ProvinceModifier { get; set; }
-    public ArcBlock AreaModifier { get; set; }
-    public ArcBlock CountryModifier { get; set; }
-    public ArcBlock OnUpgraded { get; set; }
+    public ArcModifier ProvinceModifier { get; set; }
+    public ArcModifier AreaModifier { get; set; }
+    public ArcModifier CountryModifier { get; set; }
+    public ArcEffect OnUpgraded { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
     public Tier(
         ArcInt upgradeTime,
         ArcInt costToUpgrade,
-        ArcBlock provinceModifier,
-        ArcBlock areaModifier,
-        ArcBlock countryModifier,
-        ArcBlock onUpgraded
+        ArcModifier provinceModifier,
+        ArcModifier areaModifier,
+        ArcModifier countryModifier,
+        ArcEffect onUpgraded
     )
     {
         UpgradeTime = upgradeTime;
@@ -62,10 +62,10 @@ public class Tier : IArcObject
     public static Tier Constructor(Args args, int upgradeTime, int costToUpgrade) => new(
         args.Get(ArcInt.Constructor, "upgrade_time", new(upgradeTime)),
         args.Get(ArcInt.Constructor, "cost_to_upgrade", new(costToUpgrade)),
-        args.Get(ArcBlock.Constructor, "province_modifier", new()),
-        args.Get(ArcBlock.Constructor, "area_modifier", new()),
-        args.Get(ArcBlock.Constructor, "country_modifier", new()),
-        args.Get(ArcBlock.Constructor, "on_upgraded", new())
+        args.Get(ArcModifier.Constructor, "province_modifier", new()),
+        args.Get(ArcModifier.Constructor, "area_modifier", new()),
+        args.Get(ArcModifier.Constructor, "country_modifier", new()),
+        args.Get(ArcEffect.Constructor, "on_upgraded", new())
     );
     public void TranspileSingular(string key, ref Block b)
     {
@@ -86,7 +86,7 @@ public class Tier : IArcObject
     }
     public bool CanGet(string indexer) => KeyValuePairs.CanGet(indexer);
     public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
-    public Walker Call(Walker i, ref Block result, Compiler comp) => throw new Exception();
+    public Walker Call(Walker i, ref Block result) => throw new Exception();
 }
 public class GreatProject : IArcObject
 {
@@ -102,8 +102,8 @@ public class GreatProject : IArcObject
     public ArcInt StartingTier { get; set; }
     public ArcString Type { get; set; }
     public ArcTrigger BuildTrigger { get; set; }
-    public ArcBlock OnBuilt { get; set; }
-    public ArcBlock OnDestroyed { get; set; }
+    public ArcEffect OnBuilt { get; set; }
+    public ArcEffect OnDestroyed { get; set; }
     public ArcTrigger CanUseModifiersTrigger { get; set; }
     public ArcTrigger CanUpgradeTrigger { get; set; }
     public ArcTrigger KeepTrigger { get; set; }
@@ -123,8 +123,8 @@ public class GreatProject : IArcObject
         ArcInt startingTier,
         ArcString type,
         ArcTrigger buildTrigger,
-        ArcBlock onBuilt,
-        ArcBlock onDestroyed,
+        ArcEffect onBuilt,
+        ArcEffect onDestroyed,
         ArcTrigger canUseModifiersTrigger,
         ArcTrigger canUpgradeTrigger,
         ArcTrigger keepTrigger,
@@ -206,8 +206,8 @@ public class GreatProject : IArcObject
             args.Get(ArcInt.Constructor, "starting_tier", new(0)),
             args.Get(ArcString.Constructor, "type", new("monument")),
             args.Get(ArcTrigger.Constructor, "build_trigger", args.Get(ArcTrigger.Constructor, "trigger", new())),
-            args.Get(ArcBlock.Constructor, "on_built", new()),
-            args.Get(ArcBlock.Constructor, "on_destroyed", new()),
+            args.Get(ArcEffect.Constructor, "on_built", new()),
+            args.Get(ArcEffect.Constructor, "on_destroyed", new()),
             args.Get(ArcTrigger.Constructor, "can_use_modifiers_trigger", args.Get(ArcTrigger.Constructor, "trigger", new())),
             args.Get(ArcTrigger.Constructor, "can_upgrade_trigger", args.Get(ArcTrigger.Constructor, "trigger", new())),
             args.Get(ArcTrigger.Constructor, "keep_trigger", new("always", "=", "yes")),
@@ -259,5 +259,5 @@ public class GreatProject : IArcObject
         return "Great Projects";
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value.ToString()); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }

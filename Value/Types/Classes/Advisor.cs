@@ -73,13 +73,13 @@ public class Advisor : IArcObject
         return i;
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value); return i; }
     public void Transpile(ref Block s)
     {
         s.Add(
             "advisor", "=", "{",
                 "advisor_id", "=", Id,
-                "name", "=", Name,
+                "name", "=", $"\"{Name}\"",
                 "location", "=", Location.Id,
                 "discount", "=", Discount,
                 "skill", "=", Skill,
@@ -108,16 +108,16 @@ public class AdvisorType : IArcObject
     public string Class => "AdvisorType";
     public ArcString Name { get; set; }
     public ArcString Desc { get; set; }
-    public ArcBlock Modifier { get; set; }
+    public ArcModifier Modifier { get; set; }
     public ArcBool AllowOnlyMale { get; set; }
     public ArcBool AllowOnlyFemale { get; set; }
     public ArcBool AllowOnlyOwnerReligion { get; set; }
-    public ArcBlock Chance { get; set; }
-    public ArcBlock AiWillDo { get; set; }
+    public ArcCode Chance { get; set; }
+    public ArcCode AiWillDo { get; set; }
     public ArcString MonarchPower { get; set; }
     public ArcString Id { get; set; }
     public Dict<IValue> KeyValuePairs { get; set; }
-    public AdvisorType(ArcString name, ArcString desc, ArcBlock modifier, ArcBlock aiWillDo, ArcString id, ArcBool allowOnlyMale, ArcBool allowOnlyFemale, ArcBool allowOnlyOwnerReligion, ArcBlock chance, ArcString monarchPower)
+    public AdvisorType(ArcString name, ArcString desc, ArcModifier modifier, ArcCode aiWillDo, ArcString id, ArcBool allowOnlyMale, ArcBool allowOnlyFemale, ArcBool allowOnlyOwnerReligion, ArcCode chance, ArcString monarchPower)
     {
         Name = name;
         Desc = desc;
@@ -156,13 +156,13 @@ public class AdvisorType : IArcObject
         AdvisorType AdvisorType = new(
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "desc"),
-            args.Get(ArcBlock.Constructor, "modifier"),
-            args.Get(ArcBlock.Constructor, "ai_will_do", new("factor = 1")),
+            args.Get(ArcModifier.Constructor, "modifier"),
+            args.Get(ArcCode.Constructor, "ai_will_do", new("factor = 1")),
             new(id),
             args.Get(ArcBool.Constructor, "allow_only_male", new(false)),
             args.Get(ArcBool.Constructor, "allow_only_female", new(false)),
             args.Get(ArcBool.Constructor, "allow_only_owner_religion", new(false)),
-            args.Get(ArcBlock.Constructor, "chance", new("factor = 1")),
+            args.Get(ArcCode.Constructor, "chance", new("factor = 1")),
             args.Get(ArcString.Constructor, "monarch_power")
         );
 
@@ -171,7 +171,7 @@ public class AdvisorType : IArcObject
         return i;
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value); return i; }
     public static string Transpile()
     {
         StringBuilder sb = new("");

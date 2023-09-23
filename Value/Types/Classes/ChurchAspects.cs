@@ -15,12 +15,12 @@ public class ChurchAspect : IArcObject
     public ArcTrigger Allow { get; set; }
     public ArcTrigger Trigger { get; set; }
     public ArcTrigger Potential { get; set; }
-    public ArcBlock Modifier { get; set; }
-    public ArcBlock Effect { get; set; }
-    public ArcBlock AiWillDo { get; set; }
+    public ArcModifier Modifier { get; set; }
+    public ArcEffect Effect { get; set; }
+    public ArcCode AiWillDo { get; set; }
     public ArcString Id { get; set; }
     public Dict<IValue> KeyValuePairs { get; set; }
-    public ChurchAspect(ArcString name, ArcString desc, ArcTrigger potential, ArcTrigger allow, ArcBlock modifier, ArcBlock effect, ArcBlock aiWillDo, ArcString id, ArcInt cost, ArcTrigger trigger)
+    public ChurchAspect(ArcString name, ArcString desc, ArcTrigger potential, ArcTrigger allow, ArcModifier modifier, ArcEffect effect, ArcCode aiWillDo, ArcString id, ArcInt cost, ArcTrigger trigger)
     {
         Name = name;
         Desc = desc;
@@ -61,9 +61,9 @@ public class ChurchAspect : IArcObject
             args.Get(ArcString.Constructor, "desc"),
             args.Get(ArcTrigger.Constructor, "potential", new()),
             args.Get(ArcTrigger.Constructor, "allow", new()),
-            args.Get(ArcBlock.Constructor, "modifier", new()),
-            args.Get(ArcBlock.Constructor, "effect", new()),
-            args.Get(ArcBlock.Constructor, "ai_will_do", new("factor = 1")),
+            args.Get(ArcModifier.Constructor, "modifier", new()),
+            args.Get(ArcEffect.Constructor, "effect", new()),
+            args.Get(ArcCode.Constructor, "ai_will_do", new("factor = 1")),
             new(id),
             args.Get(ArcInt.Constructor, "cost", new(100)),
             args.Get(ArcTrigger.Constructor, "trigger", new())
@@ -74,17 +74,32 @@ public class ChurchAspect : IArcObject
         return i;
     }
     public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result, Compiler comp) { result.Add(Id.Value); return i; }
+    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value); return i; }
+    public void TranspileThis(ref Block b)
+    {
+        b.Add(
+            Id.Value, "=", "{",
+                "cost", "=", Cost,
+                Potential.Compile("potential"),
+                Allow.Compile("allow"),
+                Trigger.Compile("trigger"),
+                Modifier.Compile("modifier"),
+                Effect.Compile("effect"),
+                AiWillDo.Compile("ai_will_do"),
+            "}"
+        );
+
+        Instance.Localisation.Add($"{Id}", Name.Value);
+        Instance.Localisation.Add($"desc_{Id}", Desc.Value);
+    }
     public static string Transpile()
     {
-        StringBuilder sb = new("");
+        Block b = new();
         foreach (ChurchAspect ChurchAspect in ChurchAspects.Values())
         {
-            sb.Append($"{ChurchAspect.Id} = {{ cost = {ChurchAspect.Cost} {ChurchAspect.Potential.Compile("potential")} {ChurchAspect.Allow.Compile("allow")} {ChurchAspect.Trigger.Compile("trigger")} {ChurchAspect.Modifier.Compile("modifier")} {ChurchAspect.Effect.Compile("effect")} {ChurchAspect.AiWillDo.Compile("ai_will_do")} }}");
-            Instance.Localisation.Add($"{ChurchAspect.Id}", ChurchAspect.Name.Value);
-            Instance.Localisation.Add($"desc_{ChurchAspect.Id}", ChurchAspect.Desc.Value);
+            ChurchAspect.TranspileThis(ref b);
         }
-        Instance.OverwriteFile("target/common/church_aspects/ChurchAspects.txt", sb.ToString());
+        Instance.OverwriteFile("target/common/church_aspects/ChurchAspects.txt", string.Join(' ', b));
         return "Church Aspects";
     }
 }
