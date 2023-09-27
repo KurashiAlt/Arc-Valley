@@ -51,14 +51,14 @@ public class Region : IArcObject
 	public static string Transpile()
     {
         StringBuilder sb = new();
-        foreach (Region region in Region.Regions.Values())
+        foreach (Region region in Regions.Values())
         {
             sb.Append($"{region.Id} = {{ areas = {{ {string.Join(' ', from Area in Area.Areas.Values() where Area.Region == region select Area.Id)} }} }} ");
             Instance.Localisation.Add($"{region.Id.Value}", region.Name.Value);
             Instance.Localisation.Add($"{region.Id.Value}_name", region.Name.Value);
             Instance.Localisation.Add($"{region.Id.Value}_adj", region.Adj.Value);
         }
-        Instance.OverwriteFile("target/map/region.txt", sb.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/region.txt", sb.ToString());
         return "Regions";
     }
     public override string ToString() => Name.Value;

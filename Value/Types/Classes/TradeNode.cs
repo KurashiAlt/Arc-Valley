@@ -149,7 +149,7 @@ public class TradeNode : IArcObject
             Instance.Localisation.Add(node.Id.Value, node.Name.Value);
         }
 
-        Instance.OverwriteFile("target/common/tradenodes/arc.txt", sb.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/tradenodes/arc.txt", sb.ToString());
         return "Trade Nodes";
     }
     public Walker Call(Walker i, ref Block result)

@@ -39,19 +39,19 @@ public class Country : IArcObject
         if (monarchNames.IsEmpty())
         {
             Block names = new();
-            foreach (Word w in primaryCulture.MaleNames.RemoveEnclosingBrackets().Value)
+            foreach (Word w in primaryCulture.MaleNames.Value)
             {
                 names.Add($"\"{w.value.Trim('"')}\" = 1");
             }
-            foreach (Word w in primaryCulture.CultureGroup.MaleNames.RemoveEnclosingBrackets().Value)
+            foreach (Word w in primaryCulture.CultureGroup.MaleNames.Value)
             {
                 names.Add($"\"{w.value.Trim('"')}\" = 1");
             }
-            foreach (Word w in primaryCulture.FemaleNames.RemoveEnclosingBrackets().Value)
+            foreach (Word w in primaryCulture.FemaleNames.Value)
             {
                 names.Add($"\"{w.value.Trim('"')}\" = -1");
             }
-            foreach (Word w in primaryCulture.CultureGroup.FemaleNames.RemoveEnclosingBrackets().Value)
+            foreach (Word w in primaryCulture.CultureGroup.FemaleNames.Value)
             {
                 names.Add($"\"{w.value.Trim('"')}\" = -1");
             }
@@ -59,12 +59,31 @@ public class Country : IArcObject
         }
         else
         {
-            MonarchNames = (ArcCode)monarchNames.RemoveEnclosingBrackets();
+            MonarchNames = monarchNames;
         }
-        LeaderNames = (ArcCode)leaderNames.RemoveEnclosingBrackets();
-        ShipNames = (ArcCode)shipNames.RemoveEnclosingBrackets();
-        ArmyNames = (ArcCode)armyNames.RemoveEnclosingBrackets();
-        FleetNames = (ArcCode)fleetNames.RemoveEnclosingBrackets();
+        Block fNames = new();
+        foreach (Word w in primaryCulture.MaleNames.Value)
+        {
+            fNames.Add($"{w.value.Trim('"')}");
+        }
+        foreach (Word w in primaryCulture.CultureGroup.MaleNames.Value)
+        {
+            fNames.Add($"{w.value.Trim('"')}");
+        }
+        foreach (Word w in primaryCulture.FemaleNames.Value)
+        {
+            fNames.Add($"{w.value.Trim('"')}");
+        }
+        foreach (Word w in primaryCulture.CultureGroup.FemaleNames.Value)
+        {
+            fNames.Add($"{w.value.Trim('"')}");
+        }
+        if (leaderNames.IsEmpty()) LeaderNames = new(fNames);
+        else LeaderNames = leaderNames;
+        if (shipNames.IsEmpty()) ShipNames = new(fNames);
+        else ShipNames = shipNames;
+        ArmyNames = armyNames;
+        FleetNames = fleetNames;
         Tag = tag;
         Name = name;
         Adj = adj;
@@ -162,7 +181,7 @@ public class Country : IArcObject
             "fleet_names", "=", "{", FleetNames, "}",
             Definitions.Compile()
         };
-        Instance.OverwriteFile($"target/common/countries/{Tag}.txt", string.Join(' ', countryDef));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/countries/{Tag}.txt", string.Join(' ', countryDef));
 
         Block countryHistory = new()
         {
@@ -183,19 +202,33 @@ public class Country : IArcObject
 
         countryHistory.Add(History.Compile());
 
-        Instance.OverwriteFile($"target/history/countries/{Tag}.txt", string.Join(' ', countryHistory));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/history/countries/{Tag}.txt", string.Join(' ', countryHistory));
 
         Instance.Localisation.Add($"{Tag}", $"{Name}");
         Instance.Localisation.Add($"{Tag}_ADJ", $"{Adj}");
     }
     public static string Transpile()
     {
-        Block countryDefinitions = new();
+        Block countryDefinitions = new()
+        {
+            "REB", "=", "\"countries/REB.txt\"",
+            "NAT", "=", "\"countries/NAT.txt\"",
+            "PIR", "=", "\"countries/PIR.txt\""
+        };
         foreach (Country ctr in Countries.Values())
         {
             ctr.Transpile(ref countryDefinitions);
         }
-        Instance.OverwriteFile("target/common/country_tags/countries.txt", string.Join(' ', countryDefinitions));
+
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/countries/REB.txt", "graphical_culture = westerngfx color = { 30 30 30 } historical_idea_groups = { administrative_ideas quantity_ideas defensive_ideas humanist_ideas trade_ideas quality_ideas economic_ideas maritime_ideas } monarch_names = { \"Corneles #0\" = 10 \"Moise #0\" = 10 \"Mahieu #0\" = 10 \"Daniel #0\" = 10 \"Jacob #0\" = 10 \"Piet #0\" = 10 \"Hendrik #0\" = 10 \"David #0\" = 10 \"John #0\" = 10 \"Eric #0\" = 10 \"Boel #0\" = -1 \"Alexandra #0\" = -1 \"Regina #0\" = -1 \"Miriam #0\" = -1 } leader_names = { Lowther Quelch Condent Dalzeel Spriggs Condon Angre Anstis Chivers Searle Hout Coxon Vynne Vane Worley }");
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/countries/NAT.txt", "graphical_culture = westerngfx color = { 203 164 103 } # Used for colonial nations historical_idea_groups = { expansion_ideas trade_ideas plutocracy_ideas economic_ideas quality_ideas maritime_ideas quantity_ideas administrative_ideas } monarch_names = { \"Mapi #0\" = 10 \"Quando #0\" = 10 \"Illa #0\" = 10 \"Rimac #0\" = 10 \"Tiso #0\" = 10 \"Cusi #0\" = 10 \"Mayta #0\" = 10 \"Roca #0\" = 10 \"Zope #0\" = 10 \"Curiatao #0\" = 10 \"Guacra #0\" = 10 \"Maila #0\" = 10 \"Tanqui #0\" = 10 \"Taipi #0\" = 10 \"Sanga #0\" = -1 } leader_names = { Tywan Toto Iawi Gasana Wyoh Illa Maila Quizo Tanqui Taraque Tari Pacon } ship_names = { Yamro Sanga Mani Mutara Gasana Yuhi Kigeri Kemba Adero Ayan Mahdi Gukunda Nalungo Kilolo Gahiji }");
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/countries/PIR.txt", "graphical_culture = westerngfx color = { 10 10 10 } monarch_names = { \"Woodes #0\" = 10 \"Black #0\" = 10 \"Howell #0\" = 10 \"Calico #0\" = 10 \"Lessone #0\" = 10 \"Lawrence #0\" = 10 \"Lewis #0\" = 10 \"John #0\" = 10 \"Roche #0\" = 10 \"James #0\" = 10 \"Assan #0\" = 10 \"Dirck #0\" = 10 \"Jane #0\" = -1 } leader_names = { Alvel Cavendish \"de Bouff\" Brower Barton Hein Noort Easton Rais Verney Rous Reis Davis Collier Greaves Bellamy Every Vane Rogers Taylor Vorley Kelly Howard Halsey } ship_names = { \"Captain's Horror\" \"Death\" \"Disgraceful Strumpet\" \"Dragon's Gold\" \"Executioner\" \"Killer's Fearful Storm\" \"Murderer's Death\" \"Privateer's Strumpet\" \"The Damned Killer\" \"The Dark Dagger\" \"The Dirty Blade\" \"The Dirty Scream\" \"The Doom of the Ocean\" \"The Dreaming Demon\" \"The Fallen Raider\" \"The Fear of the Demon\" \"The Foul Whore\" \"The Gold Cutlass\" \"The Hell-born\" \"The Horrid Compass\" \"The Horrible Raider\" \"The Howling Wolf\" \"The Lustful Hangman\" \"The Nightmare\" \"The Poison Death\" \"The Serpent\" \"The Vicious Murderer\" \"The Vile Saber\" }");
+
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/history/countries/REB.txt", "technology_group = nord_tg");
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/history/countries/NAT.txt", "technology_group = nord_tg");
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/history/countries/PIR.txt", "technology_group = nord_tg");
+
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/country_tags/countries.txt", string.Join(' ', countryDefinitions));
         return "Countries";
     }
     public override string ToString() => Name.Value;

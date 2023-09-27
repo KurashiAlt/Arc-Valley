@@ -70,7 +70,7 @@ public class Incident : IArcObject
 
             Instance.Localisation.Add($"{reform.Id}", reform.Name.Value);
         }
-        Instance.OverwriteFile("target/common/imperial_incidents/arc.txt", string.Join(' ', file));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/imperial_incidents/arc.txt", string.Join(' ', file));
         return "Incidents";
     }
     public override string ToString() => Name.Value;

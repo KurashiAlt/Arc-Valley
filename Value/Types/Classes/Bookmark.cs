@@ -88,7 +88,7 @@ public class Bookmark : IArcObject
             if (bookmark.Default) sb.Append("default = yes ");
             if (!bookmark.Effect.IsEmpty()) sb.Append($"effect = {{ {bookmark.Effect.Compile()} }} ");
             sb.Append($"}} ");
-            Instance.OverwriteFile($"target/common/bookmarks/{bookmark.Id}.txt", sb.ToString());
+            Instance.OverwriteFile($"{Instance.TranspileTarget}/common/bookmarks/{bookmark.Id}.txt", sb.ToString());
         }
         return "Bookmarks";
     }

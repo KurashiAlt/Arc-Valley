@@ -92,7 +92,7 @@ public class Terrain : IArcObject
         sb.Append(" } ");
         sb.Append($"terrain = {{ {Compiler.global["terrain_declarations"]} }}");
         sb.Append($"tree = {{ {Compiler.global["tree"]} }}");
-        Instance.OverwriteFile("target/map/terrain.txt", sb.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/terrain.txt", sb.ToString());
         return "Terrains";
     }
 }

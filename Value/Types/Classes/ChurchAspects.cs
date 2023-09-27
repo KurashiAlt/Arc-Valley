@@ -99,7 +99,7 @@ public class ChurchAspect : IArcObject
         {
             ChurchAspect.TranspileThis(ref b);
         }
-        Instance.OverwriteFile("target/common/church_aspects/ChurchAspects.txt", string.Join(' ', b));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/church_aspects/ChurchAspects.txt", string.Join(' ', b));
         return "Church Aspects";
     }
 }

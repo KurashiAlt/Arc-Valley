@@ -175,7 +175,7 @@ public class MissionSeries : IArcObject
             sb.Append($" }} ");
         }
 
-        Instance.OverwriteFile("target/missions/arc.txt", sb.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/missions/arc.txt", sb.ToString());
         return "Missions";
     }
     public Walker Call(Walker i, ref Block result)

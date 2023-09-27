@@ -96,7 +96,7 @@ public class Advisor : IArcObject
         {
             Advisor.Transpile(ref s);
         }
-        Instance.OverwriteFile("target/history/advisors/arc.txt", string.Join(' ', s));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/history/advisors/arc.txt", string.Join(' ', s));
         return "Advisor Types";
     }
 }
@@ -185,7 +185,7 @@ public class AdvisorType : IArcObject
             Instance.Localisation.Add($"{AdvisorType.Id}", AdvisorType.Name.Value);
             Instance.Localisation.Add($"{AdvisorType.Id}_desc", AdvisorType.Desc.Value);
         }
-        Instance.OverwriteFile("target/common/advisortypes/arc.txt", sb.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/advisortypes/arc.txt", sb.ToString());
         return "Advisor Types";
     }
 }

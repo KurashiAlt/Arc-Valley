@@ -23,29 +23,6 @@ public class Block : LinkedList<Word>
     {
 
     }
-    //public Block ExtractFirstSubBlock(string? key = null)
-    //{
-    //	if(key != null)
-    //	{
-    //		Dictionary<string, IValue> ret = new();
-    //		Compiler.Var(ret, null, new(this), ArcBlock.Construct, false, key);
-    //		Block ret2 = ret[key].AsBlock().Value;
-    //		for(int i = 0; i < (ret2.Count + 4); i++)
-    //		{
-    //			RemoveFirst();
-    //		}
-    //		return ret2;
-    //	}
-    //	else
-    //	{
-    //		Compiler.GetScope(new(this), out Block scope);
-    //		for (int i = 0; i < scope.Count; i++)
-    //		{
-    //			RemoveFirst();
-    //		}
-    //		return scope;
-    //	}
-    //}
     public override string ToString()
     {
         Walker i = new(this);
@@ -60,10 +37,11 @@ public class Block : LinkedList<Word>
     {
         if (value.Value) Add(id, "=", "yes");
     }
-    public void Add(params object[] s)
+    public void Add(params object?[] s)
     {
-        foreach(object v in s)
+        foreach(object? v in s)
         {
+            if (v == null) continue;
             string? c = v.ToString();
             if (c == null) throw new Exception();
             AddLast(c);

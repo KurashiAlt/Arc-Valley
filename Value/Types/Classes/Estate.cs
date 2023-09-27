@@ -127,7 +127,7 @@ public class EstateAgenda : IArcObject
             b.Add("}");
         }
 
-        Instance.OverwriteFile("target/common/estate_agendas/arc.txt", string.Join(' ', b));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/estate_agendas/arc.txt", string.Join(' ', b));
         return "Agendas";
     }
     public override string ToString() => Name.Value;
@@ -309,7 +309,7 @@ public class EstatePrivilege : IArcObject
             b.Add("}");
         }
 
-        Instance.OverwriteFile("target/common/estate_privileges/arc.txt", string.Join(' ', b));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/estate_privileges/arc.txt", string.Join(' ', b));
         return "Privileges";
     }
     public override string ToString() => Name.Value;
@@ -577,9 +577,9 @@ public class Estate : IArcObject
             "}"
         );
 
-        Instance.OverwriteFile("target/common/estates/arc.txt", string.Join(' ', estateFile));
-        Instance.OverwriteFile("target/common/estates_preload/arc.txt", string.Join(' ', preloadFile));
-        Instance.OverwriteFile("target/common/scripted_effects/arc.txt", string.Join(' ', scriptedEffects));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/estates/arc.txt", string.Join(' ', estateFile));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/estates_preload/arc.txt", string.Join(' ', preloadFile));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/scripted_effects/arc.txt", string.Join(' ', scriptedEffects));
         return "Estates";
     }
     public override string ToString() => Name.Value;

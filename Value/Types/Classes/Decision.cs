@@ -121,7 +121,7 @@ public class Decision : IArcObject
             Decision.Transpile(ref s);
         }
         s.Add("}");
-        Instance.OverwriteFile("target/decisions/arc.txt", string.Join(' ', s));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/decisions/arc.txt", string.Join(' ', s));
         return "Decisions";
     }
 }

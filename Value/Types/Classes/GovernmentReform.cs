@@ -75,13 +75,13 @@ public class GovernmentReform : IArcObject
     public Dict<ArcBlock>? AssimilationCultures { get; set; }
     public Dict<ArcBlock>? StatesGeneralMechanic { get; set; }
     */
-    public ArcCode? GovernmentAbilities { get; set; }
+    public ArcList<GovernmentMechanic>? GovernmentAbilities { get; set; }
     public static string[] ImplementedAttributes = new string[]
     {
         "name", "desc", "icon", "potential", "trigger", "modifier", "custom_attributes", "government_abilities"
     };
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public GovernmentReform(string id, ArcString name, ArcString desc, ArcString icon, ArcTrigger potential, ArcTrigger trigger, ArcModifier modifier, ArcCode? customAttributes, Dict<ArcCode> attributes, ArcCode? governmentAbilities)
+    public GovernmentReform(string id, ArcString name, ArcString desc, ArcString icon, ArcTrigger potential, ArcTrigger trigger, ArcModifier modifier, ArcCode? customAttributes, Dict<ArcCode> attributes, ArcList<GovernmentMechanic>? governmentAbilities)
     {
         Id = new(id);
         Name = name;
@@ -134,7 +134,7 @@ public class GovernmentReform : IArcObject
             args.Get(ArcModifier.Constructor, "modifier", new()),
             args.Get(ArcCode.Constructor, "custom_attributes", null),
             args.GetAttributes(ImplementedAttributes),
-            args.Get(ArcCode.Constructor, "government_abilities", null)
+            args.Get(ArcList<GovernmentMechanic>.GetConstructor(GovernmentMechanic.GovernmentMechanics), "government_abilities", null)
         );
     }
     public static string Transpile()
@@ -147,7 +147,16 @@ public class GovernmentReform : IArcObject
             reform.Potential.Compile("potential", ref file);
             reform.Trigger.Compile("trigger", ref file);
             reform.Modifier.Compile("modifiers", ref file);
-            reform.GovernmentAbilities?.Compile("government_abilities", ref file);
+            if(reform.GovernmentAbilities != null)
+            {
+                file.Add("government_abilities", "=", "{");
+                foreach(GovernmentMechanic? mechanic in reform.GovernmentAbilities.Values)
+                {
+                    if (mechanic == null) continue;
+                    file.Add(mechanic.Id);
+                }
+                file.Add("}");
+            }
             if(reform.CustomAttributes != null) reform.CustomAttributes.Compile("custom_attributes", ref file);
             foreach(var v in reform.Attributes)
             {
@@ -158,7 +167,7 @@ public class GovernmentReform : IArcObject
             Instance.Localisation.Add($"{reform.Id}", reform.Name.Value);
             Instance.Localisation.Add($"{reform.Id}_desc", reform.Desc.Value);
         }
-        Instance.OverwriteFile("target/common/government_reforms/arc.txt", string.Join(' ', file));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/government_reforms/arc.txt", string.Join(' ', file));
         return "Government Reforms";
     }
     public override string ToString() => Name.Value;

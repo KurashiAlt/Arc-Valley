@@ -73,15 +73,15 @@ public class TradeGood : IArcObject
     {
         StringBuilder sb = new("unknown = { color = { 0.5 0.5 0.5 } } ");
         StringBuilder sa = new("unknown = { base_price = 0 } ");
-        foreach (TradeGood tradeGood in TradeGood.TradeGoods.Values())
+        foreach (TradeGood tradeGood in TradeGoods.Values())
         {
             sb.Append($"{tradeGood.Id} = {{ color = {{ {tradeGood.Color} }} modifier = {{ {tradeGood.Modifier.Compile()} }} province = {{ {tradeGood.Province.Compile()} }} chance = {{ {tradeGood.Chance} }} }} ");
             sa.Append($"{tradeGood.Id} = {{ base_price = {tradeGood.BasePrice} goldtype = {tradeGood.IsGold} }} ");
             Instance.Localisation.Add(tradeGood.Id.Value, tradeGood.Name.Value);
             Instance.Localisation.Add($"{tradeGood.Id}DESC", tradeGood.Description.Value);
         }
-        Instance.OverwriteFile("target/common/tradegoods/00_tradegoods.txt", sb.ToString());
-        Instance.OverwriteFile("target/common/prices/00_prices.txt", sa.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/tradegoods/00_tradegoods.txt", sb.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/prices/00_prices.txt", sa.ToString());
         return "Trade Goods";
     }
 }

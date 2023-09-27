@@ -14,7 +14,7 @@ namespace ArcInstance
         public static readonly Dictionary<string, string> Localisation = new();
         public static readonly List<string> Vanilla = new();
 #pragma warning disable CS8618
-        public static string[] Args;
+        public static string[] iArgs;
 #pragma warning restore CS8618
         public static readonly string headers = @"
 /replace p@ with provinces:
@@ -25,20 +25,27 @@ namespace ArcInstance
 ";
         public static Dictionary<string, ILintCommand> linterCommands = new();
         public static bool Lint = true;
+        public static string TranspileTarget;
+        public static string GfxFolder;
+        public static IEnumerable<string> LoadOrder;
         public void Run(string[] args, ref Stopwatch timer)
         {
-            Args = args;
-            Lint = Args.Contains("--lint");
+            iArgs = args;
+            Lint = iArgs.Contains("--lint");
             CultureInfo.CurrentCulture = CultureInfo.CreateSpecificCulture("en");
 
-            Compiler.directory = directory;
             Compiler.owner = this;
 
+            Block va = Parser.ParseCode(File.ReadAllText(Path.Combine(directory, "arc.defines")));
+            va.Prepend("{");
+            va.Add("}");
+            Args arcDefines = Args.GetArgs(va);
 
+            TranspileTarget = arcDefines.Get(ArcString.Constructor, "transpile_target").Value;
+            GfxFolder = arcDefines.Get(ArcString.Constructor, "gfx_folder").Value;
+            LoadOrder = from c in arcDefines.Get(ArcCode.Constructor, "load_order").Value select new string(c.value);
 
-            string[] locations = File.ReadAllLines(Path.Combine(Compiler.directory, "arc.defines"));
-
-            foreach (string location in locations)
+            foreach (string location in LoadOrder)
             {
                 TimeSpan start = timer.Elapsed;
                 LoadTarget(location);
@@ -48,9 +55,9 @@ namespace ArcInstance
 
             if (Lint)
             {
-                if (Args.Contains("--nudge"))
+                if (iArgs.Contains("--nudge"))
                 {
-                    string path = Args[Array.IndexOf(Args, "--nudge") + 1];
+                    string path = iArgs[Array.IndexOf(iArgs, "--nudge") + 1];
                     Walker g;
 
                     string tradenodePath = $"{path}/common/tradenodes/00_tradenodes.txt";
@@ -159,7 +166,7 @@ namespace ArcInstance
                 }
 
                 List<string> nLocations = new();
-                foreach(string location in locations)
+                foreach(string location in LoadOrder)
                 {
                     if (location.EndsWith("/"))
                     {
@@ -219,11 +226,13 @@ namespace ArcInstance
                     EstatePrivilege.Transpile,
                     Estate.Transpile,
                     GovernmentReform.Transpile,
+                    GovernmentMechanic.Transpile,
                     Unit.Transpile,
                     GreatProject.Transpile,
                     MercenaryCompany.Transpile,
                     Advisor.Transpile,
                     Age.Transpile,
+                    DiplomaticAction.Transpile,
                     SpecialUnitTranspile,
 
                     EventModifier.Transpile,
@@ -240,7 +249,8 @@ namespace ArcInstance
 
                 Block b = new("spriteTypes", "=", "{");
 
-                foreach(string c in GetFiles("target/gfx/event_pictures/arc"))
+                CreateTillFolder($"{TranspileTarget}/gfx/event_pictures/arc");
+                foreach (string c in GetFiles($"{GfxFolder}/event_pictures"))
                 {
                     string s = c.Split('\\').Last();
 
@@ -250,25 +260,41 @@ namespace ArcInstance
                             "texturefile", "=", $"\"gfx/event_pictures/arc/{s}\"",
                         "}"
                     );
+
+                    File.Delete($"{TranspileTarget}/gfx/event_pictures/arc/{s}");
+                    File.Copy(c, $"{TranspileTarget}/gfx/event_pictures/arc/{s}");
                 }
 
-                foreach(string folder in GetFolders("target/gfx/interface/ages"))
+                foreach(string folder in GetFolders($"{GfxFolder}/ages"))
                 {
-                    foreach(string file in GetFiles(folder))
+                    string folderName = folder.Split('\\').Last();
+                    CreateTillFolder($"{TranspileTarget}/gfx/interface/ages/{folderName}");
+                    foreach (string file in GetFiles(folder))
                     {
                         string s = file.Split('\\').Last();
+                        //"gfx/interface/ages/first_century/ab_founding_of_a_nation.dds";
+                        string v = $"gfx/interface/ages/{folderName}/{s}";
                         b.Add(
                             "spriteType", "=", "{",
                                 "name", "=", $"\"GFX_{s.Split('.').First()}\"",
-                                "texturefile", "=", $"\"{Path.GetRelativePath(directory + "target", file).Replace('\\','/')}\"",
+                                "texturefile", "=", $"\"{v}\"",
                             "}"
                         );
+
+                        string oldPath = Path.GetRelativePath(directory, file);
+                        string newPath = $"{TranspileTarget}/{v}";
+                        
+                        File.Delete(newPath);
+                        File.Copy(oldPath, newPath);
                     }
                 }
 
-                foreach(string c in GetFiles("target/gfx/interface/great_projects"))
+                CreateTillFolder($"{TranspileTarget}/gfx/interface/great_projects");
+                foreach (string c in GetFiles($"{GfxFolder}/great_projects"))
                 {
                     string s = c.Split('\\').Last();
+                    string oldPath = $"{GfxFolder}/great_projects/{s}";
+                    string newPath = $"{TranspileTarget}/gfx/interface/great_projects/{s}";
 
                     b.Add(
                         "spriteType", "=", "{",
@@ -276,14 +302,59 @@ namespace ArcInstance
                             "texturefile", "=", $"\"gfx/interface/great_projects/{s}\"",
                         "}"
                     );
+
+                    File.Delete(newPath);
+                    File.Copy(oldPath , newPath);
                 }
 
                 b.Add("}");
 
-                OverwriteFile("target/interface/arc5.gfx", string.Join(' ', b));
+                OverwriteFile($"{TranspileTarget}/interface/arc5.gfx", string.Join(' ', b));
+
+                Block AiPersonalityFile = new();
+                foreach(KeyValuePair<string, ArcCode> personality in Compiler.GetVariable<Dict<ArcCode>>("ai_personalities"))
+                {
+                    personality.Value.Compile(personality.Key, ref AiPersonalityFile);
+                }
+                OverwriteFile($"{TranspileTarget}/common/ai_personalities/arc.txt", string.Join(' ', AiPersonalityFile));
+
+                Block COTFile = new();
+                foreach(KeyValuePair<string, ArcCode> cot in Compiler.GetVariable<Dict<ArcCode>>("centers_of_trade"))
+                {
+                    cot.Value.Compile(cot.Key, ref COTFile);
+                }
+                OverwriteFile($"{TranspileTarget}/common/centers_of_trade/arc.txt", string.Join(' ', COTFile));
             }
 
             return;
+            bool FileCompare(string file1, string file2)
+            {
+                int file1byte;
+                int file2byte;
+                FileStream fs1;
+                FileStream fs2;
+                if (file1 == file2)
+                {
+                    return true;
+                }
+                fs1 = new FileStream(file1, FileMode.Open, FileAccess.Read);
+                fs2 = new FileStream(file2, FileMode.Open, FileAccess.Read);
+                if (fs1.Length != fs2.Length)
+                {
+                    fs1.Close();
+                    fs2.Close();
+                    return false;
+                }
+                do
+                {
+                    file1byte = fs1.ReadByte();
+                    file2byte = fs2.ReadByte();
+                }
+                while ((file1byte == file2byte) && (file1byte != -1));
+                fs1.Close();
+                fs2.Close();
+                return ((file1byte - file2byte) == 0);
+            }
         }
         public static IEnumerable<string> GetFolders(string path)
         {
@@ -312,7 +383,7 @@ namespace ArcInstance
                 ((ArcBlock)musketeer.Get("regiment")).Compile("musketeer_regiment"),
             };
 
-            OverwriteFile("target/common/static_modifiers/special_units.txt", string.Join(' ', staticModifiers));
+            OverwriteFile($"{TranspileTarget}/common/static_modifiers/special_units.txt", string.Join(' ', staticModifiers));
 
             Block defines = new()
             {
@@ -330,7 +401,7 @@ namespace ArcInstance
                 "NDefines.NMilitary.MUSKETEER_STARTING_STRENGTH", "=", musketeer.Get("starting_strength"),
                 "NDefines.NMilitary.MUSKETEER_STARTING_MORALE", "=", musketeer.Get("starting_morale"),
             };
-            OverwriteFile("target/common/defines/special_units.lua", string.Join(' ', defines));
+            OverwriteFile($"{TranspileTarget}/common/defines/special_units.lua", string.Join(' ', defines));
 
             Block LocBlock = new Block()
             {
@@ -407,18 +478,37 @@ namespace ArcInstance
                 throw;
             }
         }
+        public static void CreateTillFolder(string fold)
+        {
+            string[] paths = fold.Split('/');
+            string newPath = directory;
+            foreach (string s in paths)
+            {
+                if (s.Contains('.')) continue;
+
+                newPath = Path.Combine(newPath, s);
+                if (!Directory.Exists(newPath))
+                {
+                    Console.WriteLine($"\tCreating {Path.GetRelativePath(directory, newPath)}".Pastel(ConsoleColor.Magenta));
+                    Directory.CreateDirectory(newPath);
+                }
+            }
+        }
         public static void OverwriteFile(string path, string text, bool AllowFormatting = true)
         {
+            string pathOrg = path;
             path = Path.Combine(directory, path);
             try
             {
-                if (AllowFormatting && Args.Contains("--format")) text = Parser.FormatCode(text);
+                if (AllowFormatting && iArgs.Contains("--format")) text = Parser.FormatCode(text);
             }
             catch(Exception)
             {
                 Console.WriteLine(path);
                 throw;
             }
+
+            CreateTillFolder(pathOrg);
 
             if(File.Exists(path))
             {
@@ -442,7 +532,7 @@ namespace ArcInstance
 
                 sb.Append($" {loc.Key}: \"{value}\"\n");
             }
-            OverwriteFile("target/localisation/replace/arc5_l_english.yml", Parser.ConvertStringToUtf8Bom(sb.ToString()), false);
+            OverwriteFile($"{TranspileTarget}/localisation/replace/arc5_l_english.yml", Parser.ConvertStringToUtf8Bom(sb.ToString()), false);
             return "Localisations";
         }
         private static string TranspileOnActions()
@@ -483,7 +573,7 @@ namespace ArcInstance
             foreach (KeyValuePair<string, ArcBlock> OnAction in OnActions)
             {
                 string s = $"{OnAction.Key} = {{ {OnAction.Value.Compile()}}} ";
-                OverwriteFile($"target/common/on_actions/{OnAction.Key}.txt", s);
+                OverwriteFile($"{TranspileTarget}/common/on_actions/{OnAction.Key}.txt", s);
             }
             return "On Actions";
         }

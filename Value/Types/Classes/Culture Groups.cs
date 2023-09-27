@@ -81,7 +81,7 @@ public class CultureGroup : IArcObject
             sb.Append($"{cg.MaleNames.Compile("male_names")} {cg.FemaleNames.Compile("female_names")} {cg.DynastyNames.Compile("dynasty_names")} {cg.CountryModifier.Compile("country")} {cg.ProvinceModifier.Compile("province")} }} ");
         }
 
-        Instance.OverwriteFile("target/common/cultures/arc.txt", sb.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/cultures/arc.txt", sb.ToString());
         return "Cultures";
     }
     public override string ToString() => Name.Value;

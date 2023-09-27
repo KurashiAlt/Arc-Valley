@@ -35,7 +35,7 @@ public class Idea : IArcObject
     public bool CanGet(string indexer) => keyValuePairs.CanGet(indexer);
     public IVariable? Get(string indexer) => keyValuePairs.Get(indexer);
     public override string ToString() => Name.Value;
-    public string Transpile(string ideaGroup)
+    public string Transpile(IdeaGroup ideaGroup)
     {
         StringBuilder sb = new StringBuilder();
         sb.Append($"{Id} = {{ {Modifier.Compile()} }}");
@@ -48,7 +48,7 @@ public class Idea : IArcObject
 
             IEnumerable<string> a = from idea 
                 in IdeaGroup.IdeaGroups 
-                where string.Join(' ', idea.Value.Trigger.Value).Contains(ideaGroup) 
+                where string.Join(' ', idea.Value.Trigger.Value).Contains(ideaGroup.Id.Value) 
                 orderby idea.Value.Name.Value 
                 select idea.Value.Name.Value.Trim('"');
             if (a.Any())
@@ -67,7 +67,7 @@ public class Idea : IArcObject
 
             IEnumerable<string> b = from building 
                 in Building.Buildings 
-                where building.Key.EndsWith('1') && string.Join(' ', building.Value.BuildTrigger).Contains(ideaGroup) 
+                where building.Value.UnlockTier != null && building.Value.UnlockTier.Value == 1 && building.Value.IdeaGroupUnlocks != null && building.Value.IdeaGroupUnlocks.Values.Contains(ideaGroup) 
                 orderby building.Value.Name.Value 
                 select building.Key[..1].ToUpper() + building.Key[1..^2];
             if (b.Any())
@@ -214,7 +214,7 @@ public class IdeaGroup : IArcObject
             {
                 if (idea == null) continue;
 
-                sb.Append(idea.Transpile(ideaGroup.Id.Value));
+                sb.Append(idea.Transpile(ideaGroup));
                 sb.Append(' ');
             }
 
@@ -228,7 +228,7 @@ public class IdeaGroup : IArcObject
             Instance.Localisation.Add($"{ideaGroup.Id}_bonus", $"{ideaGroup.Name.Value.Trim('"')} Ambitions");
         }
 
-        Instance.OverwriteFile("target/common/ideas/arc.txt", sb.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/ideas/arc.txt", sb.ToString());
         return "Idea Groups";
     }
     public Walker Call(Walker i, ref Block result)

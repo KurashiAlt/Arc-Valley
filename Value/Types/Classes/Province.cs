@@ -111,7 +111,7 @@ public class Province : IArcObject
             int id = province.Value.Id.Value;
             string name = province.Value.Name.Value;
             Block color = province.Value.Color.RemoveEnclosingBrackets().Value;
-            Block history = province.Value.History.Value;
+            ArcBlock history = province.Value.History;
             Instance.Localisation.Add($"PROV{id}", name);
             Instance.Localisation.Add($"PROV_ADJ{id}", name);
             ProvinceDefines.Append($"{id};{string.Join(';', color)};;x\n");
@@ -131,9 +131,9 @@ public class Province : IArcObject
 
             Block res = new();
             if (province.Value.IsLand()) res.Add(SplitToDev(province.Value.BaseDevelopment.Value));
-            if (history.Count > 0)
+            if (history.Value.Count > 0)
             {
-                res.Add(Compiler.Compile(history));
+                res.Add(history.Compile());
             }
             res.Add(
                 "2500.1.1", "=", "{",
@@ -144,7 +144,7 @@ public class Province : IArcObject
 
             if (province.Value.IsLand() || province.Value.Impassible) Continent.Append($" {province.Value.Id}");
 
-            Instance.OverwriteFile($"target/history/provinces/{id} - ARC.txt", res.ToString());
+            Instance.OverwriteFile($"{Instance.TranspileTarget}/history/provinces/{id} - ARC.txt", res.ToString());
         }
         Continent.Append(" }");
 
@@ -160,10 +160,10 @@ public class Province : IArcObject
             return $"base_tax = {first} base_production = {second} base_manpower = {third} ";
         }
 
-        Instance.OverwriteFile("target/map/continent.txt", Continent.ToString());
-        Instance.OverwriteFile("target/map/positions.txt", Positions.ToString());
-        Instance.OverwriteFile("target/map/definition.csv", ProvinceDefines.ToString(), false);
-        Instance.OverwriteFile("target/map/climate.txt", $@"
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/continent.txt", Continent.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/positions.txt", Positions.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/definition.csv", ProvinceDefines.ToString(), false);
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/climate.txt", $@"
 tropical = {{
     
 }}
@@ -206,7 +206,7 @@ severe_monsoon = {{
 }}
 
 equator_y_on_province_image = 224");
-        Instance.OverwriteFile("target/map/default.map", $@"
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/default.map", $@"
 width = 4096
 height = 2816
 

@@ -1,7 +1,4 @@
 ﻿using ArcInstance;
-using Pastel;
-using System.IO;
-using System.Text;
 
 namespace Arc;
 public class Relation : ArcBlock
@@ -34,15 +31,32 @@ public class Relation : ArcBlock
     }
     public static string Transpile()
     {
-        StringBuilder sb = new("");
+        Block b = new()
+        {
+            string.Join(' ', from rel in Relations.Values select rel.Compile())
+        };
 
-        sb.Append(string.Join(' ', from rel in Relations.Values select rel.Value));
-        sb.Append(' ');
+        if(Compiler.TryGetVariable("hre_defines:emperor", out IVariable? emperorVar))
+        {
+            if (emperorVar == null) throw new Exception("No Emperor Defined");
+            if (emperorVar is not ArcString) throw new Exception("Emperor of wrong type");
+            string emperorKey = ((ArcString)emperorVar).Value;
+            if (!Country.Countries.CanGet(emperorKey)) throw new Exception($"Emperor {emperorKey} not found as a defined country");
+            Country emperor = Country.Countries[emperorKey];
+            b.Add("2500.1.1", "=", "{", "emperor", "=", emperor.Tag, "}");
+        }
+        else
+        {
+            throw new Exception("Emperor does not exist");
+        }
 
-        Instance.OverwriteFile("target/history/diplomacy/arc.txt", sb.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/history/diplomacy/arc.txt", string.Join(' ', b));
         return "Relations";
     }
-
+    public override string Compile()
+    {
+        return Compiler.Compile(Value);
+    }
     public override string ToString() => "[Arc Relation]";
     public Walker Call(Walker i, ref List<string> result) => throw new Exception();
 }

@@ -47,7 +47,7 @@ public class ArcEffect : ArcBlock
     }
     public override string Compile()
     {
-        return Compiler.Compile(Value);
+        return Compiler.CompileEffect(Value);
     }
     internal static ArcEffect Constructor(Block block) => new(block);
 }
@@ -73,7 +73,7 @@ public class ArcModifier : ArcBlock
     }
     public override string Compile()
     {
-        return Compiler.Compile(Value);
+        return Compiler.CompileModifier(Value);
     }
     internal static ArcModifier Constructor(Block block) => new(block);
 }

@@ -2,32 +2,16 @@
 
 public partial class Compiler
 {
-    //public Walker Require(Walker i)
-    //{
-    //	i.MoveNext(); 
-    //
-    //	i = TryGetKeyValue(i, out string key, out Block? value);
-    //
-    //	if(TryGetVariable(key, out ArcPointer? left))
-    //	{
-    //		if (left == null)
-    //			throw new Exception();
-    //
-    //		if (value != null)
-    //		{
-    //			IValue right = IValue.Parse(value);
-    //			
-    //			if (!right.Fulfills(left.Value))
-    //			{
-    //				throw new Exception();
-    //			}
-    //		}
-    //	}
-    //	else
-    //	{
-    //		throw new Exception();
-    //	}
-    //
-    //	return i;
-    //}
+    public static T GetVariable<T>(string locator)
+    {
+        if(TryGetVariable(locator, out IVariable? var)) 
+        {
+            if (var == null) throw new Exception($"Variable {locator} is null");
+            return (T)var;
+        }
+        else
+        {
+            throw new Exception($"Could not find variable {locator}");
+        }
+    }
 }

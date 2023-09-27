@@ -53,7 +53,7 @@ public class EventModifier : IArcObject
             Instance.Localisation.Add(mod.Id.Value, mod.Name.Value);
         }
 
-        Instance.OverwriteFile("target/common/event_modifiers/arc.txt", sb.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/event_modifiers/arc.txt", sb.ToString());
         return "Event Modifiers";
     }
 }

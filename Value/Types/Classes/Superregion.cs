@@ -62,7 +62,7 @@ public class Superregion : IArcObject
             Instance.Localisation.Add($"{superregion.Id.Value}_name", superregion.Name.Value);
             Instance.Localisation.Add($"{superregion.Id.Value}_adj", superregion.Adj.Value);
         }
-        Instance.OverwriteFile("target/map/superregion.txt", sb.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/superregion.txt", sb.ToString());
         return "Superregion";
     }
     public override string ToString() => Name.Value;

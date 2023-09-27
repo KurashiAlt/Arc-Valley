@@ -71,7 +71,7 @@ public class Adjacency : IArcObject
             sb.Append($"{adjacency.From.Id};{adjacency.To.Id};{adjacency.Type};{adjacency.Through.Id};{adjacency.StartX};{adjacency.StartY};{adjacency.StopX};{adjacency.StopY};{adjacency.From.Name.Value.Trim('"')} to {adjacency.To.Name.Value.Trim('"')} through {adjacency.Through.Name.Value.Trim('"')};\n");
         }
         sb.Append("-1;-1;;-1;-1;-1;-1;-1;-1;");
-        Instance.OverwriteFile("target/map/adjacencies.csv", sb.ToString(), false);
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/adjacencies.csv", sb.ToString(), false);
         return "Adjacencies";
     }
     public Walker Call(Walker i, ref Block result) => throw new Exception();

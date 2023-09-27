@@ -203,17 +203,28 @@ public class Building : IArcObject
         {
             "build_trigger", "=", "{"
         };
-        if (UnlockTier != null && IdeaGroupUnlocks != null && UnlockTier.Value > 0)
+        if (UnlockTier != null && UnlockTier.Value > 0)
         {
             c.Add(
                 "FROM", "=", "{",
                     "calc_true_if", "=", "{",
                         "amount", "=", UnlockTier
             );
-            foreach (IdeaGroup? ideaGroup in IdeaGroupUnlocks.Values)
+            if (IdeaGroupUnlocks != null)
             {
-                if (ideaGroup == null) continue;
-                c.Add("full_idea_group", "=", ideaGroup.Id);
+                foreach (IdeaGroup? ideaGroup in IdeaGroupUnlocks.Values)
+                {
+                    if (ideaGroup == null) continue;
+                    c.Add("full_idea_group", "=", ideaGroup.Id);
+                }
+            }
+            if (ReformUnlocks != null)
+            {
+                foreach (GovernmentReform? reform in ReformUnlocks.Values)
+                {
+                    if (reform == null) continue;
+                    c.Add("has_reform", "=", reform.Id);
+                }
             }
             c.Add(
                     "}",
@@ -257,7 +268,7 @@ public class Building : IArcObject
         {
             building.TranspileThis(ref b);
         }
-        Instance.OverwriteFile("target/common/buildings/arc.txt", string.Join(' ', b));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/buildings/arc.txt", string.Join(' ', b));
         return "Buildings";
     }
 

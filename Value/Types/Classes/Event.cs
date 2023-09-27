@@ -231,7 +231,7 @@ public class Event : IArcObject
             ev.Transpile(ref b);
         }
 
-        Instance.OverwriteFile("target/events/arc.txt", string.Join(' ', b));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/events/arc.txt", string.Join(' ', b));
         return "Events";
     }
     public Walker Call(Walker i, ref Block result)

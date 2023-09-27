@@ -53,7 +53,7 @@ public class Area : IArcObject
             sb.Append($"{area.Id} = {{ {string.Join(' ', from Province in Province.Provinces.Values() where Province.Area == area select Province.Id)} }} ");
             Instance.Localisation.Add($"{area.Id.Value}", area.Name.Value);
         }
-        Instance.OverwriteFile("target/map/area.txt", sb.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/area.txt", sb.ToString());
         return "Areas";
     }
     public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }

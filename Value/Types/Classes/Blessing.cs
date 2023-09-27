@@ -72,7 +72,7 @@ public class Blessing : IArcObject
             Instance.Localisation.Add($"{blessing.Id}", blessing.Name.Value);
             Instance.Localisation.Add($"desc_{blessing.Id}", blessing.Desc.Value);
         }
-        Instance.OverwriteFile("target/common/church_aspects/blessings.txt", sb.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/church_aspects/blessings.txt", sb.ToString());
         return "Blessings";
     }
 }

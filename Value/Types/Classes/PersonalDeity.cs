@@ -87,7 +87,7 @@ public class PersonalDeity : IArcObject
             if (!PersonalDeity.RemovedEffect.IsEmpty()) sb.Append(PersonalDeity.RemovedEffect.Compile("removed_effect"));
             sb.Append($"{PersonalDeity.Modifiers.Compile()} }} ");
         }
-        Instance.OverwriteFile("target/common/personal_deities/arc.txt", sb.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/personal_deities/arc.txt", sb.ToString());
         return "Personal Deitys";
     }
     public override string ToString() => Id.Value;

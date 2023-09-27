@@ -255,7 +255,7 @@ public class GreatProject : IArcObject
             GreatProject.TranspileSingular(ref b);
         }
 
-        Instance.OverwriteFile("target/common/great_projects/arc.txt", string.Join(' ', b));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/great_projects/arc.txt", string.Join(' ', b));
         return "Great Projects";
     }
     public override string ToString() => Name.Value;

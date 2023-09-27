@@ -68,7 +68,7 @@ public class MercenaryCompany : IArcObject
             Instance.Localisation.Add(company.Id.Value, company.Name.Value);
         }
 
-        Instance.OverwriteFile("target/common/mercenary_companies/arc.txt", string.Join(' ', s));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/mercenary_companies/arc.txt", string.Join(' ', s));
         return "Mercenary Companies";
     }
     public Walker Call(Walker i, ref Block result) => throw new Exception();

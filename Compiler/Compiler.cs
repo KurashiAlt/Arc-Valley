@@ -16,6 +16,24 @@ namespace Arc
     {
         public static readonly Dictionary<string, IVariable> global = new()
         {
+            { "ai_personalities", new Dict<ArcCode>() {
+                { "human", new("chance", "=", "{", "factor", "=", "0", "}", "icon", "=", "1") },
+                { "ai_capitalist", new("chance", "=", "{", "factor", "=", "0", "}", "icon", "=", "2") },
+                { "ai_diplomat", new("chance", "=", "{", "factor", "=", "0", "}", "icon", "=", "3") },
+                { "ai_militarist", new("chance", "=", "{", "factor", "=", "0", "}", "icon", "=", "4") },
+                { "ai_colonialist", new("chance", "=", "{", "factor", "=", "0", "}", "icon", "=", "5") },
+                { "ai_balanced", new("chance", "=", "{", "factor", "=", "0", "}", "icon", "=", "6") },
+            } },
+            { "centers_of_trade", new Dict<ArcCode>()
+            {
+                { "staple_port", new("level", "=", "1", "type", "=", "coastal", "province_modifiers", "=", "{", "province_trade_power_value", "=", "5", "}") },
+                { "entrepot", new("level", "=", "2", "development", "=", "10", "cost", "=", "200", "type", "=", "coastal", "province_modifiers", "=", "{", "province_trade_power_value", "=", "10", "local_development_cost", "=", "-0.05", "local_institution_spread", "=", "0.1", "}") },
+                { "world_port", new("level", "=", "3", "development", "=", "25", "cost", "=", "1000", "type", "=", "coastal", "province_modifiers", "=", "{", "province_trade_power_value", "=", "25", "local_institution_spread", "=", "0.3", "}", "state_modifiers", "=", "{", "local_development_cost", "=", "-0.1", "local_sailors_modifier", "=", "1", "allowed_num_of_buildings", "=", "1", "}", "global_modifiers", "=", "{", "navy_tradition_decay", "=", "-0.002", "}") },
+                { "emporium", new("level", "=", "1", "type", "=", "inland", "province_modifiers", "=", "{", "province_trade_power_value", "=", "5", "}") },
+                { "market_town", new("level", "=", "2", "cost", "=", "200", "development", "=", "10", "type", "=", "inland", "province_modifiers", "=", "{", "province_trade_power_value", "=", "10", "local_development_cost", "=", "-0.05", "}") },
+                { "world_trade_center", new("level", "=", "3", "cost", "=", "1000", "development", "=", "25", "type", "=", "inland", "province_modifiers", "=", "{", "province_trade_power_value", "=", "25", "local_institution_spread", "=", "0.3", "}", "state_modifiers", "=", "{", "local_development_cost", "=", "-0.1", "local_manpower_modifier", "=", "0.33", "allowed_num_of_buildings", "=", "1", "}") },
+
+            } },
             { "bi_yearly_events", new ArcBlock() },
             { "on_actions", new Dict<ArcBlock>() {
                 { "on_startup", new() },
@@ -295,6 +313,10 @@ namespace Arc
             { "trade_nodes", TradeNode.TradeNodes },
             { "terrain_declarations", new ArcBlock() },
             { "tree", new ArcBlock() },
+            { "hre_defines", new Dict<IVariable>()
+            {
+                { "emperor", new ArcString("") }
+            } },
             { "interface", new Dict<IValue>() {
                 { "church_aspects", new ArcString("") },
                 { "countryreligionview", new ArcString("") }
@@ -439,6 +461,8 @@ namespace Arc
                         "age" => Age.Call(g),
                         "decision" => Decision.Call(g),
                         "building_line" => BuildingLine.Call(g),
+                        "government_mechanic" => GovernmentMechanic.Call(g),
+                        "diplomatic_action" => DiplomaticAction.Call(g),
                         _ => throw new Exception()
                     };
                     continue;
@@ -508,13 +532,13 @@ namespace Arc
                                 "limit", "=", "{",
                                     StringCompile(trigger, CompileTrigger),
                                 "}",
-                                Compile(scope),
+                                compile(scope),
                             "}"
                         };
 
                     foreach (string k in s)
                     {
-                        result.Add(StringCompile(k, Compile));
+                        result.Add(StringCompile(k, compile));
                         result.Add(n);
                     }
                 }
@@ -524,7 +548,7 @@ namespace Arc
 
                     g = GetScope(g, out Block scope);
 
-                    string compiled = Compile(scope);
+                    string compiled = compile(scope);
                     foreach (string k in s)
                     {
                         Block n = new()
@@ -568,8 +592,7 @@ namespace Arc
 
                 if (Parser.HasEnclosingBrackets(scope)) scope = RemoveEnclosingBrackets(scope);
 
-                if (result.Last == null) throw new Exception();
-                if (result.Last.Value.value != "=") result.Add("=");
+                if (result.Last?.Value.value != "=") result.Add("=");
 
                 result.Add(
                     "{",
@@ -640,87 +663,20 @@ namespace Arc
 
             return string.Join(' ', result);
         }
-        public static string Compile(Block code)
+        public static string CompileEffect(Block code)
         {
             if (code.Count == 0)
                 return "";
 
             Block result = new();
-            Dictionary<string, Func<Walker, Walker>> keywords = new()
+
+            Walker g = new(code);
+            do
             {
-                { "csharp", (Walker i) =>
-                    {
-                        if(!i.MoveNext()) throw new Exception();
-                        i = GetScope(i, out Block scope);
-
-                        string code = $@"
-                            using System;
-                            using System.Collections.Generic;
-                            using System.IO;
-                            using System.Linq;
-                            using System.Threading;
-                            using System.Threading.Tasks;
-
-                            using Arc;
-                            using ArcInstance;
-
-                            namespace ArcSharp
-                            {{
-                                public class ArcSharp
-                                {{
-                                    public void Run(ref Block result)
-                                    {{
-                                        {string.Join(' ', scope)}
-                                    }}
-                                }}
-                            }}";
-
-                        SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
-
-                        string assemblyName = "RuntimeCode";
-                        Assembly[] referencedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-                        MetadataReference[] references = new MetadataReference[referencedAssemblies.Length];
-
-                        for (int c = 0; c < referencedAssemblies.Length; c++)
-                        {
-                            references[c] = MetadataReference.CreateFromFile(referencedAssemblies[c].Location);
-                        }
-
-                        CSharpCompilation compilation = CSharpCompilation.Create(
-                            assemblyName,
-                            syntaxTrees: new[] { syntaxTree },
-                            references: references,
-                            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-
-                        using (var ms = new System.IO.MemoryStream())
-                        {
-                            EmitResult emitResult = compilation.Emit(ms);
-
-                            if (!emitResult.Success)
-                            {
-                                Console.WriteLine("Compilation errors:");
-                                foreach (var diagnostic in emitResult.Diagnostics)
-                                {
-                                    Console.WriteLine(diagnostic);
-                                }
-                            }
-                            else
-                            {
-                                ms.Seek(0, System.IO.SeekOrigin.Begin);
-
-                                Assembly assembly = AssemblyLoadContext.Default.LoadFromStream(ms);
-                                Type calculatorType = assembly.GetType("ArcSharp.ArcSharp");
-                                dynamic calculatorInstance = Activator.CreateInstance(calculatorType);
-
-                                calculatorInstance.Run(ref result);
-                            }
-                        }
-
-                        return i;
-                } },
-                { "quick_province_modifier", (Walker i) =>
+                if (AllCompile(ref g, ref result, CompileEffect)) continue;
+                else if (g.Current == "quick_province_modifier")
                 {
-                    i = Args.GetArgs(i, out Args args);
+                    g = Args.GetArgs(g, out Args args);
                     ArcString name = args.Get(ArcString.Constructor, "name");
                     ArcBool permanent = args.Get(ArcBool.Constructor, "permanent", new(true));
                     ArcInt duration = args.Get(ArcInt.Constructor, "duration", new(-1));
@@ -730,23 +686,23 @@ namespace Arc
 
                     new EventModifier($"qem_{QuickEventModifiers}", name, modifier);
 
-                    if(permanent.Value) result.Add("add_permanent_province_modifier", "=", "{");
+                    if (permanent.Value) result.Add("add_permanent_province_modifier", "=", "{");
                     else result.Add("add_province_modifier", "=", "{");
                     result.Add("name", "=", $"qem_{QuickEventModifiers}");
                     result.Add("duration", "=", duration.Value);
-                    if(desc.Value.Count() != 0) {
+                    if (desc.Value.Count() != 0)
+                    {
                         result.Add("desc", "=", $"qem_{QuickEventModifiers}_desc ");
                         Instance.Localisation.Add($"qem_{QuickEventModifiers}_desc", desc.Value);
                     }
-                    if(hidden.Value) result.Add("hidden", "=", "yes");
+                    if (hidden.Value) result.Add("hidden", "=", "yes");
                     result.Add("}");
 
                     QuickEventModifiers++;
-                    return i;
-                } },
-                { "quick_country_modifier", (Walker i) =>
+                }
+                else if (g.Current == "quick_country_modifier")
                 {
-                    i = Args.GetArgs(i, out Args args);
+                    g = Args.GetArgs(g, out Args args);
                     ArcString name = args.Get(ArcString.Constructor, "name");
                     ArcInt duration = args.Get(ArcInt.Constructor, "duration", new(-1));
                     ArcString desc = args.Get(ArcString.Constructor, "desc", new(""));
@@ -758,31 +714,29 @@ namespace Arc
                     result.Add("add_country_modifier", "=", "{");
                     result.Add("name", "=", $"qem_{QuickEventModifiers}");
                     result.Add("duration", "=", duration.Value);
-                    if(desc.Value.Count() != 0) {
+                    if (desc.Value.Count() != 0)
+                    {
                         result.Add("desc", "=", $"qem_{QuickEventModifiers}_desc ");
                         Instance.Localisation.Add($"qem_{QuickEventModifiers}_desc", desc.Value);
                     }
-                    if(hidden.Value) result.Add("hidden", "=", "yes");
+                    if (hidden.Value) result.Add("hidden", "=", "yes");
                     result.Add("}");
 
                     QuickEventModifiers++;
-                    return i;
-                } },
-                { "ags", (Walker i) => { throw new Exception(string.Join(' ', code)); } },
-                { "tag", (Walker i) => { throw new Exception(string.Join(' ', code)); } },
-                { "create_flagship", (Walker i) =>
+                }
+                else if (g.Current == "create_flagship")
                 {
-                    i = Args.GetArgs(i, out Args args);
+                    g = Args.GetArgs(g, out Args args);
 
                     Block traits = args.Get(ArcCode.Constructor, "traits", new()).Value;
 
-                    if(Parser.HasEnclosingBrackets(traits)) traits = RemoveEnclosingBrackets(traits);
+                    if (Parser.HasEnclosingBrackets(traits)) traits = RemoveEnclosingBrackets(traits);
 
-                    foreach(Word trait in traits)
+                    foreach (Word trait in traits)
                     {
                         result.Add("set_country_flag", "=", trait);
                     }
-                    if(traits.Any()) result.Add("set_country_flag", "=", "forced_trait");
+                    if (traits.Any()) result.Add("set_country_flag", "=", "forced_trait");
                     result.Add(
                         args.GetFromList(Province.Provinces, "where").Id, "=", "{",
                             "create_flagship", "=", "{",
@@ -791,25 +745,48 @@ namespace Arc
                             "}",
                         "}"
                     );
-                    foreach(Word trait in traits)
+                    foreach (Word trait in traits)
                     {
                         result.Add("clr_country_flag", "=", trait);
                     }
-                    if(traits.Any()) result.Add("clr_country_flag", "=", "forced_trait");
+                    if (traits.Any()) result.Add("clr_country_flag", "=", "forced_trait");
+                }
+                else result.Add(g.Current);
+            } while (g.MoveNext());
 
-                    return i;
-                } }
-            };
+            if (Parser.HasEnclosingBrackets(result)) result = RemoveEnclosingBrackets(result);
+
+            return string.Join(' ', result);
+        }
+        public static string CompileModifier(Block code)
+        {
+            if (code.Count == 0)
+                return "";
+
+            Block result = new();
+
+            Walker g = new(code);
+            do
+            {
+                if (AllCompile(ref g, ref result, CompileModifier)) continue;
+                else result.Add(g.Current);
+            } while (g.MoveNext());
+
+            if (Parser.HasEnclosingBrackets(result)) result = RemoveEnclosingBrackets(result);
+
+            return string.Join(' ', result);
+        }
+        public static string Compile(Block code)
+        {
+            if (code.Count == 0)
+                return "";
+
+            Block result = new();
 
             Walker g = new(code);
             do
             {
                 if (AllCompile(ref g, ref result, Compile)) continue;
-                else if (keywords.ContainsKey(g.Current))
-                {
-                    g = keywords[g.Current].Invoke(g);
-                    continue;
-                }
                 else result.Add(g.Current);
             } while (g.MoveNext());
 

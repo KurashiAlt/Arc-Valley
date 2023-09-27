@@ -101,7 +101,7 @@ public class Unit : IArcObject
         {
             attribute.Value.Compile(attribute.Key, ref b, true, true);
         }
-        Instance.OverwriteFile($"target/common/units/{Id}.txt", string.Join(' ', b));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/units/{Id}.txt", string.Join(' ', b));
     }
     public static string Transpile()
     {

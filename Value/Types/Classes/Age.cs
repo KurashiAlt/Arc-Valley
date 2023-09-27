@@ -248,7 +248,7 @@ public class Age : IArcObject
         {
             Age.TranspileSingular(ref s);
         }
-        Instance.OverwriteFile("target/common/ages/ages.txt", string.Join(' ', s));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/ages/ages.txt", string.Join(' ', s));
         return "Ages";
     }
     public override string ToString() => Name.Value;
