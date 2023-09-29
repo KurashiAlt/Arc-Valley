@@ -66,9 +66,12 @@ public class Idea : IArcObject
             }
 
             IEnumerable<string> b = from building 
-                in Building.Buildings 
-                where building.Value.UnlockTier != null && building.Value.UnlockTier.Value == 1 && building.Value.IdeaGroupUnlocks != null && building.Value.IdeaGroupUnlocks.Values.Contains(ideaGroup) 
-                orderby building.Value.Name.Value 
+                in Building.Buildings where
+                building.Value.GetNullable<ArcInt>("unlock_tier") != null && 
+                building.Value.GetNullable<ArcInt>("unlock_tier").Value == 1 && 
+                building.Value.GetNullable<ArcList<IdeaGroup>>("idea_group_unlocks") != null && 
+                building.Value.GetNullable<ArcList<IdeaGroup>>("idea_group_unlocks").Values.Contains(ideaGroup) 
+                orderby building.Value.Get<ArcString>("name").Value 
                 select building.Key[..1].ToUpper() + building.Key[1..^2];
             if (b.Any())
             {

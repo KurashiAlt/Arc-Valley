@@ -3,6 +3,7 @@ using Pastel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Arc;
 public class GovernmentReform : IArcObject
@@ -119,9 +120,28 @@ public class GovernmentReform : IArcObject
 
         i = Args.GetArgs(i, out Args args);
 
-        Constructor(id, args);
+        GovernmentReform reform = Constructor(id, args);
+
+        Regex regex = new Regex("^tier_(\\d+)");
+        Match match = regex.Match(id);
+        if (match.Success)
+        {
+            int tier = int.Parse(match.Groups[1].Value);
+            AddToReformLevel("monarchy");
+            AddToReformLevel("republic");
+            AddToReformLevel("tribal");
+            AddToReformLevel("native");
+            AddToReformLevel("theocracy");
+
+            void AddToReformLevel(string type)
+            {
+                ReformLevel b = Government.Governments[type].Get<ArcList<ReformLevel>>("reform_levels").Values[tier - 1] ?? throw new Exception();
+                b.Get<ArcList<GovernmentReform>>("reforms").Values.Add(reform);
+            }
+        }
 
         return i;
+
     }
     public static GovernmentReform Constructor(string id, Args args)
     {
@@ -167,7 +187,7 @@ public class GovernmentReform : IArcObject
             Instance.Localisation.Add($"{reform.Id}", reform.Name.Value);
             Instance.Localisation.Add($"{reform.Id}_desc", reform.Desc.Value);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/government_reforms/arc.txt", string.Join(' ', file));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/government_reforms/reforms.txt", string.Join(' ', file));
         return "Government Reforms";
     }
     public override string ToString() => Name.Value;

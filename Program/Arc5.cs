@@ -234,6 +234,8 @@ namespace ArcInstance
                     Age.Transpile,
                     DiplomaticAction.Transpile,
                     SpecialUnitTranspile,
+                    Government.Transpile,
+                    GovernmentNames.Transpile,
 
                     EventModifier.Transpile,
                     TranspileLocalisations,
@@ -272,7 +274,6 @@ namespace ArcInstance
                     foreach (string file in GetFiles(folder))
                     {
                         string s = file.Split('\\').Last();
-                        //"gfx/interface/ages/first_century/ab_founding_of_a_nation.dds";
                         string v = $"gfx/interface/ages/{folderName}/{s}";
                         b.Add(
                             "spriteType", "=", "{",
@@ -287,6 +288,25 @@ namespace ArcInstance
                         File.Delete(newPath);
                         File.Copy(oldPath, newPath);
                     }
+                }
+
+                CreateTillFolder($"{TranspileTarget}/gfx/interface/buildings");
+                foreach (string c in GetFiles($"{GfxFolder}/buildings"))
+                {
+                    string s = c.Split('\\').Last();
+                    string oldPath = $"{GfxFolder}/buildings/{s}";
+                    string newPath = $"{TranspileTarget}/gfx/interface/buildings/{s}";
+
+                    b.Add(
+                        "spriteType", "=", "{",
+                            "name", "=", $"\"GFX_{s.Split('.').First()}\"",
+                            "texturefile", "=", $"\"gfx/interface/buildings/{s.Split('.').First()}.tga\"",
+                            "loadType", "=", "\"INGAME\"",
+                        "}"
+                    );
+
+                    File.Delete(newPath);
+                    File.Copy(oldPath, newPath);
                 }
 
                 CreateTillFolder($"{TranspileTarget}/gfx/interface/great_projects");

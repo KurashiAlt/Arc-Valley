@@ -24,6 +24,30 @@ public class Dict<Type> : IArcObject, IEnumerable<KeyValuePair<string, Type>> wh
             return dict;
         };
     }
+    public static Func<Block, Dict<Type>> Constructor(Func<Block, Type> constructor)
+    {
+        return (Block s) =>
+        {
+            if (Parser.HasEnclosingBrackets(s)) s = Compiler.RemoveEnclosingBrackets(s);
+
+            Dict<Type> dict = new();
+
+            if (s.Count == 0) return dict;
+
+            Walker i = new(s);
+            do
+            {
+                string key = i.Current;
+                i.ForceMoveNext();
+                if (i.Current != "=") throw new Exception();
+                i.ForceMoveNext();
+                i = Compiler.GetScope(i, out Block scope);
+                dict.Add(key, constructor(scope));
+            } while (i.MoveNext());
+
+            return dict;
+        };
+    }
     private readonly Dictionary<string, DictPointer<Type>> Kvps;
     public Dictionary<string, Type>.ValueCollection Values() => Kvps.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Value).Values;
     public Dict() { Kvps = new(); }
@@ -44,6 +68,20 @@ public class Dict<Type> : IArcObject, IEnumerable<KeyValuePair<string, Type>> wh
     }
     public bool IsObject() => true;
     public IVariable? Get(string indexer) => Kvps[indexer].Value;
+    public T Get<T>(string indexer)
+    {
+        IVariable? v = Get(indexer);
+        if (v is T) return (T)v;
+        else throw new Exception($"{indexer} is of wrong type");
+    }
+    public T? GetNullable<T>(string indexer)
+    {
+        if (!CanGet(indexer)) return default;
+        IVariable? v = Get(indexer);
+        if (v == null) return default;
+        else if (v is T c) return c;
+        else throw new Exception($"{indexer} is of wrong type");
+    }
     public bool CanGet(string indexer) => Kvps.ContainsKey(indexer);
     public Type this[string indexer] => Kvps[indexer].Value;
     public int Count => Kvps.Count;
@@ -63,7 +101,7 @@ public class Dict<Type> : IArcObject, IEnumerable<KeyValuePair<string, Type>> wh
 
     public override string ToString() => "Arc Dict";
 
-    public Walker Call(Walker i, ref Block result)
+    public virtual Walker Call(Walker i, ref Block result)
     {
         Console.Write(i.Current);
         throw new NotImplementedException();

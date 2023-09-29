@@ -2,10 +2,23 @@
 public class ArcList<T> : IArcObject where T : IVariable
 {
     public List<T?> Values { get; set; }
+    public Dict<T>? dict { get; set; }
+    public Func<string, Args, T>? constructor { get; set; }
     public bool IsObject() => true;
     public ArcList()
     {
         Values = new();
+    }
+    public ArcList(Dict<T> _dict)
+    {
+        Values = new();
+        dict = _dict;
+    }
+    public ArcList(Dict<T> _dict, Func<string, Args, T> _constructor)
+    {
+        Values = new();
+        dict = _dict;
+        constructor = _constructor;
     }
     public ArcList(Block value, Func<Block, int, T> Constructor)
     {
@@ -47,6 +60,23 @@ public class ArcList<T> : IArcObject where T : IVariable
                 Values.Add((T?)Dictionary.Get(i.Current));
         } while (i.MoveNext());
     }
+    public ArcList(Block value, Func<string, Args, T> Constructor)
+    {
+        if (Parser.HasEnclosingBrackets(value)) Compiler.RemoveEnclosingBrackets(value);
+
+        Values = new();
+
+        if (value.Count == 0) return;
+
+        Walker i = new(value);
+        do
+        {
+            string key = i.Current;
+            i = Args.GetArgs(i, out Args args);
+
+            Values.Add(Constructor(key, args));
+        } while (i.MoveNext());
+    }
     public ArcList(Block value, Func<Block, T> Constructor)
     {
         if (Parser.HasEnclosingBrackets(value)) Compiler.RemoveEnclosingBrackets(value);
@@ -79,7 +109,26 @@ public class ArcList<T> : IArcObject where T : IVariable
     }
     public Walker Call(Walker i, ref Block result)
     {
-        throw new Exception();
+        i.ForceMoveNext();
+        if (i.Current != "+=") throw new Exception();
+        i.ForceMoveNext();
+        if(i.Current == "new")
+        {
+            if (constructor == null) throw new Exception();
+            i.ForceMoveNext();
+
+            string id = i.Current;
+
+            i = Args.GetArgs(i, out Args args);
+
+            Values.Add(constructor(id, args));
+        }
+        else
+        {
+            if (dict == null) throw new Exception();
+            Values.Add(dict[i.Current]);
+        }
+        return i;
     }
     public override string ToString()
     {
@@ -89,10 +138,19 @@ public class ArcList<T> : IArcObject where T : IVariable
     {
         return (Block s) => new ArcList<T>(s, dict);
     }
+    public static Func<Block, ArcList<T>> GetConstructor(Func<Block, T> func)
+    {
+        return (Block s) => new ArcList<T>(s, func);
+    }
+    public static Func<Block, ArcList<T>> GetConstructor(Func<string, Args, T> func)
+    {
+        return (Block s) => new ArcList<T>(s, func);
+    }
     public virtual IVariable? Get(string indexer)
     {
         if(int.TryParse(indexer, out int res))
         {
+            res -= 1;
             return Values[res];
         }
         throw new Exception();
@@ -102,6 +160,7 @@ public class ArcList<T> : IArcObject where T : IVariable
     {
         if (int.TryParse(indexer, out int res))
         {
+            res -= 1;
             if(res < 0) return false;
             if(res >= Values.Count) return false;
             return true;

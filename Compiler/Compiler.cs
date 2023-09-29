@@ -14,7 +14,7 @@ namespace Arc
 {
     public static partial class Compiler
     {
-        public static readonly Dictionary<string, IVariable> global = new()
+        public static readonly Dict<IVariable> global = new()
         {
             { "ai_personalities", new Dict<ArcCode>() {
                 { "human", new("chance", "=", "{", "factor", "=", "0", "}", "icon", "=", "1") },
@@ -309,8 +309,11 @@ namespace Arc
             { "religious_groups", ReligionGroup.ReligionGroups },
             { "superregions", Superregion.Superregions },
             { "terrains", Terrain.Terrains },
+            { "governments", Government.Governments },
+            { "government_reforms", GovernmentReform.GovernmentReforms },
             { "trade_goods", TradeGood.TradeGoods },
             { "trade_nodes", TradeNode.TradeNodes },
+            { "default_reform", new ArcCode() },
             { "terrain_declarations", new ArcBlock() },
             { "tree", new ArcBlock() },
             { "hre_defines", new Dict<IVariable>()
@@ -319,7 +322,10 @@ namespace Arc
             } },
             { "interface", new Dict<IValue>() {
                 { "church_aspects", new ArcString("") },
-                { "countryreligionview", new ArcString("") }
+                { "countryreligionview", new ArcString("") },
+                { "provinceview", new ArcString("") },
+                { "macrobuildinterface", new ArcString("") },
+                { "buildings", new ArcCode() },
             } },
             { "special_units", new Dict<IVariable>()
             {
@@ -449,6 +455,8 @@ namespace Arc
                         "agenda" => EstateAgenda.Call(g),
                         "privilege" => EstatePrivilege.Call(g),
                         "estate" => Estate.Call(g),
+                        "government" => Government.Call(g),
+                        "government_names" => GovernmentNames.Call(g),
                         "government_reform" => GovernmentReform.Call(g),
                         "country_event" => Event.Call(g, false),
                         "province_event" => Event.Call(g, true),

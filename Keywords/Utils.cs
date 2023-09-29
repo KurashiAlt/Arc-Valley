@@ -150,7 +150,7 @@ public partial class Compiler
     //	}
     public static bool TryGetVariable(string locator, out IVariable? var)
     {
-        return TryGetVariable(locator, out var, new Func<string, IVariable>((string indexer) => global[indexer]), global.ContainsKey);
+        return TryGetVariable(locator, out var, new Func<string, IVariable>((string indexer) => global[indexer]), global.CanGet);
     }
     public static bool TryGetVariable(string locator, out IVariable? var, Func<string, IVariable> Get, Func<string, bool> CanGet)
     {

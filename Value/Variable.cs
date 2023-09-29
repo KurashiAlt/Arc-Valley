@@ -1,5 +1,5 @@
 ﻿namespace Arc;
 public interface IVariable
 {
-    public Walker Call(Walker i, ref Block result);
+    public virtual Walker Call(Walker i, ref Block result) => throw new NotImplementedException();
 }

@@ -7,6 +7,11 @@ public class Args
     public static readonly Dictionary<string, Args> Inheritables = new Dictionary<string, Args>();
     public Dictionary<string, Block>? keyValuePairs;
     public Block? block;
+    public Block Get()
+    {
+        if (block == null) throw new Exception();
+        return block;
+    }
     public Block Get(string key, Block defaultValue)
     {
         if (keyValuePairs == null) throw new Exception($"Non object type arguments; Trying to get: {key}");
