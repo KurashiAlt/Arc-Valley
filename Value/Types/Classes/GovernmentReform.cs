@@ -17,6 +17,7 @@ public class GovernmentReform : IArcObject
     public ArcTrigger Potential { get; set; }
     public ArcTrigger Trigger { get; set; }
     public ArcModifier Modifier { get; set; }
+    public ArcEffect Effect { get; set; }
     public ArcCode? CustomAttributes { get; set; }
     //public ArcList<ArcBlock>? Conditionals { get; set; }
     public Dict<ArcCode> Attributes { get; set; } //Used for non implemented Attributes
@@ -79,10 +80,10 @@ public class GovernmentReform : IArcObject
     public ArcList<GovernmentMechanic>? GovernmentAbilities { get; set; }
     public static string[] ImplementedAttributes = new string[]
     {
-        "name", "desc", "icon", "potential", "trigger", "modifier", "custom_attributes", "government_abilities"
+        "name", "desc", "icon", "potential", "trigger", "modifier", "effect", "custom_attributes", "government_abilities"
     };
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public GovernmentReform(string id, ArcString name, ArcString desc, ArcString icon, ArcTrigger potential, ArcTrigger trigger, ArcModifier modifier, ArcCode? customAttributes, Dict<ArcCode> attributes, ArcList<GovernmentMechanic>? governmentAbilities)
+    public GovernmentReform(string id, ArcString name, ArcString desc, ArcString icon, ArcTrigger potential, ArcTrigger trigger, ArcModifier modifier, ArcCode? customAttributes, Dict<ArcCode> attributes, ArcList<GovernmentMechanic>? governmentAbilities, ArcEffect effect)
     {
         Id = new(id);
         Name = name;
@@ -94,6 +95,7 @@ public class GovernmentReform : IArcObject
         CustomAttributes = customAttributes;
         Attributes = attributes;
         GovernmentAbilities = governmentAbilities;
+        Effect = effect;
         KeyValuePairs = new()
         {
             { "id", Id },
@@ -105,6 +107,7 @@ public class GovernmentReform : IArcObject
             { "modifier", Modifier },
             { "custom_attributes", CustomAttributes },
             { "attributes", Attributes },
+            { "effect", Effect },
         };
 
         GovernmentReforms.Add(id, this);
@@ -154,7 +157,8 @@ public class GovernmentReform : IArcObject
             args.Get(ArcModifier.Constructor, "modifier", new()),
             args.Get(ArcCode.Constructor, "custom_attributes", null),
             args.GetAttributes(ImplementedAttributes),
-            args.Get(ArcList<GovernmentMechanic>.GetConstructor(GovernmentMechanic.GovernmentMechanics), "government_abilities", null)
+            args.Get(ArcList<GovernmentMechanic>.GetConstructor(GovernmentMechanic.GovernmentMechanics), "government_abilities", null),
+            args.Get(ArcEffect.Constructor, "effect", new())
         );
     }
     public static string Transpile()
@@ -167,6 +171,7 @@ public class GovernmentReform : IArcObject
             reform.Potential.Compile("potential", ref file);
             reform.Trigger.Compile("trigger", ref file);
             reform.Modifier.Compile("modifiers", ref file);
+            reform.Effect.Compile("effect", ref file);
             if(reform.GovernmentAbilities != null)
             {
                 file.Add("government_abilities", "=", "{");

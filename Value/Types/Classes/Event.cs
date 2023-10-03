@@ -76,21 +76,21 @@ public class Option : IArcObject
 public class Event : IArcObject
 {
     public static Dict<Event> Events = new();
-    ArcString Id { get; set; }
-    ArcBool ProvinceEvent { get; set; }
-    ArcString Title { get; set; }
-    ArcString Desc { get; set; }
-    ArcString Picture { get; set; }
-    ArcBool Major { get; set; }
-    ArcTrigger MajorTrigger { get; set; }
-    ArcBool FireOnlyOnce { get; set; }
-    ArcBool Hidden { get; set; }
-    ArcTrigger Trigger { get; set; }
-    ArcEffect Immediate { get; set; }
-    ArcEffect After { get; set; }
-    ArcCode MeanTimeToHappen { get; set; }
-    ArcBool IsTriggeredOnly { get; set; }
-    ArcList<Option> Options { get; set; }
+    public ArcString Id { get; set; }
+    public ArcBool ProvinceEvent { get; set; }
+    public ArcString Title { get; set; }
+    public ArcString Desc { get; set; }
+    public ArcString Picture { get; set; }
+    public ArcBool Major { get; set; }
+    public ArcTrigger MajorTrigger { get; set; }
+    public ArcBool FireOnlyOnce { get; set; }
+    public ArcBool Hidden { get; set; }
+    public ArcTrigger Trigger { get; set; }
+    public ArcEffect Immediate { get; set; }
+    public ArcEffect After { get; set; }
+    public ArcCode MeanTimeToHappen { get; set; }
+    public ArcBool IsTriggeredOnly { get; set; }
+    public ArcList<Option> Options { get; set; }
     public Dict<IVariable> keyValuePairs { get; set; }
     public Event(
         string id,

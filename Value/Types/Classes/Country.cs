@@ -215,9 +215,11 @@ public class Country : IArcObject
             "NAT", "=", "\"countries/NAT.txt\"",
             "PIR", "=", "\"countries/PIR.txt\""
         };
-        foreach (Country ctr in Countries.Values())
+        foreach (KeyValuePair<string, Country> ctr in Countries)
         {
-            ctr.Transpile(ref countryDefinitions);
+            ctr.Value.Transpile(ref countryDefinitions);
+
+            //Instance.Warn($"(\"add_core = {ctr.Value.Tag}\", \"add_core = {ctr.Key}\"),");
         }
 
         Instance.OverwriteFile($"{Instance.TranspileTarget}/common/countries/REB.txt", "graphical_culture = westerngfx color = { 30 30 30 } historical_idea_groups = { administrative_ideas quantity_ideas defensive_ideas humanist_ideas trade_ideas quality_ideas economic_ideas maritime_ideas } monarch_names = { \"Corneles #0\" = 10 \"Moise #0\" = 10 \"Mahieu #0\" = 10 \"Daniel #0\" = 10 \"Jacob #0\" = 10 \"Piet #0\" = 10 \"Hendrik #0\" = 10 \"David #0\" = 10 \"John #0\" = 10 \"Eric #0\" = 10 \"Boel #0\" = -1 \"Alexandra #0\" = -1 \"Regina #0\" = -1 \"Miriam #0\" = -1 } leader_names = { Lowther Quelch Condent Dalzeel Spriggs Condon Angre Anstis Chivers Searle Hout Coxon Vynne Vane Worley }");

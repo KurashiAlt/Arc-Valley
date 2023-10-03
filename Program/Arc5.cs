@@ -237,6 +237,7 @@ namespace ArcInstance
                     Government.Transpile,
                     GovernmentNames.Transpile,
 
+                    OpinionModifier.Transpile,
                     EventModifier.Transpile,
                     TranspileLocalisations,
                 };
@@ -344,6 +345,8 @@ namespace ArcInstance
                     cot.Value.Compile(cot.Key, ref COTFile);
                 }
                 OverwriteFile($"{TranspileTarget}/common/centers_of_trade/arc.txt", string.Join(' ', COTFile));
+
+                OverwriteFile($"warnings.txt", string.Join('\n', warnings));
             }
 
             return;
@@ -375,6 +378,11 @@ namespace ArcInstance
                 fs2.Close();
                 return ((file1byte - file2byte) == 0);
             }
+        }
+        static List<string> warnings = new();
+        public static void Warn(string s)
+        {
+            warnings.Add(s);
         }
         public static IEnumerable<string> GetFolders(string path)
         {

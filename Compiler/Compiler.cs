@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
+using System.Reflection.Emit;
 
 namespace Arc
 {
@@ -316,6 +317,7 @@ namespace Arc
             { "default_reform", new ArcCode() },
             { "terrain_declarations", new ArcBlock() },
             { "tree", new ArcBlock() },
+            { "args", new ArgList() },
             { "hre_defines", new Dict<IVariable>()
             {
                 { "emperor", new ArcString("") }
@@ -448,6 +450,7 @@ namespace Arc
                         "tradenode" => TradeNode.Call(g),
                         "idea_group" => IdeaGroup.Call(g),
                         "event_modifier" => EventModifier.Call(g),
+                        "opinion_modifier" => OpinionModifier.Call(g),
                         "relation" => Relation.Call(g),
                         "culture_group" => CultureGroup.Call(g),
                         "culture" => Culture.Call(g),
@@ -471,7 +474,10 @@ namespace Arc
                         "building_line" => BuildingLine.Call(g),
                         "government_mechanic" => GovernmentMechanic.Call(g),
                         "diplomatic_action" => DiplomaticAction.Call(g),
-                        _ => throw new Exception()
+                        "effect" => NewEffect.Call(g),
+                        "trigger" => NewTrigger.Call(g),
+                        "modifier" => NewModifier.Call(g),
+                        _ => throw new Exception($"Unknown Object Type {g.Current} in object declaration")
                     };
                     continue;
                 }
@@ -634,6 +640,7 @@ namespace Arc
 
             return compiler(Parser.ParseCode(file));
         }
+        public static List<(string, NewTrigger)> NewTriggers = new();
         public static string CompileTrigger(Block code)
         {
             if (code.Count == 0)
@@ -645,32 +652,58 @@ namespace Arc
             do
             {
                 if (AllCompile(ref g, ref result, CompileTrigger)) continue;
-                else if (g.Current == "ags")
-                {
-                    if (!g.MoveNext()) throw new Exception();
-                    if (g.Current != "=") throw new Exception();
-                    if (!g.MoveNext()) throw new Exception();
-                    string value = g.Current;
 
-                    result.Add("is_year", "=", int.Parse(value) + 2500);
-                }
-                else if (g.Current == "tag")
+                string key = g.Current;
+                IEnumerable<(string, NewTrigger)> ThisFunctions = from c in NewTriggers where c.Item1 == key select c;
+                if (ThisFunctions.Any())
                 {
-                    if (!g.MoveNext()) throw new Exception();
-                    if (g.Current != "=") throw new Exception();
-                    if (!g.MoveNext()) throw new Exception();
-                    string value = g.Current;
-                    if(IsBaseScope(value) || IsDefaultScope(value)) result.Add("tag", "=", value);
-                    else if (Country.Countries.CanGet(value)) result.Add("tag", "=", Country.Countries[value].Tag);
-                    else throw new Exception($"Country: {value} does not exist");
+                    (string, NewTrigger) LastClickedTrigger = ThisFunctions.Last();
+
+                    List<string> Errors = new();
+
+                    g = Args.GetArgs(g, out Args args);
+                    foreach ((string, NewTrigger) trigger in ThisFunctions)
+                    {
+                        try
+                        {
+                            NewTrigger b = trigger.Item2;
+                            Arg a;
+                            if (b.Get<vvC>("args") is Dict<Type>) a = ArcObject.FromArgs<NewTrigger>(args, b);
+                            else a = vx.FromArgs<NewTrigger>(args, b);
+
+                            global.Get<ArgList>("args").list.AddFirst(a);
+
+                            b.Get<ArcTrigger>("transpile").Compile(ref result);
+
+                            global.Get<ArgList>("args").list.RemoveFirst();
+                            goto custom_trigger_exit;
+                        }
+                        catch (Exception e)
+                        {
+                            if (trigger == LastClickedTrigger)
+                            {
+                                foreach (string error in Errors)
+                                {
+                                    Console.WriteLine(error);
+                                }
+                                throw;
+                            }
+                            else Errors.Add(e.Message);
+                        }
+                    }
+                    custom_trigger_exit:
+                    continue;
                 }
-                else result.Add(g.Current);
+
+                Instance.Warn($"Unknown Trigger: {g.Current}");
+                result.Add(g.Current);
             } while (g.MoveNext());
 
             if (Parser.HasEnclosingBrackets(result)) result = RemoveEnclosingBrackets(result);
 
             return string.Join(' ', result);
         }
+        public static List<(string, NewEffect)> NewEffects = new();
         public static string CompileEffect(Block code)
         {
             if (code.Count == 0)
@@ -682,7 +715,49 @@ namespace Arc
             do
             {
                 if (AllCompile(ref g, ref result, CompileEffect)) continue;
-                else if (g.Current == "quick_province_modifier")
+                
+                string key = g.Current;
+                IEnumerable<(string, NewEffect)> ThisFunctions = from c in NewEffects where c.Item1 == key select c;
+                if (ThisFunctions.Any())
+                {
+                    (string, NewEffect) LastClickedEffect = ThisFunctions.Last();
+
+                    List<string> Errors = new();
+
+                    g = Args.GetArgs(g, out Args args);
+                    foreach ((string, NewEffect) effect in ThisFunctions)
+                    {
+                        try
+                        {
+                            NewEffect b = effect.Item2;
+                            Arg a;
+                            if (b.Get<vvC>("args") is Dict<Type>) a = ArcObject.FromArgs<NewEffect>(args, b);
+                            else a = vx.FromArgs<NewEffect>(args, b);
+                        
+                            global.Get<ArgList>("args").list.AddFirst(a);
+                        
+                            b.Get<ArcEffect>("transpile").Compile(ref result);
+                        
+                            global.Get<ArgList>("args").list.RemoveFirst();
+                            goto custom_effect_exit;
+                        }
+                        catch (Exception e) {
+                            if (effect == LastClickedEffect)
+                            {
+                                foreach(string error in Errors)
+                                {
+                                    Console.WriteLine(error);
+                                }
+                                throw;
+                            }
+                            else Errors.Add(e.Message);
+                        }
+                    }
+                    custom_effect_exit:
+                    continue;
+                }
+
+                if (g.Current == "quick_province_modifier")
                 {
                     g = Args.GetArgs(g, out Args args);
                     ArcString name = args.Get(ArcString.Constructor, "name");
@@ -707,8 +782,10 @@ namespace Arc
                     result.Add("}");
 
                     QuickEventModifiers++;
+                    continue;
                 }
-                else if (g.Current == "quick_country_modifier")
+                 
+                if (g.Current == "quick_country_modifier")
                 {
                     g = Args.GetArgs(g, out Args args);
                     ArcString name = args.Get(ArcString.Constructor, "name");
@@ -731,8 +808,10 @@ namespace Arc
                     result.Add("}");
 
                     QuickEventModifiers++;
+                    continue;
                 }
-                else if (g.Current == "create_flagship")
+                 
+                if (g.Current == "create_flagship")
                 {
                     g = Args.GetArgs(g, out Args args);
 
@@ -758,14 +837,19 @@ namespace Arc
                         result.Add("clr_country_flag", "=", trait);
                     }
                     if (traits.Any()) result.Add("clr_country_flag", "=", "forced_trait");
+
+                    continue;
                 }
-                else result.Add(g.Current);
+
+                Instance.Warn($"Unknown Effect: {g.Current}");
+                result.Add(g.Current);
             } while (g.MoveNext());
 
             if (Parser.HasEnclosingBrackets(result)) result = RemoveEnclosingBrackets(result);
 
             return string.Join(' ', result);
         }
+        public static List<(string, NewModifier)> NewModifiers = new();
         public static string CompileModifier(Block code)
         {
             if (code.Count == 0)
@@ -777,7 +861,50 @@ namespace Arc
             do
             {
                 if (AllCompile(ref g, ref result, CompileModifier)) continue;
-                else result.Add(g.Current);
+
+                string key = g.Current;
+                IEnumerable<(string, NewModifier)> ThisFunctions = from c in NewModifiers where c.Item1 == key select c;
+                if (ThisFunctions.Any())
+                {
+                    (string, NewModifier) LastClickedTrigger = ThisFunctions.Last();
+
+                    List<string> Errors = new();
+
+                    g = Args.GetArgs(g, out Args args);
+                    foreach ((string, NewModifier) modifier in ThisFunctions)
+                    {
+                        try
+                        {
+                            NewModifier b = modifier.Item2;
+                            Arg a;
+                            if (b.Get<vvC>("args") is Dict<Type>) a = ArcObject.FromArgs<NewModifier>(args, b);
+                            else a = vx.FromArgs<NewModifier>(args, b);
+
+                            global.Get<ArgList>("args").list.AddFirst(a);
+
+                            b.Get<ArcModifier>("transpile").Compile(ref result);
+
+                            global.Get<ArgList>("args").list.RemoveFirst();
+                            goto custom_modifier_exit;
+                        }
+                        catch (Exception e)
+                        {
+                            if (modifier == LastClickedTrigger)
+                            {
+                                foreach (string error in Errors)
+                                {
+                                    Console.WriteLine(error);
+                                }
+                                throw;
+                            }
+                            else Errors.Add(e.Message);
+                        }
+                    }
+                custom_modifier_exit:
+                    continue;
+                }
+
+                result.Add(g.Current);
             } while (g.MoveNext());
 
             if (Parser.HasEnclosingBrackets(result)) result = RemoveEnclosingBrackets(result);

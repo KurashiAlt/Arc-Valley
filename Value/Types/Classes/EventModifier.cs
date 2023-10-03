@@ -57,3 +57,65 @@ public class EventModifier : IArcObject
         return "Event Modifiers";
     }
 }
+
+public class OpinionModifier : ArcObject
+{
+    public static readonly Dict<OpinionModifier> OpinionModifiers = new();
+    OpinionModifier(string key)
+    {
+        OpinionModifiers.Add(key, this);
+    }
+    public static OpinionModifier Constructor(string id, Args args) => new(id)
+    {
+        { "id", new ArcString(id) },
+        { "name", args.Get(ArcString.Constructor, "name") },
+        { "opinion", args.Get(ArcInt.Constructor, "opinion") },
+        { "min", args.Get(ArcInt.Constructor, "min", null) },
+        { "max", args.Get(ArcInt.Constructor, "max", null) },
+        { "max_vassal", args.Get(ArcInt.Constructor, "max_vassal", null) },
+        { "max_in_other_direction", args.Get(ArcInt.Constructor, "max_in_other_direction", null) },
+        { "yearly_decay", args.Get(ArcInt.Constructor, "yearly_decay", null) },
+        { "months", args.Get(ArcInt.Constructor, "months", null) }
+    };
+    public static new Walker Call(Walker i) => Call(i, Constructor);
+    public override Walker Call(Walker i, ref Block result) 
+    {
+        result.Add(Get<ArcString>("id").Value);
+        return i;
+    }
+    void TranspileThis(ref Block a)
+    {
+        string id = Get<ArcString>("id").Value;
+        Instance.Localisation.Add(id, Get<ArcString>("name").Value);
+
+        a.Add(id, "=", "{");
+        a.Add("opinion", "=", Get<ArcInt>("opinion"));
+
+        ArcInt? min = GetNullable<ArcInt>("min");
+        if (min != null) a.Add("min", "=", min);
+        ArcInt? max = GetNullable<ArcInt>("max");
+        if (max != null) a.Add("max", "=", max);
+        ArcInt? max_vassal = GetNullable<ArcInt>("max_vassal");
+        if (max_vassal != null) a.Add("max_vassal", "=", max_vassal);
+        ArcInt? max_in_other_direction = GetNullable<ArcInt>("max_in_other_direction");
+        if (max_in_other_direction != null) a.Add("max_in_other_direction", "=", max_in_other_direction);
+        ArcInt? yearly_decay = GetNullable<ArcInt>("yearly_decay");
+        if (yearly_decay != null) a.Add("yearly_decay", "=", yearly_decay);
+        ArcInt? months = GetNullable<ArcInt>("months");
+        if (months != null) a.Add("months", "=", months);
+
+        a.Add("}");
+    }
+    public static string Transpile()
+    {
+        Block a = new();
+
+        foreach(KeyValuePair<string, OpinionModifier> mod in OpinionModifiers)
+        {
+            mod.Value.TranspileThis(ref a);
+        }
+
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/opinion_modifiers/arc.txt", string.Join(' ', a));
+        return "Opinion Modifiers";
+    }
+}

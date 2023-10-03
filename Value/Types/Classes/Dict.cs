@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 namespace Arc;
-public class Dict<Type> : IArcObject, IEnumerable<KeyValuePair<string, Type>> where Type : IVariable?
+public class Dict<Type> : IArcObject, IEnumerable<KeyValuePair<string, Type>>, vvC where Type : IVariable?
 {
     //(Block s) => new Dict<Mission>(s, Mission.Constructor)
     public static Func<Block, Dict<Type>> Constructor(Func<string, Args, Type> constructor)
