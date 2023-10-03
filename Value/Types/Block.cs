@@ -75,12 +75,12 @@ public class ArcBlock : IValue
                 default:
                     {
                         i.MoveBack();
-                        result.Add(Compiler.Compile(Value));
+                        result.Add(Compile());
                     }
                     break;
             }
         }
-        else result.Add(Compiler.Compile(Value));
+        else result.Add(Compile());
         return i;
     }
     public override string ToString()
@@ -119,7 +119,7 @@ public class ArcBlock : IValue
 
     public virtual string Compile()
     {
-        return Compiler.Compile(Value);
+        throw new Exception();
     }
     internal int Count() => Value.Count;
 }

@@ -135,6 +135,7 @@ public class Type : IValue, vvC
             "relation" => new(Relation.Relations.Get),
             "culture_group" => new(CultureGroup.CultureGroups.Get),
             "culture" => new(Culture.Cultures.Get),
+            "missions" => new(Mission.Missions.Get),
             "mission_series" => new(MissionSeries.MissionSerieses.Get),
             "agenda" => new(EstateAgenda.EstateAgendas.Get),
             "privilege" => new(EstatePrivilege.EstatePrivileges.Get),

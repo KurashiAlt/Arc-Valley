@@ -405,10 +405,10 @@ namespace ArcInstance
 
             Block staticModifiers = new()
             {
-                ((ArcBlock)galleass.Get("modifier")).Compile("galleass_modifier"),
-                ((ArcBlock)galleass.Get("ship")).Compile("galleass_ship"),
-                ((ArcBlock)musketeer.Get("modifier")).Compile("musketeer_modifier"),
-                ((ArcBlock)musketeer.Get("regiment")).Compile("musketeer_regiment"),
+                ((ArcModifier)galleass.Get("modifier")).Compile("galleass_modifier"),
+                ((ArcModifier)galleass.Get("ship")).Compile("galleass_ship"),
+                ((ArcModifier)musketeer.Get("modifier")).Compile("musketeer_modifier"),
+                ((ArcModifier)musketeer.Get("regiment")).Compile("musketeer_regiment"),
             };
 
             OverwriteFile($"{TranspileTarget}/common/static_modifiers/special_units.txt", string.Join(' ', staticModifiers));
@@ -565,7 +565,7 @@ namespace ArcInstance
         }
         private static string TranspileOnActions()
         {
-            Dict<ArcBlock> OnActions = (Dict<ArcBlock>)Compiler.global["on_actions"];
+            Dict<ArcEffect> OnActions = (Dict<ArcEffect>)Compiler.global["on_actions"];
 
             Block BiYearlyEvents = ((ArcBlock)Compiler.global["bi_yearly_events"]).Value;
 
@@ -592,13 +592,13 @@ namespace ArcInstance
 
             BiYearlyEvents.Add(BiYearlySum/10, "=", "0");
 
-            ArcBlock OnBiYearlyPulse = OnActions["on_bi_yearly_pulse"];
+            ArcEffect OnBiYearlyPulse = OnActions["on_bi_yearly_pulse"];
 
             OnBiYearlyPulse.Value.Add("random_events", "=", "{");
             OnBiYearlyPulse.Value.Add(BiYearlyEvents);
             OnBiYearlyPulse.Value.Add("}");
 
-            foreach (KeyValuePair<string, ArcBlock> OnAction in OnActions)
+            foreach (KeyValuePair<string, ArcEffect> OnAction in OnActions)
             {
                 string s = $"{OnAction.Key} = {{ {OnAction.Value.Compile()}}} ";
                 OverwriteFile($"{TranspileTarget}/common/on_actions/{OnAction.Key}.txt", s);

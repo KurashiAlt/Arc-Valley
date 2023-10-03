@@ -1,13 +1,14 @@
 ﻿using ArcInstance;
 using Pastel;
 using System.ComponentModel;
+using System.ComponentModel.Design.Serialization;
 using System.Text;
 using System.Xml.Linq;
 
 namespace Arc;
 public class Mission : IArcObject
 {
-    public static Dict<Mission> Missions = new Dict<Mission>();
+    public static Dict<Mission> Missions = new();
     public ArcString Id { get; set; }
     public ArcString Name { get; set; }
     public ArcString Desc { get; set; }
@@ -15,15 +16,16 @@ public class Mission : IArcObject
     public ArcInt? Position { get; set; }
     public ArcString? CompletedBy { get; set; }
     public ArcCode Required { get; set; }
-    public ArcList<Province> ProvincesToHighlight { get; set; }
+    public ArcTrigger ProvincesToHighlight { get; set; }
     public ArcTrigger Trigger { get; set; }
     public ArcEffect Effect { get; set; }
     public Dict<IVariable?> keyValuePairs { get; set; }
-    public Mission(string key, ArcString name, ArcString desc, ArcString icon, ArcInt? position, ArcString? completedBy, ArcCode required, ArcList<Province> provincesToHighlight, ArcTrigger trigger, ArcEffect effect)
+    public Mission(string key, ArcString name, ArcString desc, ArcString icon, ArcInt? position, ArcString? completedBy, ArcCode required, ArcTrigger provincesToHighlight, ArcTrigger trigger, ArcEffect effect)
     {
         Name = name;
         Desc = desc;
         Icon = icon;
+        position.Value += 1;
         Position = position;
         CompletedBy = completedBy;
         Required = required;
@@ -57,16 +59,7 @@ public class Mission : IArcObject
         if (Position != null) sb.Append($"position = {Position} "); 
         if (CompletedBy != null) sb.Append($"completed_by = {CompletedBy} ");
         sb.Append(Required.Compile("required_missions"));
-        if (ProvincesToHighlight.Values.Count > 0)
-        {
-            sb.Append($"provinces_to_highlight = {{ ");
-            foreach (Province? province in ProvincesToHighlight.Values)
-            {
-                if (province == null) continue;
-                sb.Append($"{province.Id} ");
-            }
-            sb.Append($"}} ");
-        }
+        sb.Append(ProvincesToHighlight.Compile("provinces_to_highlight"));
         sb.Append($"{Trigger.Compile("trigger")} {Effect.Compile("effect")} }}");
 
         Instance.Localisation.Add($"{Id}_title", Name.Value);
@@ -77,20 +70,90 @@ public class Mission : IArcObject
     {
         throw new NotImplementedException();
     }
-    public static Mission Constructor(string key, Args args)
+    public static Mission Constructor(string key, Args args) => new(
+        key,
+        args.Get(ArcString.Constructor, "name"),
+        args.Get(ArcString.Constructor, "desc", new("")),
+        args.Get(ArcString.Constructor, "icon", new("mission_unknown_mission")),
+        args.Get(ArcInt.Constructor, "position", null),
+        args.Get(ArcString.Constructor, "completed_by", null),
+        args.Get(ArcCode.Constructor, "required", new()),
+        args.Get(ArcTrigger.Constructor, "provinces_to_highlight", new()),
+        args.Get(ArcTrigger.Constructor, "trigger", new()),
+        args.Get(ArcEffect.Constructor, "effect", new())
+    );
+}
+public class MissionTree : ArcObject
+{
+    public static Dict<MissionTree> MissionTrees = new();
+    public static new Walker Call(Walker i) => Call(i, Constructor);
+    MissionSeries?[] Serieses { get; set; }
+    string Id { get; set; }
+    ArcBool Generic { get; set; }
+    ArcBool Ai { get; set; }
+    ArcBool HasCountryShield { get; set; }
+    ArcTrigger PotentialOnLoad { get; set; }
+    ArcTrigger Potential { get; set; }
+    public MissionTree(string id, Args args)
     {
-        return new Mission(
-            key,
-            args.Get(ArcString.Constructor, "name"),
-            args.Get(ArcString.Constructor, "desc"),
-            args.Get(ArcString.Constructor, "icon"),
-            args.Get(ArcInt.Constructor, "position", null),
-            args.Get(ArcString.Constructor, "completed_by", null),
-            args.Get(ArcCode.Constructor, "required", new()),
-            args.Get((Block s) => new ArcList<Province>(s, Province.Provinces), "provinces_to_highlight", new()),
-            args.Get(ArcTrigger.Constructor, "trigger", new()),
-            args.Get(ArcEffect.Constructor, "effect", new())
-        );
+        Id = id;
+        Generic = args.Get(ArcBool.Constructor, "generic", new(false));
+        Ai = args.Get(ArcBool.Constructor, "ai", new(true));
+        HasCountryShield = args.Get(ArcBool.Constructor, "has_country_shield", new(false));
+        PotentialOnLoad = args.Get(ArcTrigger.Constructor, "potential_on_load", new());
+        Potential = args.Get(ArcTrigger.Constructor, "potential", new());
+
+        Serieses = new MissionSeries?[]{
+            null, null, null, null, null,
+            null, null, null, null, null
+        };
+
+        AddFromArgs(args);
+
+        MissionTrees.Add(id, this);
+    }
+    public void AddFromArgs(Args args)
+    {
+        string[] v = { "generic", "ai", "has_country_shield", "potential_on_load", "potential" };
+        if (args.keyValuePairs == null) throw new Exception();
+        foreach (KeyValuePair<string, Block> mis in from m in args.keyValuePairs where !v.Contains(m.Key) select m)
+        {
+            Args a = Args.GetArgs(mis.Value);
+            Mission mission = new(
+                $"{Id}_{mis.Key}",
+                a.Get(ArcString.Constructor, "name"),
+                a.Get(ArcString.Constructor, "desc", new("")),
+                a.Get(ArcString.Constructor, "icon", new("mission_unknown_mission")),
+                a.Get(ArcInt.Constructor, "y", null),
+                a.Get(ArcString.Constructor, "completed_by", null),
+                new ArcCode(from b in a.Get(ArcCode.Constructor, "required", new()).Value select $"{Id}_{b.value}"),
+                a.Get(ArcTrigger.Constructor, "provinces_to_highlight", new()),
+                a.Get(ArcTrigger.Constructor, "trigger", new()),
+                a.Get(ArcEffect.Constructor, "effect", new())
+            );
+            int x = a.Get(ArcInt.Constructor, "x").Value;
+            if (Serieses[x] == null) Serieses[x] = new(
+                $"{Id}_{x}",
+                new(x),
+                Generic,
+                Ai,
+                HasCountryShield,
+                PotentialOnLoad,
+                Potential,
+                new()
+            );
+            Serieses[x].Missions.Add(mis.Key, mission);
+        }
+    }
+    public static MissionTree Constructor(string id, Args args) => new(id, args);
+    public override Walker Call(Walker i, ref Block result)
+    {
+        i.ForceMoveNext();
+        if (i.Current != "+=") throw new Exception();
+        i.ForceMoveNext();
+        i = Args.GetArgs(i, out Args args, 2);
+        AddFromArgs(args);
+        return i;
     }
 }
 public class MissionSeries : IArcObject
@@ -109,6 +172,7 @@ public class MissionSeries : IArcObject
     public MissionSeries(string key, ArcInt? slot, ArcBool generic, ArcBool ai, ArcBool hasCountryShield, ArcTrigger potentialOnLoad, ArcTrigger potential, Dict<Mission> missions)
     {
         Id = new($"{key}_series");
+        slot.Value += 1;
         Slot = slot;
         Generic = generic;
         Ai = ai;
@@ -168,7 +232,7 @@ public class MissionSeries : IArcObject
         {
             if (MissionSeries == null) continue;
             sb.Append($"{MissionSeries.Id} = {{ slot = {MissionSeries.Slot} generic = {MissionSeries.Generic} ai = {MissionSeries.Ai} has_country_shield = {MissionSeries.HasCountryShield} {MissionSeries.PotentialOnLoad.Compile("potential_on_load")} {MissionSeries.Potential.Compile("potential")} ");
-            foreach(Mission? mission in MissionSeries.Missions.Values())
+            foreach(Mission? mission in from c in MissionSeries.Missions orderby c.Value.Position.Value select c.Value)
             {
                 sb.Append(mission.Transpile());
             }

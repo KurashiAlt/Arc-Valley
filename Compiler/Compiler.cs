@@ -10,6 +10,8 @@ using Microsoft.CodeAnalysis.Emit;
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection.Emit;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Diagnostics;
 
 namespace Arc
 {
@@ -36,7 +38,7 @@ namespace Arc
 
             } },
             { "bi_yearly_events", new ArcBlock() },
-            { "on_actions", new Dict<ArcBlock>() {
+            { "on_actions", new Dict<ArcEffect>() {
                 { "on_startup", new() },
                 { "on_religion_change", new() },
                 { "on_secondary_religion_change", new() },
@@ -304,6 +306,7 @@ namespace Arc
             { "estates", Estate.Estates },
             { "event_modifiers", EventModifier.EventModifiers },
             { "personal_deitys", PersonalDeity.PersonalDeitys },
+            { "mission_trees", MissionTree.MissionTrees },
             { "provinces", Province.Provinces },
             { "regions", Region.Regions },
             { "religions", Religion.Religions },
@@ -334,8 +337,8 @@ namespace Arc
                 { "galleass", new Dict<IVariable>()
                 {
                     { "name", new ArcString("\"Galleass\"") },
-                    { "modifier", new ArcBlock() },
-                    { "ship", new ArcBlock() },
+                    { "modifier", new ArcModifier() },
+                    { "ship", new ArcModifier() },
                     { "uses_construction", new ArcInt(1) },
                     { "base_cost_modifier", new ArcFloat(1.0) },
                     { "sailors_cost_modifier", new ArcFloat(1.0) },
@@ -346,8 +349,8 @@ namespace Arc
                 { "musketeer", new Dict<IVariable>()
                 {
                     { "name", new ArcString("\"Musketeer\"") },
-                    { "modifier", new ArcBlock() },
-                    { "regiment", new ArcBlock() },
+                    { "modifier", new ArcModifier() },
+                    { "regiment", new ArcModifier() },
                     { "uses_construction", new ArcInt(1) },
                     { "base_cost_modifier", new ArcFloat(1.0) },
                     { "manpower_cost_modifier", new ArcFloat(1.0) },
@@ -417,6 +420,74 @@ namespace Arc
                 else throw new Exception($"Invalid command in [Lint] Object Declaration: {g.Current}");
             } while (g.MoveNext());
         }
+        public static Walker Declare(Walker g)
+        {
+            return (string)g.Current switch
+            {
+                "province" => Province.Call(g),
+                "area" => Area.Call(g),
+                "region" => Region.Call(g),
+                "superregion" => Superregion.Call(g),
+                "tradegood" => TradeGood.Call(g),
+                "terrain" => Terrain.Call(g),
+                "blessing" => Blessing.Call(g),
+                "church_aspect" => ChurchAspect.Call(g),
+                "inheritable" => Args.Call(g),
+                "country" => Country.Call(g),
+                "adjacency" => Adjacency.Call(g),
+                "building" => Building.Call(g),
+                "bookmark" => Bookmark.Call(g),
+                "religion" => Religion.Call(g),
+                "religious_group" => ReligionGroup.Call(g),
+                "personal_deity" => PersonalDeity.Call(g),
+                "advisor_type" => AdvisorType.Call(g),
+                "tradenode" => TradeNode.Call(g),
+                "idea_group" => IdeaGroup.Call(g),
+                "event_modifier" => EventModifier.Call(g),
+                "opinion_modifier" => OpinionModifier.Call(g),
+                "relation" => Relation.Call(g),
+                "culture_group" => CultureGroup.Call(g),
+                "culture" => Culture.Call(g),
+                "mission_series" => MissionSeries.Call(g),
+                "agenda" => EstateAgenda.Call(g),
+                "privilege" => EstatePrivilege.Call(g),
+                "estate" => Estate.Call(g),
+                "government" => Government.Call(g),
+                "government_names" => GovernmentNames.Call(g),
+                "government_reform" => GovernmentReform.Call(g),
+                "country_event" => Event.Call(g, false),
+                "province_event" => Event.Call(g, true),
+                "incident" => Incident.Call(g),
+                "unit" => Unit.Call(g),
+                "great_project" => GreatProject.Call(g),
+                "localisation" => DefineLoc(g),
+                "mercenary_company" => MercenaryCompany.Call(g),
+                "advisor" => Advisor.Call(g),
+                "age" => Age.Call(g),
+                "decision" => Decision.Call(g),
+                "building_line" => BuildingLine.Call(g),
+                "government_mechanic" => GovernmentMechanic.Call(g),
+                "diplomatic_action" => DiplomaticAction.Call(g),
+                "effect" => NewEffect.Call(g),
+                "trigger" => NewTrigger.Call(g),
+                "modifier" => NewModifier.Call(g),
+                "mission_tree" => MissionTree.Call(g),
+                _ => throw new Exception($"Unknown Object Type {g.Current} in object declaration")
+            };
+        }
+        static Walker DefineLoc(Walker i)
+        {
+            if (!i.MoveNext()) throw new Exception();
+            string key = i.Current;
+            if (!i.MoveNext()) throw new Exception();
+            if (i.Current != "=") throw new Exception();
+            if (!i.MoveNext()) throw new Exception();
+            string value = i.Current;
+
+            Instance.Localisation.Add(key, value);
+
+            return i;
+        }
         public static void ObjectDeclare(Block code)
         {
             if (code.Count == 0)
@@ -428,57 +499,7 @@ namespace Arc
                 if (g.Current == "new")
                 {
                     if (!g.MoveNext()) throw new Exception();
-                    g = (string)g.Current switch
-                    {
-                        "province" => Province.Call(g),
-                        "area" => Area.Call(g),
-                        "region" => Region.Call(g),
-                        "superregion" => Superregion.Call(g),
-                        "tradegood" => TradeGood.Call(g),
-                        "terrain" => Terrain.Call(g),
-                        "blessing" => Blessing.Call(g),
-                        "church_aspect" => ChurchAspect.Call(g),
-                        "inheritable" => Args.Call(g),
-                        "country" => Country.Call(g),
-                        "adjacency" => Adjacency.Call(g),
-                        "building" => Building.Call(g),
-                        "bookmark" => Bookmark.Call(g),
-                        "religion" => Religion.Call(g),
-                        "religious_group" => ReligionGroup.Call(g),
-                        "personal_deity" => PersonalDeity.Call(g),
-                        "advisor_type" => AdvisorType.Call(g),
-                        "tradenode" => TradeNode.Call(g),
-                        "idea_group" => IdeaGroup.Call(g),
-                        "event_modifier" => EventModifier.Call(g),
-                        "opinion_modifier" => OpinionModifier.Call(g),
-                        "relation" => Relation.Call(g),
-                        "culture_group" => CultureGroup.Call(g),
-                        "culture" => Culture.Call(g),
-                        "mission_series" => MissionSeries.Call(g),
-                        "agenda" => EstateAgenda.Call(g),
-                        "privilege" => EstatePrivilege.Call(g),
-                        "estate" => Estate.Call(g),
-                        "government" => Government.Call(g),
-                        "government_names" => GovernmentNames.Call(g),
-                        "government_reform" => GovernmentReform.Call(g),
-                        "country_event" => Event.Call(g, false),
-                        "province_event" => Event.Call(g, true),
-                        "incident" => Incident.Call(g),
-                        "unit" => Unit.Call(g),
-                        "great_project" => GreatProject.Call(g),
-                        "localisation" => DefineLoc(g),
-                        "mercenary_company" => MercenaryCompany.Call(g),
-                        "advisor" => Advisor.Call(g),
-                        "age" => Age.Call(g),
-                        "decision" => Decision.Call(g),
-                        "building_line" => BuildingLine.Call(g),
-                        "government_mechanic" => GovernmentMechanic.Call(g),
-                        "diplomatic_action" => DiplomaticAction.Call(g),
-                        "effect" => NewEffect.Call(g),
-                        "trigger" => NewTrigger.Call(g),
-                        "modifier" => NewModifier.Call(g),
-                        _ => throw new Exception($"Unknown Object Type {g.Current} in object declaration")
-                    };
+                    g = Declare(g);
                     continue;
                 }
                 else if (TryGetVariable(g.Current, out IVariable? var))
@@ -489,20 +510,6 @@ namespace Arc
                 }
                 else throw new Exception($"Invalid command in Object Declaration: {g.Current}");
             } while (g.MoveNext());
-
-            Walker DefineLoc(Walker i)
-            {
-                if (!i.MoveNext()) throw new Exception();
-                string key = i.Current;
-                if (!i.MoveNext()) throw new Exception();
-                if (i.Current != "=") throw new Exception();
-                if (!i.MoveNext()) throw new Exception();
-                string value = i.Current;
-
-                Instance.Localisation.Add(key, value);
-
-                return i;
-            }
         }
         public static bool AllCompile(ref Walker g, ref Block result, Func<Block, string> compile)
         {
@@ -515,6 +522,10 @@ namespace Arc
                 string value = g.Current;
 
                 Instance.Localisation.Add(key, value);
+            }
+            else if (g.Current == "breakpoint")
+            {
+                Debugger.Break();
             }
             else if (g.Current == "if") { result.Add("if", "="); }
             else if (g.Current == "else_if") { result.Add("else_if", "="); }
@@ -587,7 +598,7 @@ namespace Arc
                 Regex Replace = TranspiledString();
                 newValue = Replace.Replace(newValue, delegate (Match m)
                 {
-                    return StringCompile(m.Groups[1].Value, Compile).Trim();
+                    return StringCompile(m.Groups[1].Value, compile).Trim();
                 });
 
                 result.Add(newValue);

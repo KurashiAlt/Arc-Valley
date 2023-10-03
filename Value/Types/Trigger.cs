@@ -83,6 +83,15 @@ public class ArcCode : ArcBlock
     {
         Value = new();
     }
+    public ArcCode(IEnumerable<string> enumerable)
+    {
+        Value = new();
+
+        foreach(string s in enumerable)
+        {
+            Value.Add(s);
+        }
+    }
     public ArcCode(params string[] s)
     {
         Value = new()
