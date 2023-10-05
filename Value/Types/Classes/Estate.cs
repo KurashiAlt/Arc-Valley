@@ -160,6 +160,9 @@ public class EstatePrivilege : IArcObject
     public ArcInt CooldownYears { get; set; }
     public ArcEffect OnCooldownExpires { get; set; }
     public ArcCode AiWillDo { get; set; }
+    public ArcEffect? OnGrantedProvince { get; set; }
+    public ArcEffect? OnRevokedProvince { get; set; }
+    public ArcEffect? OnInvalidProvince { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
     public EstatePrivilege(
         string id, 
@@ -183,7 +186,10 @@ public class EstatePrivilege : IArcObject
         ArcCode mechanics, 
         ArcInt cooldownYears,
         ArcEffect onCooldownExpires, 
-        ArcCode aiWillDo
+        ArcCode aiWillDo,
+        ArcEffect? onGrantedProvince,
+        ArcEffect? onRevokedProvince,
+        ArcEffect? onInvalidProvince
     ) {
         Name = name;
         Desc = desc;
@@ -207,6 +213,9 @@ public class EstatePrivilege : IArcObject
         CooldownYears = cooldownYears;
         OnCooldownExpires = onCooldownExpires;
         AiWillDo = aiWillDo;
+        OnGrantedProvince = onGrantedProvince;
+        OnRevokedProvince = onRevokedProvince;
+        OnInvalidProvince = onInvalidProvince;
         KeyValuePairs = new()
         {
             { "name", Name },
@@ -231,6 +240,9 @@ public class EstatePrivilege : IArcObject
             { "cooldown_years", CooldownYears },
             { "on_cooldown_expires", OnCooldownExpires },
             { "ai_will_do", AiWillDo },
+            { "on_granted_province", OnGrantedProvince },
+            { "on_revoked_province", OnRevokedProvince },
+            { "on_invalid_province", OnInvalidProvince }
         };
 
         EstatePrivileges.Add(id, this);
@@ -252,7 +264,7 @@ public class EstatePrivilege : IArcObject
     public static EstatePrivilege Constructor(string key, Args args) => new EstatePrivilege(
         key,
         args.Get(ArcString.Constructor, "name"),
-        args.Get(ArcString.Constructor, "desc"),
+        args.Get(ArcString.Constructor, "desc", new("")),
         args.Get(ArcString.Constructor, "icon"),
         args.Get(ArcFloat.Constructor, "land_share", new(0)),
         args.Get(ArcFloat.Constructor, "max_absolutism", new(0)),
@@ -271,7 +283,10 @@ public class EstatePrivilege : IArcObject
         args.Get(ArcCode.Constructor, "mechanics", new()),
         args.Get(ArcInt.Constructor, "cooldown_years", new(10)),
         args.Get(ArcEffect.Constructor, "on_cooldown_expires", new()),
-        args.Get(ArcCode.Constructor, "ai_will_do", new("factor", "=", "1"))
+        args.Get(ArcCode.Constructor, "ai_will_do", new("factor", "=", "1")),
+        args.Get(ArcEffect.Constructor, "on_granted_province", null),
+        args.Get(ArcEffect.Constructor, "on_revoked_province", null),
+        args.Get(ArcEffect.Constructor, "on_invalid_province", null)
     );
     public static string Transpile()
     {
@@ -296,6 +311,9 @@ public class EstatePrivilege : IArcObject
             privilege.OnInvalid.Compile("on_invalid", ref b);
             privilege.Penalties.Compile("penalties", ref b);
             privilege.Benefits.Compile("benefits", ref b);
+            privilege.OnGrantedProvince?.Compile("on_granted_province", ref b);
+            privilege.OnRevokedProvince?.Compile("on_revoked_province", ref b);
+            privilege.OnInvalidProvince?.Compile("on_invalid_province", ref b);
             foreach(ArcCode? s in privilege.ConditionalModifiers.Values)
             {
                 if (s == null) continue;
@@ -596,6 +614,8 @@ public class PrivilegeList : ArcList<EstatePrivilege>
         if (Parser.HasEnclosingBrackets(value)) Compiler.RemoveEnclosingBrackets(value);
 
         Values = new();
+        constructor = Constructor;
+        dict = Dictionary;
 
         if (value.Count == 0) return;
 

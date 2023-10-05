@@ -52,19 +52,22 @@ public class Mission : IArcObject
     public bool CanGet(string indexer) => keyValuePairs.CanGet(indexer);
     public IVariable? Get(string indexer) => keyValuePairs.Get(indexer);
     public override string ToString() => Name.Value;
-    public string Transpile()
+    public void Transpile(ref Block b)
     {
-        StringBuilder sb = new StringBuilder();
-        sb.Append($"{Id} = {{ icon = {Icon} ");
-        if (Position != null) sb.Append($"position = {Position} "); 
-        if (CompletedBy != null) sb.Append($"completed_by = {CompletedBy} ");
-        sb.Append(Required.Compile("required_missions"));
-        sb.Append(ProvincesToHighlight.Compile("provinces_to_highlight"));
-        sb.Append($"{Trigger.Compile("trigger")} {Effect.Compile("effect")} }}");
+        b.Add(
+            Id, "=", "{", 
+                "icon", "=", Icon
+        );
+        if (Position != null) b.Add("position", "=", Position); 
+        if (CompletedBy != null) b.Add("completed_by", "=", CompletedBy);
+        Required.Compile("required_missions", ref b);
+        ProvincesToHighlight.Compile("provinces_to_highlight", ref b);
+        Trigger.Compile("trigger", ref b);
+        Effect.Compile("effect", ref b);
+        b.Add("}");
 
         Instance.Localisation.Add($"{Id}_title", Name.Value);
         Instance.Localisation.Add($"{Id}_desc", Desc.Value);
-        return sb.ToString();
     }
     public Walker Call(Walker i, ref Block result)
     {
@@ -87,7 +90,7 @@ public class MissionTree : ArcObject
 {
     public static Dict<MissionTree> MissionTrees = new();
     public static new Walker Call(Walker i) => Call(i, Constructor);
-    MissionSeries?[] Serieses { get; set; }
+    public MissionSeries?[] Serieses { get; set; }
     string Id { get; set; }
     ArcBool Generic { get; set; }
     ArcBool Ai { get; set; }
@@ -227,19 +230,27 @@ public class MissionSeries : IArcObject
     public override string ToString() => Id.Value;
     public static string Transpile()
     {
-        StringBuilder sb = new();
+        Block b = new();
         foreach (MissionSeries? MissionSeries in MissionSerieses.Values())
         {
             if (MissionSeries == null) continue;
-            sb.Append($"{MissionSeries.Id} = {{ slot = {MissionSeries.Slot} generic = {MissionSeries.Generic} ai = {MissionSeries.Ai} has_country_shield = {MissionSeries.HasCountryShield} {MissionSeries.PotentialOnLoad.Compile("potential_on_load")} {MissionSeries.Potential.Compile("potential")} ");
+            b.Add(
+                MissionSeries.Id, "=", "{", 
+                    "slot", "=", MissionSeries.Slot, 
+                    "generic", "=", MissionSeries.Generic, 
+                    "ai", "=", MissionSeries.Ai ,
+                    "has_country_shield", "=", MissionSeries.HasCountryShield
+            );
+            MissionSeries.PotentialOnLoad.Compile("potential_on_load", ref b);
+            MissionSeries.Potential.Compile("potential", ref b);
             foreach(Mission? mission in from c in MissionSeries.Missions orderby c.Value.Position.Value select c.Value)
             {
-                sb.Append(mission.Transpile());
+                mission.Transpile(ref b);
             }
-            sb.Append($" }} ");
+            b.Add("}");
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/missions/arc.txt", sb.ToString());
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/missions/arc.txt", string.Join(' ', b));
         return "Missions";
     }
     public Walker Call(Walker i, ref Block result)

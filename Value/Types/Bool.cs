@@ -42,6 +42,31 @@ public class ArcBool : IValue
     public static implicit operator bool(ArcBool b) => b.Value;
     public Walker Call(Walker i, ref Block result)
     {
-        throw new NotImplementedException();
+        if (i.MoveNext())
+        {
+            switch (i.Current)
+            {
+                case ":=":
+                    {
+                        if (!i.MoveNext())
+                            throw new Exception();
+
+                        string k = i.Current;
+                        k = k.Replace("yes", "true");
+                        k = k.Replace("no", "false");
+                        Value = bool.Parse(k);
+                    }
+                    break;
+
+                default:
+                    {
+                        i.MoveBack();
+                        result.Add(Value.ToString());
+                    }
+                    break;
+            }
+        }
+        else result.Add(Value.ToString());
+        return i;
     }
 }

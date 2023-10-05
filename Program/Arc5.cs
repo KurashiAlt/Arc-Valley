@@ -27,6 +27,7 @@ namespace ArcInstance
         public static bool Lint = true;
         public static string TranspileTarget;
         public static string GfxFolder;
+        public static string UnsortedFolder;
         public static IEnumerable<string> LoadOrder;
         public void Run(string[] args, ref Stopwatch timer)
         {
@@ -41,6 +42,7 @@ namespace ArcInstance
             va.Add("}");
             Args arcDefines = Args.GetArgs(va);
 
+            UnsortedFolder = arcDefines.Get(ArcString.Constructor, "unsorted_target").Value;
             TranspileTarget = arcDefines.Get(ArcString.Constructor, "transpile_target").Value;
             GfxFolder = arcDefines.Get(ArcString.Constructor, "gfx_folder").Value;
             LoadOrder = from c in arcDefines.Get(ArcCode.Constructor, "load_order").Value select new string(c.value);
@@ -240,6 +242,7 @@ namespace ArcInstance
                     OpinionModifier.Transpile,
                     EventModifier.Transpile,
                     TranspileLocalisations,
+                    Unsorted
                 };
 
                 foreach(Func<string> transpiler in Transpilers)
@@ -266,6 +269,22 @@ namespace ArcInstance
 
                     File.Delete($"{TranspileTarget}/gfx/event_pictures/arc/{s}");
                     File.Copy(c, $"{TranspileTarget}/gfx/event_pictures/arc/{s}");
+                }
+
+                CreateTillFolder($"{TranspileTarget}/gfx/interface/missions");
+                foreach (string c in GetFiles($"{GfxFolder}/missions"))
+                {
+                    string s = c.Split('\\').Last();
+
+                    b.Add(
+                        "spriteType", "=", "{",
+                            "name", "=", $"\"{s.Split('.').First()}\"",
+                            "texturefile", "=", $"\"gfx/interface/missions/{s}\"",
+                        "}"
+                    );
+
+                    File.Delete($"{TranspileTarget}/gfx/interface/missions/{s}");
+                    File.Copy(c, $"{TranspileTarget}/gfx/interface/missions/{s}");
                 }
 
                 foreach(string folder in GetFolders($"{GfxFolder}/ages"))
@@ -328,6 +347,24 @@ namespace ArcInstance
                     File.Copy(oldPath , newPath);
                 }
 
+                CreateTillFolder($"{TranspileTarget}/gfx/interface/privileges");
+                foreach (string c in GetFiles($"{GfxFolder}/privileges"))
+                {
+                    string s = c.Split('\\').Last();
+                    string oldPath = $"{GfxFolder}/privileges/{s}";
+                    string newPath = $"{TranspileTarget}/gfx/interface/privileges/{s}";
+
+                    b.Add(
+                        "spriteType", "=", "{",
+                            "name", "=", $"\"{s.Split('.').First()}\"",
+                            "texturefile", "=", $"\"gfx/interface/privileges/{s}\"",
+                        "}"
+                    );
+
+                    File.Delete(newPath);
+                    File.Copy(oldPath , newPath);
+                }
+
                 b.Add("}");
 
                 OverwriteFile($"{TranspileTarget}/interface/arc5.gfx", string.Join(' ', b));
@@ -349,35 +386,78 @@ namespace ArcInstance
                 OverwriteFile($"warnings.txt", string.Join('\n', warnings));
             }
 
-            return;
-            bool FileCompare(string file1, string file2)
+            if (args.Contains("--mission"))
             {
-                int file1byte;
-                int file2byte;
-                FileStream fs1;
-                FileStream fs2;
-                if (file1 == file2)
+                foreach(var a in MissionTree.MissionTrees)
                 {
-                    return true;
+                    foreach(var b in a.Value.Serieses)
+                    {
+                        if (b == null) continue;
+                        foreach(var c in b.Missions)
+                        {
+                            Console.WriteLine($"mission {c.Value.Id}");
+                        }
+                    }
                 }
-                fs1 = new FileStream(file1, FileMode.Open, FileAccess.Read);
-                fs2 = new FileStream(file2, FileMode.Open, FileAccess.Read);
-                if (fs1.Length != fs2.Length)
+            }
+
+            return;
+        }
+        static string Unsorted()
+        {
+            if(!iArgs.Contains("--unsorted")) return "Unsorted Files";
+            RFold(UnsortedFolder);
+            void RFold(string fold)
+            {
+                IEnumerable<string> Folders = GetFolders(fold);
+                foreach (string folder in Folders)
                 {
-                    fs1.Close();
-                    fs2.Close();
-                    return false;
+                    RFold(folder);
                 }
-                do
+
+                string tfold = $"{TranspileTarget}\\{Path.GetRelativePath($"{directory}/{UnsortedFolder}", fold)}".Replace('\\', '/');
+                CreateTillFolder(tfold);
+                IEnumerable<string> files = GetFiles(fold);
+                foreach (string file in files)
                 {
-                    file1byte = fs1.ReadByte();
-                    file2byte = fs2.ReadByte();
+                    string cfile = Path.GetRelativePath(directory, file).Replace('\\', '/');
+                    string tfile = $"{TranspileTarget}\\{Path.GetRelativePath($"{directory}/{UnsortedFolder}", file)}".Replace('\\', '/');
+                    File.Delete(tfile);
+                    File.Copy(cfile, tfile);
                 }
-                while ((file1byte == file2byte) && (file1byte != -1));
+            }
+
+            return "Unsorted Files";
+        }
+        static bool FileCompare(string file1, string file2)
+        {
+            if (!File.Exists(file1)) return false;
+            if (!File.Exists(file2)) return false;
+            int file1byte;
+            int file2byte;
+            FileStream fs1;
+            FileStream fs2;
+            if (file1 == file2)
+            {
+                return true;
+            }
+            fs1 = new FileStream(file1, FileMode.Open, FileAccess.Read);
+            fs2 = new FileStream(file2, FileMode.Open, FileAccess.Read);
+            if (fs1.Length != fs2.Length)
+            {
                 fs1.Close();
                 fs2.Close();
-                return ((file1byte - file2byte) == 0);
+                return false;
             }
+            do
+            {
+                file1byte = fs1.ReadByte();
+                file2byte = fs2.ReadByte();
+            }
+            while ((file1byte == file2byte) && (file1byte != -1));
+            fs1.Close();
+            fs2.Close();
+            return ((file1byte - file2byte) == 0);
         }
         static List<string> warnings = new();
         public static void Warn(string s)

@@ -24,6 +24,7 @@ public static partial class Parser
     }
     public static Block ParseCode(string str)
     {
+        int line = 0;
         str = CommentRemover().Replace(str, "");
 
         Block retval = new();

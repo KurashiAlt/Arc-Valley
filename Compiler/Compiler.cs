@@ -522,15 +522,30 @@ namespace Arc
                 string value = g.Current;
 
                 Instance.Localisation.Add(key, value);
+                return true;
             }
-            else if (g.Current == "breakpoint")
+
+            if (g.Current == "breakpoint")
             {
                 Debugger.Break();
+                return true;
             }
-            else if (g.Current == "if") { result.Add("if", "="); }
-            else if (g.Current == "else_if") { result.Add("else_if", "="); }
-            else if (g.Current == "else") { result.Add("else", "="); }
-            else if (g.Current.value.EndsWith(','))
+            if (g.Current == "if") 
+            { 
+                result.Add("if", "=");
+                return true;
+            }
+            if (g.Current == "else_if") 
+            { 
+                result.Add("else_if", "=");
+                return true;
+            }
+            if (g.Current == "else") 
+            { 
+                result.Add("else", "=");
+                return true;
+            }
+            if (g.Current.value.EndsWith(','))
             {
                 List<string> s = new();
                 do
@@ -566,6 +581,7 @@ namespace Arc
                         result.Add(StringCompile(k, compile));
                         result.Add(n);
                     }
+                    return true;
                 }
                 else if (g.Current.value == "=")
                 {
@@ -587,10 +603,11 @@ namespace Arc
 
                         result.Add(n);
                     }
+                    return true;
                 }
                 else throw new Exception();
             }
-            else if (TryTrimOne(g.Current, '`', out string? newValue))
+            if (TryTrimOne(g.Current, '`', out string? newValue))
             {
                 if (newValue == null)
                     throw new Exception();
@@ -602,13 +619,14 @@ namespace Arc
                 });
 
                 result.Add(newValue);
+                return true;
             }
-            else if (g.Current.value.EndsWith('%'))
+            if (g.Current.value.EndsWith('%'))
             {
                 result.Add((double.Parse(g.Current.value[..^1]) / 100).ToString("0.000"));
                 return true;
             }
-            else if (g.Current.value.StartsWith('[') && g.Current.value.EndsWith(']'))
+            if (g.Current.value.StartsWith('[') && g.Current.value.EndsWith(']'))
             {
                 string trigger = g.Current.value[1..^1];
 
@@ -627,22 +645,26 @@ namespace Arc
                         compile(scope),
                     "}"
                 );
+                return true;
             }
-            else if (g.Current.value.StartsWith('(') && g.Current.value.EndsWith(')'))
+            if (g.Current.value.StartsWith('(') && g.Current.value.EndsWith(')'))
             {
                 string calc = g.Current.value[1..^1];
 
                 result.Add(Calculator.Calculate(calc));
+                return true;
             }
-            else if (TryGetVariable(g.Current, out IVariable? var))
+            if (TryGetVariable(g.Current, out IVariable? var))
             {
                 if (var == null) throw new Exception();
                 g = var.Call(g, ref result);
+                return true;
             }
-            else return false;
-            return true;
+
+            return false;
         }
         public static bool IsBaseScope(string v) => v == "ROOT" || v == "PREV" || v == "THIS" || v == "FROM";
+        public static bool IsLogicalScope(string v) => v == "NOT" || v == "AND" || v == "OR";
         public static bool IsDefaultScope(string v) => v == "REB" || v == "NAT" || v == "PIR";
         public static string StringCompile(string file, Func<Block, string> compiler, bool preprocessor = false)
         {

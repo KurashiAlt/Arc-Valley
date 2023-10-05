@@ -107,7 +107,7 @@ public class Type : IValue, vvC
             "country_scope" => new((Block b) =>
             {
                 string tag = string.Join(' ', b);
-                if (Compiler.IsDefaultScope(tag) || Compiler.IsBaseScope(tag)) return ArcString.Constructor(b);
+                if (Compiler.IsDefaultScope(tag) || Compiler.IsBaseScope(tag) || tag.StartsWith("event_target") ) return ArcString.Constructor(b);
                 return Country.Countries.Get(tag);
             }),
 
@@ -140,6 +140,14 @@ public class Type : IValue, vvC
             "agenda" => new(EstateAgenda.EstateAgendas.Get),
             "privilege" => new(EstatePrivilege.EstatePrivileges.Get),
             "estate" => new(Estate.Estates.Get),
+            "estate_privilege" => new((Block b) =>
+            {
+                string id = string.Join(' ', b);
+                string[] parts = id.Split(':');
+                Estate est = Estate.Estates[parts[0]];
+                EstatePrivilege pr = est.Privileges.dict[parts[1]];
+                return pr;
+            }),
             "government" => new(Government.Governments.Get),
             "government_names" => new(GovernmentNames.GovernmentNameDict.Get),
             "government_reform" => new(GovernmentReform.GovernmentReforms.Get),
