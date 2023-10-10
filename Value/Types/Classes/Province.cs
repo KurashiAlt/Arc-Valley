@@ -96,7 +96,7 @@ public class Province : IArcObject
         return i;
     }
 
-    public override string ToString() => Name.Value;
+    public override string ToString() => Id.ToString();
     public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
     public static string Transpile()
     {

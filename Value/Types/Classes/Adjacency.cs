@@ -3,76 +3,40 @@ using Pastel;
 using System.Text;
 
 namespace Arc;
-public class Adjacency : IArcObject
+public class Adjacency : ArcObject
 {
     public static readonly Dict<Adjacency> Adjacencies = new();
-    public bool IsObject() => true;
-    public Province From { get; set; }
-    public Province To { get; set; }
-    public ArcString Type { get; set; }
-    public Province Through { get; set; }
-    public ArcInt StartX { get; set; }
-    public ArcInt StartY { get; set; }
-    public ArcInt StopX { get; set; }
-    public ArcInt StopY { get; set; }
-    public Dict<IVariable> KeyValuePairs { get; set; }
-    public Adjacency(Province from, Province to, ArcString type, Province through, ArcInt startX, ArcInt startY, ArcInt stopX, ArcInt stopY)
+    public Adjacency(string id)
     {
-        From = from;
-        To = to;
-        Type = type;
-        if (!new string[] { "sea", "land", "lake", "canal", "river" }.Contains(type.Value)) throw new Exception();
-        Through = through;
-        StartX = startX;
-        StartY = startY;
-        StopX = stopX;
-        StopY = stopY;
-        KeyValuePairs = new()
-        {
-            { "from", From },
-            { "to", To },
-            { "type", Type },
-            { "through", Through },
-            { "start_x", StartX },
-            { "start_y", StartY },
-            { "stop_x", StopX },
-            { "stop_y", StopY },
-        };
+        Adjacencies.Add(id, this);
     }
-    public bool CanGet(string indexer) => KeyValuePairs.CanGet(indexer);
-    public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
-    public static Walker Call(Walker i)
+    public static new Walker Call(Walker i) => Call(i, Constructor);
+    public static Adjacency Constructor(string id, Args args) => new(id)
     {
-        if (!i.MoveNext()) throw new Exception();
-
-        string id = i.Current;
-
-        i = Args.GetArgs(i, out Args args);
-        Adjacency adj = new(
-            Province.Provinces[args.Get(ArcString.Constructor, "from").Value],
-            Province.Provinces[args.Get(ArcString.Constructor, "to").Value],
-            args.Get(ArcString.Constructor, "type"),
-            Province.Provinces[args.Get(ArcString.Constructor, "through").Value],
-            args.GetDefault(ArcInt.Constructor, "start_x", new(-1)),
-            args.GetDefault(ArcInt.Constructor, "start_y", new(-1)),
-            args.GetDefault(ArcInt.Constructor, "stop_x", new(-1)),
-            args.GetDefault(ArcInt.Constructor, "stop_y", new(-1))
-        );
-
-        Adjacencies.Add(id, adj);
-
-        return i;
+        { "id", new ArcString(id) },
+        { "from", args.GetFromList(Province.Provinces, "from") },
+        { "to", args.GetFromList(Province.Provinces, "to") },
+        { "type", args.Get(ArcString.Constructor, "type") },
+        { "through", args.GetFromList(Province.Provinces, "through") },
+        { "start_x", args.GetDefault(ArcInt.Constructor, "start_x", new(-1)) },
+        { "start_y", args.GetDefault(ArcInt.Constructor, "start_y", new(-1)) },
+        { "stop_x", args.GetDefault(ArcInt.Constructor, "stop_x", new(-1)) },
+        { "stop_y", args.GetDefault(ArcInt.Constructor, "stop_y", new(-1)) }
+    };
+    public void Transpile(ref StringBuilder sb)
+    {
+        sb.Append($"{Get<Province>("from").Id};{Get<Province>("to").Id};{Get<ArcString>("type")};{Get<Province>("through").Id};{Get<ArcInt>("start_x")};{Get<ArcInt>("start_y")};{Get<ArcInt>("stop_x")};{Get<ArcInt>("stop_y")};{Get<Province>("from").Name} to {Get<Province>("to").Name} through {Get<Province>("through").Name};\n");
     }
     public static string Transpile()
     {
         StringBuilder sb = new("From;To;Type;Through;start_x;start_y;stop_x;stop_y;Comment;\n");
         foreach (Adjacency adjacency in Adjacency.Adjacencies.Values())
         {
-            sb.Append($"{adjacency.From.Id};{adjacency.To.Id};{adjacency.Type};{adjacency.Through.Id};{adjacency.StartX};{adjacency.StartY};{adjacency.StopX};{adjacency.StopY};{adjacency.From.Name.Value.Trim('"')} to {adjacency.To.Name.Value.Trim('"')} through {adjacency.Through.Name.Value.Trim('"')};\n");
+            adjacency.Transpile(ref sb);
         }
         sb.Append("-1;-1;;-1;-1;-1;-1;-1;-1;");
         Instance.OverwriteFile($"{Instance.TranspileTarget}/map/adjacencies.csv", sb.ToString(), false);
         return "Adjacencies";
     }
-    public Walker Call(Walker i, ref Block result) => throw new Exception();
+    public override Walker Call(Walker i, ref Block result) => throw new Exception();
 }
