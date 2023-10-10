@@ -5,74 +5,68 @@ using System.Linq;
 using System.Text;
 
 namespace Arc;
-public class Incident : IArcObject
+public class Incident : ArcObject
 {
     public static readonly Dict<Incident> Incidents = new();
-    public bool IsObject() => true;
-    public ArcString Id { get; set; }
-    public ArcString Name { get; set; }
-    public Dict<ArcCode> Attributes { get; set; } 
-    public static string[] ImplementedAttributes = new string[]
+    public static new Walker Call(Walker i) => Call(i, Constructor);
+    Incident(string key)
     {
-        "name"
+        Incidents.Add(key, this);
+    }
+    public static Incident Constructor(string id, Args args) => new(id)
+    {
+        { "id", new ArcString(id) },
+        { "name", args.Get(ArcString.Constructor, "name") },
+        { "immediate", args.Get(ArcEffect.Constructor, "immediate", new()) },
+        { "after", args.Get(ArcEffect.Constructor, "after", new()) },
+        { "can_stop", args.Get(ArcTrigger.Constructor, "can_stop", new()) },
+        { "options", args.Get((Block s) => new ArcList<Option>(s, Option.Constructor), "options") }
     };
-    public Dict<IVariable?> KeyValuePairs { get; set; }
-    public Incident(
-        string id, 
-        ArcString name, 
-        Dict<ArcCode> attributes
-    ) {
-        Id = new(id);
-        Name = name;
-        Attributes = attributes;
-        KeyValuePairs = new()
-        {
-            { "id", Id },
-            { "name", Name },
-            { "attributes", Attributes },
-        };
-
-        Incidents.Add(id, this);
-    }
-
-    public bool CanGet(string indexer) => KeyValuePairs.CanGet(indexer);
-    public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
-    public static Walker Call(Walker i)
+    public void Transpile(ref Block file, int i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        string id = Get<ArcString>("id").Value;
+        string name = Get<ArcString>("name").Value;
+        file.Add(id, "=", "{");
+        file.Add("event", "=", $"incidents.{i}");
+        file.Add("default_option", "=", "0");
+        Get<ArcTrigger>("can_stop").Compile("can_stop", ref file);
+        file.Add("0", "=", "{", "factor", "=", "1", "}");
+        file.Add("1", "=", "{", "factor", "=", "1", "}");
+        file.Add("2", "=", "{", "factor", "=", "1", "}");
+        file.Add("}");
 
-        string id = i.Current;
-
-        i = Args.GetArgs(i, out Args args);
-
-        Constructor(id, args);
-
-        return i;
-    }
-    public static Incident Constructor(string id, Args args)
-    {
-        return new Incident(id,
-            args.Get(ArcString.Constructor, "name"),
-            args.GetAttributes(ImplementedAttributes)
+        _ = new Event(
+            $"incidents.{i}",
+            new(false),
+            new(name),
+            new(""),
+            new("DEATH_OF_HEIR_eventPicture"),
+            new(false),
+            new(),
+            new(true),
+            new(false),
+            new(),
+            Get<ArcEffect>("immediate"),
+            Get<ArcEffect>("after"),
+            new(),
+            new(true),
+            Get<ArcList<Option>>("options")
         );
+
+        Instance.Localisation.Add($"{id}", name);
     }
     public static string Transpile()
     {
         Block file = new();
+        int i = 0;
         foreach (Incident reform in Incidents.Values())
         {
-            file.Add(reform.Id, "=", "{");
-            foreach (var v in reform.Attributes)
-            {
-                v.Value.Compile(v.Key, ref file, true, true);
-            }
-            file.Add("}");
-
-            Instance.Localisation.Add($"{reform.Id}", reform.Name.Value);
+            reform.Transpile(ref file, i);
+            i++;
         }
         Instance.OverwriteFile($"{Instance.TranspileTarget}/common/imperial_incidents/arc.txt", string.Join(' ', file));
         return "Incidents";
     }
-    public override string ToString() => Name.Value;
-    public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
+    public override string ToString() => Get<ArcString>("id").Value;
+    public Walker Call(Walker i, ref Block result) { result.Add(ToString()); return i; }
 }

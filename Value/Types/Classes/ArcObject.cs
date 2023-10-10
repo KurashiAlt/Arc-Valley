@@ -21,6 +21,8 @@ public class ArcObject : Dict<IVariable>, Arg
 
         foreach (KeyValuePair<string, Type> kvp in b.Get<Dict<Type>>("args"))
         {
+            if (kvp.Value.Nullable && !args.keyValuePairs.ContainsKey(kvp.Key)) continue;
+
             ArcString d = args.Get(ArcString.Constructor, kvp.Key);
             if (Compiler.TryGetVariable(d.Value, out IVariable? var))
             {

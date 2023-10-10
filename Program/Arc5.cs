@@ -203,9 +203,9 @@ namespace ArcInstance
                     TranspileOnActions,
                     ReligionGroup.Transpile,
                     PersonalDeity.Transpile,
-                    Event.Transpile,
                     Decision.Transpile,
                     Incident.Transpile,
+                    Event.Transpile,
                     Adjacency.Transpile,
                     Area.Transpile,
                     Bookmark.Transpile,
@@ -398,6 +398,26 @@ namespace ArcInstance
                             Console.WriteLine($"mission {c.Value.Id}");
                         }
                     }
+                }
+            }
+
+            if (args.Contains("--ideas"))
+            {
+                int i = 1;
+                foreach(var a in IdeaGroup.IdeaGroups)
+                {
+                    string color = a.Value.Category.Value switch
+                    {
+                        "ADM" => "fillColor=#d5e8d4;strokeColor=#82b366;",
+                        "DIP" => "fillColor=#dae8fc;strokeColor=#6c8ebf;",
+                        "MIL" => "fillColor=#f8cecc;strokeColor=#b85450;",
+                        _ => ""
+                    };
+                    if (color == "") continue;
+                    Console.WriteLine($"        <mxCell id=\"iTcpgkeqXsMG6gXbWK2M-{i}\" value=\"{a.Value.Name}\" style=\"rounded=0;whiteSpace=wrap;html=1;{color}\" vertex=\"1\" parent=\"1\">");
+                    Console.WriteLine($"          <mxGeometry x=\"{i*80}\" y=\"320\" width=\"80\" height=\"80\" as=\"geometry\" />");
+                    Console.WriteLine("        </mxCell>");
+                    i++;
                 }
             }
 

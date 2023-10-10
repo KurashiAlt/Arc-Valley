@@ -17,23 +17,18 @@ public class ArcString : IValue
     }
     public ArcString(Block b)
     {
-        string val = TrimOneQuote(string.Join(' ', b));
-
-        if (Compiler.TryTrimOne(val, '`', out string? newValue))
+        if (Compiler.TranspiledString(string.Join(' ', b), '`', out string? newValue, Compiler.Compile) && newValue != null)
         {
-            if (newValue == null)
-                throw new Exception();
-
-            Regex Replace = Compiler.TranspiledString();
-            newValue = Replace.Replace(newValue, delegate (Match m)
-            {
-                return Compiler.StringCompile(m.Groups[1].Value, Compiler.Compile).Trim();
-            });
-
-            val = newValue;
+            Value = newValue;
         }
-
-        Value = val;
+        else if (Compiler.TranspiledString(string.Join(' ', b), '"', out string? nw2, Compiler.Compile) && nw2 != null)
+        {
+            Value = nw2;
+        }
+        else 
+        {
+            Value = TrimOneQuote(string.Join(' ', b));
+        }
     }
     public void Set(Block value)
     {
@@ -85,12 +80,12 @@ public class ArcString : IValue
                 default:
                     {
                         i.MoveBack();
-                        result.Add(Compiler.StringCompile(Value, Compiler.Compile));
+                        result.Add(string.Join(' ', Value));
                     }
                     break;
             }
         }
-        else result.Add(Compiler.StringCompile(Value, Compiler.Compile));
+        else result.Add(string.Join(' ', Value));
         return i;
     }
 }

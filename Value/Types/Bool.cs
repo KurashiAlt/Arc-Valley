@@ -61,12 +61,12 @@ public class ArcBool : IValue
                 default:
                     {
                         i.MoveBack();
-                        result.Add(Value.ToString());
+                        result.Add(ToString());
                     }
                     break;
             }
         }
-        else result.Add(Value.ToString());
+        else result.Add(ToString());
         return i;
     }
 }

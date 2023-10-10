@@ -180,8 +180,16 @@ public partial class Compiler
                 }
                 else
                 {
-                    var = Get(currentKey);
-                    return true;
+                    if (CanGet(currentKey))
+                    {
+                        var = Get(currentKey);
+                        return true;
+                    }
+                    else
+                    {
+                        var = null;
+                        return false;
+                    }
                 }
                 f++;
             } while (KeyLocator.Length > f);
