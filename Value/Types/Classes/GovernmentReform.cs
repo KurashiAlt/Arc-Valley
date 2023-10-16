@@ -150,7 +150,7 @@ public class GovernmentReform : IArcObject
     {
         return new GovernmentReform(id, 
             args.Get(ArcString.Constructor, "name"),
-            args.Get(ArcString.Constructor, "desc"),
+            args.Get(ArcString.Constructor, "desc", new("")),
             args.Get(ArcString.Constructor, "icon"),
             args.Get(ArcTrigger.Constructor, "potential", new()),
             args.Get(ArcTrigger.Constructor, "trigger", new()),

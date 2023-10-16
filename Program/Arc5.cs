@@ -32,7 +32,7 @@ namespace ArcInstance
         public void Run(string[] args, ref Stopwatch timer)
         {
             iArgs = args;
-            Lint = iArgs.Contains("--lint");
+            Lint = iArgs.Contains("lint");
             CultureInfo.CurrentCulture = CultureInfo.CreateSpecificCulture("en");
 
             Compiler.owner = this;
@@ -52,14 +52,14 @@ namespace ArcInstance
                 TimeSpan start = timer.Elapsed;
                 LoadTarget(location);
                 TimeSpan end = timer.Elapsed;
-                Console.WriteLine($"{$"Finished Loading {location}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds.ToString().PadLeft(5)} Milliseconds".Pastel(ConsoleColor.Red)}");
+                Console.WriteLine($"{$"Finished Loading {location}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
             }
 
             if (Lint)
             {
-                if (iArgs.Contains("--nudge"))
+                if (iArgs.Contains("nudge"))
                 {
-                    string path = iArgs[Array.IndexOf(iArgs, "--nudge") + 1];
+                    string path = iArgs[Array.IndexOf(iArgs, "nudge") + 1];
                     Walker g;
 
                     string tradenodePath = $"{path}/common/tradenodes/00_tradenodes.txt";
@@ -200,11 +200,12 @@ namespace ArcInstance
             {
                 Func<string>[] Transpilers =
                 {
+                    Incident.Transpile,
+
                     TranspileOnActions,
                     ReligionGroup.Transpile,
                     PersonalDeity.Transpile,
                     Decision.Transpile,
-                    Incident.Transpile,
                     Event.Transpile,
                     Adjacency.Transpile,
                     Area.Transpile,
@@ -238,136 +239,25 @@ namespace ArcInstance
                     SpecialUnitTranspile,
                     Government.Transpile,
                     GovernmentNames.Transpile,
+                    HolyOrder.Transpile,
+                    ProvinceTriggeredModifier.Transpile,
+                    CasusBelli.Transpile,
+                    WarGoal.Transpile,
 
                     OpinionModifier.Transpile,
                     EventModifier.Transpile,
                     TranspileLocalisations,
-                    Unsorted
+                    Gfx,
+                    Unsorted,
                 };
 
                 foreach(Func<string> transpiler in Transpilers)
                 {
                     TimeSpan start = timer.Elapsed;
                     string type = transpiler();
-                    TimeSpan end = timer.Elapsed;
-                    Console.WriteLine($"{$"Finished Transpiling {type}".PadRight(50).Pastel(ConsoleColor.Cyan)}{$"{(end - start).Milliseconds.ToString().PadLeft(5)} Milliseconds".Pastel(ConsoleColor.Red)}");
+                    start = timer.Elapsed - start;
+                    Console.WriteLine($"{$"Finished Transpiling {type}".PadRight(50).Pastel(ConsoleColor.Cyan)}{$"{start.TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
                 }
-
-                Block b = new("spriteTypes", "=", "{");
-
-                CreateTillFolder($"{TranspileTarget}/gfx/event_pictures/arc");
-                foreach (string c in GetFiles($"{GfxFolder}/event_pictures"))
-                {
-                    string s = c.Split('\\').Last();
-
-                    b.Add(
-                        "spriteType", "=", "{",
-                            "name", "=", $"\"{s.Split('.').First()}\"",
-                            "texturefile", "=", $"\"gfx/event_pictures/arc/{s}\"",
-                        "}"
-                    );
-
-                    File.Delete($"{TranspileTarget}/gfx/event_pictures/arc/{s}");
-                    File.Copy(c, $"{TranspileTarget}/gfx/event_pictures/arc/{s}");
-                }
-
-                CreateTillFolder($"{TranspileTarget}/gfx/interface/missions");
-                foreach (string c in GetFiles($"{GfxFolder}/missions"))
-                {
-                    string s = c.Split('\\').Last();
-
-                    b.Add(
-                        "spriteType", "=", "{",
-                            "name", "=", $"\"{s.Split('.').First()}\"",
-                            "texturefile", "=", $"\"gfx/interface/missions/{s}\"",
-                        "}"
-                    );
-
-                    File.Delete($"{TranspileTarget}/gfx/interface/missions/{s}");
-                    File.Copy(c, $"{TranspileTarget}/gfx/interface/missions/{s}");
-                }
-
-                foreach(string folder in GetFolders($"{GfxFolder}/ages"))
-                {
-                    string folderName = folder.Split('\\').Last();
-                    CreateTillFolder($"{TranspileTarget}/gfx/interface/ages/{folderName}");
-                    foreach (string file in GetFiles(folder))
-                    {
-                        string s = file.Split('\\').Last();
-                        string v = $"gfx/interface/ages/{folderName}/{s}";
-                        b.Add(
-                            "spriteType", "=", "{",
-                                "name", "=", $"\"GFX_{s.Split('.').First()}\"",
-                                "texturefile", "=", $"\"{v}\"",
-                            "}"
-                        );
-
-                        string oldPath = Path.GetRelativePath(directory, file);
-                        string newPath = $"{TranspileTarget}/{v}";
-                        
-                        File.Delete(newPath);
-                        File.Copy(oldPath, newPath);
-                    }
-                }
-
-                CreateTillFolder($"{TranspileTarget}/gfx/interface/buildings");
-                foreach (string c in GetFiles($"{GfxFolder}/buildings"))
-                {
-                    string s = c.Split('\\').Last();
-                    string oldPath = $"{GfxFolder}/buildings/{s}";
-                    string newPath = $"{TranspileTarget}/gfx/interface/buildings/{s}";
-
-                    b.Add(
-                        "spriteType", "=", "{",
-                            "name", "=", $"\"GFX_{s.Split('.').First()}\"",
-                            "texturefile", "=", $"\"gfx/interface/buildings/{s.Split('.').First()}.tga\"",
-                            "loadType", "=", "\"INGAME\"",
-                        "}"
-                    );
-
-                    File.Delete(newPath);
-                    File.Copy(oldPath, newPath);
-                }
-
-                CreateTillFolder($"{TranspileTarget}/gfx/interface/great_projects");
-                foreach (string c in GetFiles($"{GfxFolder}/great_projects"))
-                {
-                    string s = c.Split('\\').Last();
-                    string oldPath = $"{GfxFolder}/great_projects/{s}";
-                    string newPath = $"{TranspileTarget}/gfx/interface/great_projects/{s}";
-
-                    b.Add(
-                        "spriteType", "=", "{",
-                            "name", "=", $"\"GFX_great_project_{s.Split('.').First()}\"",
-                            "texturefile", "=", $"\"gfx/interface/great_projects/{s}\"",
-                        "}"
-                    );
-
-                    File.Delete(newPath);
-                    File.Copy(oldPath , newPath);
-                }
-
-                CreateTillFolder($"{TranspileTarget}/gfx/interface/privileges");
-                foreach (string c in GetFiles($"{GfxFolder}/privileges"))
-                {
-                    string s = c.Split('\\').Last();
-                    string oldPath = $"{GfxFolder}/privileges/{s}";
-                    string newPath = $"{TranspileTarget}/gfx/interface/privileges/{s}";
-
-                    b.Add(
-                        "spriteType", "=", "{",
-                            "name", "=", $"\"{s.Split('.').First()}\"",
-                            "texturefile", "=", $"\"gfx/interface/privileges/{s}\"",
-                        "}"
-                    );
-
-                    File.Delete(newPath);
-                    File.Copy(oldPath , newPath);
-                }
-
-                b.Add("}");
-
-                OverwriteFile($"{TranspileTarget}/interface/arc5.gfx", string.Join(' ', b));
 
                 Block AiPersonalityFile = new();
                 foreach(KeyValuePair<string, ArcCode> personality in Compiler.GetVariable<Dict<ArcCode>>("ai_personalities"))
@@ -386,7 +276,7 @@ namespace ArcInstance
                 OverwriteFile($"warnings.txt", string.Join('\n', warnings));
             }
 
-            if (args.Contains("--mission"))
+            if (args.Contains("mission"))
             {
                 foreach(var a in MissionTree.MissionTrees)
                 {
@@ -401,7 +291,7 @@ namespace ArcInstance
                 }
             }
 
-            if (args.Contains("--ideas"))
+            if (args.Contains("ideas"))
             {
                 int i = 1;
                 foreach(var a in IdeaGroup.IdeaGroups)
@@ -423,9 +313,167 @@ namespace ArcInstance
 
             return;
         }
+        static string Gfx()
+        {
+            if (!(iArgs.Contains("gfx") || iArgs.Contains("all"))) return "GFX folder";
+            Block b = new("spriteTypes", "=", "{");
+
+            CreateTillFolder($"{TranspileTarget}/gfx/event_pictures/arc");
+            foreach (string c in GetFiles($"{GfxFolder}/event_pictures"))
+            {
+                string s = c.Split('\\').Last();
+
+                b.Add(
+                    "spriteType", "=", "{",
+                        "name", "=", $"\"{s.Split('.').First()}\"",
+                        "texturefile", "=", $"\"gfx/event_pictures/arc/{s}\"",
+                    "}"
+                );
+
+                File.Delete($"{TranspileTarget}/gfx/event_pictures/arc/{s}");
+                File.Copy(c, $"{TranspileTarget}/gfx/event_pictures/arc/{s}");
+            }
+
+            CreateTillFolder($"{TranspileTarget}/gfx/interface/missions");
+            foreach (string c in GetFiles($"{GfxFolder}/missions"))
+            {
+                string s = c.Split('\\').Last();
+
+                b.Add(
+                    "spriteType", "=", "{",
+                        "name", "=", $"\"{s.Split('.').First()}\"",
+                        "texturefile", "=", $"\"gfx/interface/missions/{s}\"",
+                    "}"
+                );
+
+                File.Delete($"{TranspileTarget}/gfx/interface/missions/{s}");
+                File.Copy(c, $"{TranspileTarget}/gfx/interface/missions/{s}");
+            }
+
+            foreach (string folder in GetFolders($"{GfxFolder}/ages"))
+            {
+                string folderName = folder.Split('\\').Last();
+                CreateTillFolder($"{TranspileTarget}/gfx/interface/ages/{folderName}");
+                foreach (string file in GetFiles(folder))
+                {
+                    string s = file.Split('\\').Last();
+                    string v = $"gfx/interface/ages/{folderName}/{s}";
+                    b.Add(
+                        "spriteType", "=", "{",
+                            "name", "=", $"\"GFX_{s.Split('.').First()}\"",
+                            "texturefile", "=", $"\"{v}\"",
+                        "}"
+                    );
+
+                    string oldPath = Path.GetRelativePath(directory, file);
+                    string newPath = $"{TranspileTarget}/{v}";
+
+                    File.Delete(newPath);
+                    File.Copy(oldPath, newPath);
+                }
+            }
+
+            CreateTillFolder($"{TranspileTarget}/gfx/interface/buildings");
+            foreach (string c in GetFiles($"{GfxFolder}/buildings"))
+            {
+                string s = c.Split('\\').Last();
+                string oldPath = $"{GfxFolder}/buildings/{s}";
+                string newPath = $"{TranspileTarget}/gfx/interface/buildings/{s}";
+
+                b.Add(
+                    "spriteType", "=", "{",
+                        "name", "=", $"\"GFX_{s.Split('.').First()}\"",
+                        "texturefile", "=", $"\"gfx/interface/buildings/{s.Split('.').First()}.tga\"",
+                        "loadType", "=", "\"INGAME\"",
+                    "}"
+                );
+
+                File.Delete(newPath);
+                File.Copy(oldPath, newPath);
+            }
+
+            CreateTillFolder($"{TranspileTarget}/gfx/interface/great_projects");
+            foreach (string c in GetFiles($"{GfxFolder}/great_projects"))
+            {
+                string s = c.Split('\\').Last();
+                string oldPath = $"{GfxFolder}/great_projects/{s}";
+                string newPath = $"{TranspileTarget}/gfx/interface/great_projects/{s}";
+
+                b.Add(
+                    "spriteType", "=", "{",
+                        "name", "=", $"\"GFX_great_project_{s.Split('.').First()}\"",
+                        "texturefile", "=", $"\"gfx/interface/great_projects/{s}\"",
+                    "}"
+                );
+
+                File.Delete(newPath);
+                File.Copy(oldPath, newPath);
+            }
+
+            CreateTillFolder($"{TranspileTarget}/gfx/interface/privileges");
+            foreach (string c in GetFiles($"{GfxFolder}/privileges"))
+            {
+                string s = c.Split('\\').Last();
+                string oldPath = $"{GfxFolder}/privileges/{s}";
+                string newPath = $"{TranspileTarget}/gfx/interface/privileges/{s}";
+
+                b.Add(
+                    "spriteType", "=", "{",
+                        "name", "=", $"\"{s.Split('.').First()}\"",
+                        "texturefile", "=", $"\"gfx/interface/privileges/{s}\"",
+                    "}"
+                );
+
+                File.Delete(newPath);
+                File.Copy(oldPath, newPath);
+            }
+
+            CreateTillFolder($"{TranspileTarget}/gfx/interface/holy_orders");
+            foreach (string c in GetFiles($"{GfxFolder}/holy_orders"))
+            {
+                string s = c.Split('\\').Last();
+                string oldPath = $"{GfxFolder}/holy_orders/{s}";
+                string newPath = $"{TranspileTarget}/gfx/interface/holy_orders/{s}";
+
+                b.Add(
+                    "spriteType", "=", "{",
+                        "name", "=", $"\"GFX_holy_order_{s.Split('.').First()}\"",
+                        "texturefile", "=", $"\"gfx/interface/holy_orders/{s}\"",
+                        "noOfFrames", "=", "4",
+                    "}"
+                );
+
+                File.Delete(newPath);
+                File.Copy(oldPath, newPath);
+            }
+
+            CreateTillFolder($"{TranspileTarget}/gfx/interface/government_reform_icons");
+            foreach (string c in GetFiles($"{GfxFolder}/government_reforms"))
+            {
+                string s = c.Split('\\').Last();
+                string oldPath = $"{GfxFolder}/government_reforms/{s}";
+                string newPath = $"{TranspileTarget}/gfx/interface/government_reform_icons/{s}";
+
+                b.Add(
+                    "spriteType", "=", "{",
+                        "name", "=", $"\"government_reform_{s.Split('.').First()}\"",
+                        "texturefile", "=", $"\"gfx/interface/government_reform_icons/{s}\"",
+                    "}"
+                );
+
+                File.Delete(newPath);
+                File.Copy(oldPath, newPath);
+            }
+
+            b.Add("}");
+
+            OverwriteFile($"{TranspileTarget}/interface/arc5.gfx", string.Join(' ', b));
+
+            return "GFX folder";
+        }
         static string Unsorted()
         {
-            if(!iArgs.Contains("--unsorted")) return "Unsorted Files";
+            if(!(iArgs.Contains("unsorted") || iArgs.Contains("all"))) return "Unsorted Files";
             RFold(UnsortedFolder);
             void RFold(string fold)
             {
@@ -622,13 +670,21 @@ namespace ArcInstance
                 }
             }
         }
-        public static void OverwriteFile(string path, string text, bool AllowFormatting = true)
+        public static void OverwriteFile(string path, string text, bool AllowFormatting = true, bool BOM = false)
         {
+            if (BOM)
+            {
+                byte[] data = Encoding.UTF8.GetBytes(text);
+                byte[] result = Encoding.UTF8.GetPreamble().Concat(data).ToArray();
+                UTF8Encoding encoder = new(true);
+
+                text = encoder.GetString(result);
+            }
             string pathOrg = path;
             path = Path.Combine(directory, path);
             try
             {
-                if (AllowFormatting && iArgs.Contains("--format")) text = Parser.FormatCode(text);
+                if (AllowFormatting && iArgs.Contains("format")) text = Parser.FormatCode(text);
             }
             catch(Exception)
             {
@@ -660,7 +716,7 @@ namespace ArcInstance
 
                 sb.Append($" {loc.Key}: \"{value}\"\n");
             }
-            OverwriteFile($"{TranspileTarget}/localisation/replace/arc5_l_english.yml", Parser.ConvertStringToUtf8Bom(sb.ToString()), false);
+            OverwriteFile($"{TranspileTarget}/localisation/replace/arc5_l_english.yml", (sb.ToString()), false, true);
             return "Localisations";
         }
         private static string TranspileOnActions()

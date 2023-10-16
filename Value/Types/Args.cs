@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Security.Cryptography;
 
 namespace Arc;
 
@@ -159,62 +160,69 @@ public class Args
 
         int Inherits = 0;
 
-        Walker q = new(scope);
-        do //name = "Western Sea of Thule"
+        try
         {
-            string Key = q.Current; //name
-            if (!q.MoveNext()) throw new Exception(); //name
-
-            if (q.Current != "=") throw new Exception(Key);
-            if (!q.MoveNext()) throw new Exception(); //=
-
-            if(Key == "inherit")
+            Walker q = new(scope);
+            do //name = "Western Sea of Thule"
             {
-                if (noInherit)
-                {
-                    Key = $"{Key}~{Inherits}";
+                string Key = q.Current; //name
+                if (!q.MoveNext()) throw new Exception(); //name
 
+                if (q.Current != "=") throw new Exception(Key);
+                if (!q.MoveNext()) throw new Exception(); //=
+
+                if(Key == "inherit")
+                {
+                    if (noInherit)
+                    {
+                        Key = $"{Key}~{Inherits}";
+
+                        q = Compiler.GetScope(q, out Block Value);
+                        if (args.keyValuePairs.ContainsKey(Key))
+                            args.keyValuePairs[Key] = Value;
+                        else
+                            args.keyValuePairs.Add(Key, Value);
+
+                        Inherits++;
+                        continue;
+                    }
+                    Args inherit = Inheritables[q.Current];
+                    if (inherit.keyValuePairs == null)
+                        throw new Exception();
+                    foreach(KeyValuePair<string, Block> kvp in inherit.keyValuePairs)
+                    {
+                        args.keyValuePairs.Add(kvp.Key, kvp.Value);
+                    }
+                }
+                else if (multiKey)
+                {
                     q = Compiler.GetScope(q, out Block Value);
-                    if (args.keyValuePairs.ContainsKey(Key))
+                    args.keyValuePairs.Add($"{Key}_{(from a in args.keyValuePairs where a.Key.StartsWith(Key) select a).Count()}", Value);
+                }
+                else
+                {
+                    q = Compiler.GetScope(q, out Block Value);
+                    if(args.keyValuePairs.ContainsKey(Key))
                         args.keyValuePairs[Key] = Value;
                     else
                         args.keyValuePairs.Add(Key, Value);
-
-                    Inherits++;
-                    continue;
                 }
-                Args inherit = Inheritables[q.Current];
-                if (inherit.keyValuePairs == null)
+            } while (q.MoveNext());
+
+            if (globalInherit != null)
+            {
+                if (globalInherit.keyValuePairs == null)
                     throw new Exception();
-                foreach(KeyValuePair<string, Block> kvp in inherit.keyValuePairs)
+                foreach (KeyValuePair<string, Block> kvp in globalInherit.keyValuePairs)
                 {
+                    if (args.keyValuePairs.ContainsKey(kvp.Key)) continue;
                     args.keyValuePairs.Add(kvp.Key, kvp.Value);
                 }
             }
-            else if (multiKey)
-            {
-                q = Compiler.GetScope(q, out Block Value);
-                args.keyValuePairs.Add($"{Key}_{(from a in args.keyValuePairs where a.Key.StartsWith(Key) select a).Count()}", Value);
-            }
-            else
-            {
-                q = Compiler.GetScope(q, out Block Value);
-                if(args.keyValuePairs.ContainsKey(Key))
-                    args.keyValuePairs[Key] = Value;
-                else
-                    args.keyValuePairs.Add(Key, Value);
-            }
-        } while (q.MoveNext());
-
-        if (globalInherit != null)
+        }
+        catch (Exception)
         {
-            if (globalInherit.keyValuePairs == null)
-                throw new Exception();
-            foreach (KeyValuePair<string, Block> kvp in globalInherit.keyValuePairs)
-            {
-                if (args.keyValuePairs.ContainsKey(kvp.Key)) continue;
-                args.keyValuePairs.Add(kvp.Key, kvp.Value);
-            }
+            args.block = scope;
         }
 
         return i;

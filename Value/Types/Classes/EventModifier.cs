@@ -119,3 +119,45 @@ public class OpinionModifier : ArcObject
         return "Opinion Modifiers";
     }
 }
+public class ProvinceTriggeredModifier : ArcObject
+{
+    public static readonly Dict<ProvinceTriggeredModifier> ProvinceTriggeredModifiers = new();
+    public ProvinceTriggeredModifier(string key) { ProvinceTriggeredModifiers.Add(key, this); }
+    public static new Walker Call(Walker i) => Call(i, Constructor);
+    public static ProvinceTriggeredModifier Constructor(string id, Args args) => new(id)
+    {
+        { "id", new ArcString(id) },
+        { "name", args.Get(ArcString.Constructor, "name") },
+        { "potential", args.Get(ArcTrigger.Constructor, "potential", new()) },
+        { "trigger", args.Get(ArcTrigger.Constructor, "trigger", new()) },
+        { "modifier", args.Get(ArcModifier.Constructor, "modifier", new()) },
+        { "on_apply", args.Get(ArcEffect.Constructor, "on_apply", new()) },
+        { "on_remove", args.Get(ArcEffect.Constructor, "on_remove", new()) },
+    };
+    public override string ToString() => Get("id").ToString();
+    public override Walker Call(Walker i, ref Block result) { result.Add(ToString()); return i; }
+    public void Transpile(ref Block s)
+    {
+        string id = Get("id").ToString();
+        Instance.Localisation.Add(id, Get("name").ToString());
+        s.Add(
+            id, "=", "{",
+                Get<ArcBlock>("modifier").Compile(),
+                Get<ArcBlock>("potential").Compile("potential"),
+                Get<ArcBlock>("trigger").Compile("trigger"),
+                Get<ArcBlock>("on_apply").Compile("on_activation"),
+                Get<ArcBlock>("on_remove").Compile("on_deactivation"),
+            "}"
+        );
+    }
+    public static string Transpile()
+    {
+        Block s = new();
+        foreach (KeyValuePair<string, ProvinceTriggeredModifier> ProvinceTriggeredModifier in ProvinceTriggeredModifiers)
+        {
+            ProvinceTriggeredModifier.Value.Transpile(ref s);
+        }
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/province_triggered_modifiers/arc.txt", string.Join(' ', s));
+        return "Province Triggered Modifiers";
+    }
+}

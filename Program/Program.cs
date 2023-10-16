@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 Instance arc = new();
 
-//if (args.Contains("--kurashi"))
+//if (args.Contains("kurashi"))
 //{
 //    Dictionary<string, string> Loc = new();
 //

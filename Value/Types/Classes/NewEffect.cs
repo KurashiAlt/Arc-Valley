@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -124,6 +125,24 @@ public class Type : IValue, vvC
             nullable = true;
         }
 
+        if(key.StartsWith("list<") && key.EndsWith(">"))
+        {
+            string t = key[5..^1];
+
+            return new((Block b) =>
+            {
+                Type sub = Regulat(t, false);
+
+                return ArcList<IVariable>.GetConstructor(sub.ThisConstructor)(b);
+            }, nullable);
+        }
+        else
+        {
+            return Regulat(key, nullable);
+        }
+    }
+    public static Type Regulat(string key, bool nullable)
+    {
         Type ConstC(Func<Block, IVariable> constructor) => new(constructor, nullable);
         Type ConstD(Func<string, IVariable?> get) => new(get, nullable);
         return key switch
@@ -134,6 +153,11 @@ public class Type : IValue, vvC
             "block" => ConstC(ArcCode.Constructor),
             "bool" => ConstC(ArcBool.Constructor),
             "string" => ConstC(ArcString.Constructor),
+            "text" => ConstD((string s) => {
+                ArcString c = new ArcString(s);
+                c.Value = $"{s}";
+                return c;
+            }),
             "float" => ConstC(ArcFloat.Constructor),
             "int" => ConstC(ArcInt.Constructor),
 
@@ -221,7 +245,12 @@ public class Type : IValue, vvC
             "building_line" => ConstD(BuildingLine.BuildingLines.Get),
             "government_mechanic" => ConstD(GovernmentMechanic.GovernmentMechanics.Get),
             "diplomatic_action" => ConstD(DiplomaticAction.DiplomaticActions.Get),
-            _ => throw new NotImplementedException($"Unknown type {string.Join(' ', b)}")
+            "holy_order" => ConstD(HolyOrder.HolyOrders.Get),
+            "casus_belli" => ConstD(CasusBelli.CasusBellies.Get),
+            "province_triggered_modifier" => ConstD(ProvinceTriggeredModifier.ProvinceTriggeredModifiers.Get),
+            "war_goal" => ConstD(WarGoal.WarGoals.Get),
+            "expedition" => ConstD(Expedition.Expeditions.Get),
+            _ => throw new NotImplementedException($"Unknown type {key}")
         };
     }
 }

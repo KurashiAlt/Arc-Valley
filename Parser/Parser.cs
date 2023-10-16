@@ -1,5 +1,7 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
+using static System.Net.Mime.MediaTypeNames;
+
 namespace Arc;
 
 public static partial class Parser
@@ -75,14 +77,6 @@ public static partial class Parser
         string v = s.ToString();
         if (!string.IsNullOrWhiteSpace(v)) retval.AddLast(v);
         return retval;
-    }
-    public static string ConvertStringToUtf8Bom(string source)
-    {
-        var data = Encoding.UTF8.GetBytes(source);
-        var result = Encoding.UTF8.GetPreamble().Concat(data).ToArray();
-        var encoder = new UTF8Encoding(true);
-
-        return encoder.GetString(result);
     }
     public static string FormatCode(string str)
     {

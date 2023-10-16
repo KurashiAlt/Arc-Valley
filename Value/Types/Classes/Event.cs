@@ -7,6 +7,52 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Arc;
+public class Expedition : ArcObject
+{
+    public static Dict<Expedition> Expeditions = new();
+    public static new Walker Call(Walker i) => Call(i, Constructor);
+    public Expedition(string id, Args args)
+    {
+        ArcString? picture = args.Get(ArcString.Constructor, "picture", null);
+        int length = args.Get(ArcInt.Constructor, "length").Value;
+        Province prov = Province.Provinces[id];
+        prov.History.Value.Add(
+            "1.1.1", "=", "{", 
+                "add_permanent_province_modifier", "=", "{", 
+                    "name", "=", "expedition_target", 
+                    "duration", "=", "-1", 
+                "}", 
+                "set_variable", "=", "{", 
+                    "which", "=", "expedition_start_length", 
+                    "value", "=", length, 
+                "}", 
+                "set_variable", "=", "{", 
+                    "which", "=", "expedition_length", 
+                    "value", "=", length, 
+                "}", 
+            "}"
+        );
+        Event.Events["expedition.3"].Options.Add(
+            new(
+                new("Great"),
+                new("factor", "=", "1"),
+                new(false),
+                prov,
+                new($"`province_id = {prov.Id}`"),
+                args.Get(ArcEffect.Constructor, "on_complete")
+            )
+        );
+        if(picture != null)
+        {
+            Event.Events["expedition.1"].Pictures.Add(picture.Value, new($"`province_id = {prov.Id}`"));
+            Event.Events["expedition.2"].Pictures.Add(picture.Value, new($"`province_id = {prov.Id}`"));
+            Event.Events["expedition.3"].Pictures.Add(picture.Value, new($"`province_id = {prov.Id}`"));
+        }
+
+        Expeditions.Add(id, this);
+    }
+    public static Expedition Constructor(string id, Args args) => new(id, args);
+}
 
 public class Option : IArcObject
 {
@@ -75,12 +121,126 @@ public class Option : IArcObject
 
 public class Event : IArcObject
 {
-    public static Dict<Event> Events = new();
+    public static Dict<Event> Events = new()
+    {
+        { "expedition.1", new(
+            "expedition.1",
+            new(true),
+            new("Send an Expedition"),
+            new(""),
+            new("TOMB_eventPicture"),
+            new(false),
+            new(),
+            new(false),
+            new(false),
+            new(),
+            new(),
+            new(),
+            new(),
+            new(true),
+            new()
+            {
+                new Option(
+                    new("Send an Expedition"),
+                    new("factor", "=", "1"),
+                    new(false),
+                    null,
+                    null,
+                    new(@"
+owner = {
+    add_treasury = -50
+}
+set_province_flag = expedition_in_progress
+change_variable = {
+    which = expedition_length
+    value = -1
+}
+if = {
+    limit = {
+        check_variable = {
+            which = expedition_length
+            value = 1
+        }
+    }
+    province_event = {
+        id = expedition.2
+        days = 730 
+    }
+} 
+else = { 
+    province_event = { 
+        id = expedition.3 
+        days = 730 
+    } 
+}")
+                ),
+                new Option(
+                    new("Nevermind"),
+                    new("factor", "=", "1"),
+                    new(false),
+                    null,
+                    null,
+                    new()
+                )
+            },
+            new(),
+            false
+        ) },
+        { "expedition.2", new(
+            "expedition.2",
+            new(true),
+            new("End of Expedition"),
+            new(""),
+            new("TOMB_eventPicture"),
+            new(false),
+            new(),
+            new(false),
+            new(false),
+            new(),
+            new("clr_province_flag = expedition_in_progress"),
+            new(),
+            new(),
+            new(true),
+            new()
+            {
+                new Option(
+                    new("I see"),
+                    new("factor", "=", "1"),
+                    new(false),
+                    null,
+                    null,
+                    new()
+                )
+            },
+            new(),
+            false
+        ) },
+        { "expedition.3", new(
+            "expedition.3",
+            new(true),
+            new("A find"),
+            new(""),
+            new("TOMB_eventPicture"),
+            new(false),
+            new(),
+            new(false),
+            new(false),
+            new(),
+            new("clr_province_flag = expedition_in_progress"),
+            new("remove_province_modifier = expedition_target"),
+            new(),
+            new(true),
+            new(),
+            new(),
+            false
+        ) },
+    };
     public ArcString Id { get; set; }
     public ArcBool ProvinceEvent { get; set; }
     public ArcString Title { get; set; }
     public ArcString Desc { get; set; }
     public ArcString Picture { get; set; }
+    public Dict<ArcTrigger>? Pictures { get; set; }
     public ArcBool Major { get; set; }
     public ArcTrigger MajorTrigger { get; set; }
     public ArcBool FireOnlyOnce { get; set; }
@@ -88,7 +248,7 @@ public class Event : IArcObject
     public ArcTrigger Trigger { get; set; }
     public ArcEffect Immediate { get; set; }
     public ArcEffect After { get; set; }
-    public ArcCode MeanTimeToHappen { get; set; }
+    public ArcFactor MeanTimeToHappen { get; set; }
     public ArcBool IsTriggeredOnly { get; set; }
     public ArcList<Option> Options { get; set; }
     public Dict<IVariable> keyValuePairs { get; set; }
@@ -105,9 +265,11 @@ public class Event : IArcObject
         ArcTrigger trigger,
         ArcEffect immediate,
         ArcEffect after,
-        ArcCode meanTimeToHappen,
+        ArcFactor meanTimeToHappen,
         ArcBool isTriggeredOnly,
-        ArcList<Option> options
+        ArcList<Option> options,
+        Dict<ArcTrigger>? pictures,
+        bool addToList = true
     ) {
         Id = new(id);
         ProvinceEvent = provinceEvent;
@@ -124,6 +286,7 @@ public class Event : IArcObject
         MeanTimeToHappen = meanTimeToHappen;
         IsTriggeredOnly = isTriggeredOnly;
         Options = options;
+        Pictures = pictures;
         keyValuePairs = new()
         {
             { "id", Id },
@@ -143,7 +306,7 @@ public class Event : IArcObject
             { "options", Options },
         };
 
-        Events.Add(id, this);
+        if(addToList) Events.Add(id, this);
     }
 
     public bool CanGet(string indexer) => keyValuePairs.CanGet(indexer);
@@ -168,9 +331,10 @@ public class Event : IArcObject
             args.Get(ArcTrigger.Constructor, "trigger", new()),
             args.Get(ArcEffect.Constructor, "immediate", new()),
             args.Get(ArcEffect.Constructor, "after", new()),
-            args.Get(ArcCode.Constructor, "mean_time_to_happen", new()),
+            args.Get(ArcFactor.Constructor, "mean_time_to_happen", new()),
             args.Get(ArcBool.Constructor, "is_triggered_only", new(true)),
-            args.Get((Block s) => new ArcList<Option>(s, Option.Constructor), "options")
+            args.Get((Block s) => new ArcList<Option>(s, Option.Constructor), "options"),
+            args.Get(Dict<ArcTrigger>.Constructor(ArcTrigger.Constructor), "pictures", null)
         );
         return i;
     }
@@ -187,6 +351,15 @@ public class Event : IArcObject
         b.Add("id", "=", Id);
         b.Add("title", "=", $"{Id}.title");
         b.Add("desc", "=", $"{Id}.desc");
+        if(Pictures != null) 
+        {
+            foreach(KeyValuePair<string, ArcTrigger> pic in Pictures)
+            {
+                b.Add("picture", "=", "{");
+                pic.Value.Compile("trigger", ref b);
+                b.Add("picture", "=", pic.Key, "}");
+            }
+        }
         b.Add("picture", "=", Picture);
         if (Major) b.Add("major", "=", "yes");
         MajorTrigger.Compile("major_trigger", ref b);

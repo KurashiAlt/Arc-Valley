@@ -1,5 +1,7 @@
-﻿namespace Arc;
-public class ArcList<T> : IArcObject where T : IVariable
+﻿using System.Collections;
+
+namespace Arc;
+public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVariable
 {
     public List<T?> Values { get; set; }
     public Dict<T>? dict { get; set; }
@@ -166,5 +168,15 @@ public class ArcList<T> : IArcObject where T : IVariable
             return true;
         }
         return false;
+    }
+    public void Add(T value)
+    {
+        Values.Add(value);
+    }
+    public IEnumerator GetEnumerator() => Values.GetEnumerator();
+
+    public IEnumerator<IVariable> GetArcEnumerator()
+    {
+        return (from v in Values select v as IVariable).GetEnumerator();
     }
 }

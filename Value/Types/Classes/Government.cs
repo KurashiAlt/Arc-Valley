@@ -155,7 +155,7 @@ public class GovernmentNames : ArcObject
             gv.Transpile(ref a);
         }
         Instance.OverwriteFile($"{Instance.TranspileTarget}/common/government_names/arc.txt", string.Join(' ', a));
-        return "Governments";
+        return "Government Names";
     }
 
 }

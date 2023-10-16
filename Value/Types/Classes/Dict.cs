@@ -1,7 +1,14 @@
 ﻿using System.Collections;
+using System.Security.Cryptography;
+
 namespace Arc;
-public class Dict<Type> : IArcObject, IEnumerable<KeyValuePair<string, Type>>, vvC where Type : IVariable?
+public interface ArcEnumerable
 {
+    IEnumerator<IVariable> GetArcEnumerator();
+}
+public class Dict<Type> : IArcObject, ArcEnumerable, IEnumerable<KeyValuePair<string, Type>>, vvC where Type : IVariable?
+{
+
     //(Block s) => new Dict<Mission>(s, Mission.Constructor)
     public static Func<Block, Dict<Type>> Constructor(Func<string, Args, Type> constructor)
     {
@@ -74,6 +81,7 @@ public class Dict<Type> : IArcObject, IEnumerable<KeyValuePair<string, Type>>, v
         if (v is T) return (T)v;
         else throw new Exception($"{indexer} is of wrong type");
     }
+    public IVariable? GetNullable(string indexer) => GetNullable<IVariable>(indexer);
     public T? GetNullable<T>(string indexer)
     {
         if (!CanGet(indexer)) return default;
@@ -93,7 +101,10 @@ public class Dict<Type> : IArcObject, IEnumerable<KeyValuePair<string, Type>>, v
     {
         Kvps.Add(v.indexer, new DictPointer<Type>(v.Value));
     }
-
+    public void Delete(string indexer)
+    {
+        Kvps.Remove(indexer);
+    }
     public static Walker Call(Walker i)
     {
         throw new Exception();
@@ -110,6 +121,13 @@ public class Dict<Type> : IArcObject, IEnumerable<KeyValuePair<string, Type>>, v
     public IEnumerator<KeyValuePair<string, Type>> GetEnumerator() => new DictEnumerator(Kvps.GetEnumerator());
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    public IEnumerator<IVariable> GetArcEnumerator()
+    {
+        IEnumerable<IVariable> l = (from v in Kvps select (IVariable)v.Value.Value);
+        return l.GetEnumerator();
+    }
+
     public class DictEnumerator : IEnumerator<KeyValuePair<string, Type>>
     {
         private Dictionary<string, DictPointer<Type>>.Enumerator Enum;

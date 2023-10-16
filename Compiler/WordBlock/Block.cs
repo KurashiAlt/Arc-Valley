@@ -78,6 +78,10 @@ public class Walker
             throw new Exception();
         node = code.First;
     }
+    public void Asssert(string s)
+    {
+        if (Current != s) throw new Exception(s);
+    }
     public void ForceMoveNext()
     {
         if (!MoveNext()) throw new Exception();

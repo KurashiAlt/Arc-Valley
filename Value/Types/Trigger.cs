@@ -87,7 +87,7 @@ public class ArcCode : ArcBlock
     {
         Value = new();
 
-        foreach(string s in enumerable)
+        foreach (string s in enumerable)
         {
             Value.Add(s);
         }
@@ -111,4 +111,39 @@ public class ArcCode : ArcBlock
         return Compiler.Compile(Value);
     }
     internal static ArcCode Constructor(Block block) => new(block);
+}
+public class ArcFactor : ArcBlock
+{
+    public ArcFactor()
+    {
+        Value = new();
+    }
+    public ArcFactor(IEnumerable<string> enumerable)
+    {
+        Value = new();
+
+        foreach (string s in enumerable)
+        {
+            Value.Add(s);
+        }
+    }
+    public ArcFactor(params string[] s)
+    {
+        Value = new()
+        {
+            s
+        };
+    }
+    public ArcFactor(Block value, bool t = false)
+    {
+        if (!t)
+            if (Parser.HasEnclosingBrackets(value))
+                value = Compiler.RemoveEnclosingBrackets(value);
+        Value = value;
+    }
+    public override string Compile()
+    {
+        return Compiler.FactorCompile(Value);
+    }
+    internal static ArcFactor Constructor(Block block) => new(block);
 }

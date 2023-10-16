@@ -318,6 +318,9 @@ namespace Arc
             { "government_reforms", GovernmentReform.GovernmentReforms },
             { "trade_goods", TradeGood.TradeGoods },
             { "trade_nodes", TradeNode.TradeNodes },
+            { "province_triggered_modifiers", ProvinceTriggeredModifier.ProvinceTriggeredModifiers },
+            { "casus_bellies", CasusBelli.CasusBellies },
+            { "war_goals", WarGoal.WarGoals },
             { "default_reform", new ArcCode() },
             { "terrain_declarations", new ArcBlock() },
             { "tree", new ArcBlock() },
@@ -473,6 +476,11 @@ namespace Arc
                 "trigger" => NewTrigger.Call(g),
                 "modifier" => NewModifier.Call(g),
                 "mission_tree" => MissionTree.Call(g),
+                "holy_order" => HolyOrder.Call(g),
+                "province_triggered_modifier" => ProvinceTriggeredModifier.Call(g),
+                "casus_belli" => CasusBelli.Call(g),
+                "war_goal" => WarGoal.Call(g),
+                "expedition" => Expedition.Call(g),
                 _ => throw new Exception($"Unknown Object Type {g.Current} in object declaration")
             };
         }
@@ -611,6 +619,75 @@ namespace Arc
             if (g.Current == "breakpoint")
             {
                 Debugger.Break();
+                return true;
+            }
+            if (g.Current == "foreach")
+            {
+                g.ForceMoveNext(); string varKey = g.Current;
+                g.ForceMoveNext(); g.Asssert("in");
+                g.ForceMoveNext(); string dictKey = g.Current;
+                g.ForceMoveNext(); GetScope(g, out Block scope);
+                if (Parser.HasEnclosingBrackets(scope)) RemoveEnclosingBrackets(scope);
+
+                if (TryGetVariable(varKey, out IVariable? _)) throw new Exception($"Variable {varKey} already exists");
+                TryGetVariable(dictKey, out IVariable? dictValue);
+                if (dictValue == null) throw new Exception($"Variable {dictKey} does not exist");
+
+                if (dictValue is ArgList)
+                {
+                    Arg arg = ArgList.list.First();
+                    if (arg is ArcObject arcObject)
+                    {
+                        dictValue = arcObject;
+                    }
+                    else if (arg is vx Vc)
+                    {
+                        dictValue = Vc.va.Value;
+                    }
+                    else throw new Exception();
+                }
+
+                if (dictValue is ArcEnumerable arcEnum)
+                {
+                    IEnumerator<IVariable> enume = arcEnum.GetArcEnumerator();
+                    if (enume.MoveNext())
+                    {
+                        do
+                        {
+                            global.Add(varKey, enume.Current);
+                            result.Add(compile(scope));
+                            global.Delete(varKey);
+                        } while (enume.MoveNext());
+                    }
+                }
+                else throw new Exception();
+
+                return true;
+            }
+            if (g.Current == "for")
+            {
+                g.ForceMoveNext(); string varKey = g.Current;
+                g.ForceMoveNext(); g.Asssert("as");
+                g.ForceMoveNext(); int start = int.Parse(g.Current);
+                g.ForceMoveNext(); g.Asssert("to");
+                g.ForceMoveNext(); int end = int.Parse(g.Current);
+                g.ForceMoveNext(); GetScope(g, out Block scope);
+                if (Parser.HasEnclosingBrackets(scope)) RemoveEnclosingBrackets(scope);
+
+                if (TryGetVariable(varKey, out IVariable? _)) throw new Exception($"Variable {varKey} already exists");
+                ArcInt varValue = new(start);
+                global.Add(varKey, varValue);
+
+                do
+                {
+                    result.Add(compile(scope));
+                    if (varValue.Value > end) varValue.Value--;
+                    else varValue.Value++;
+                } while (varValue.Value != end);
+                result.Add(compile(scope));
+
+                global.Delete(varKey);
+
                 return true;
             }
             if (g.Current == "if") 
@@ -815,6 +892,7 @@ namespace Arc
             return string.Join(' ', result);
         }
         public static List<(string, NewEffect)> NewEffects = new();
+        public static int NctAmount = 0;
         public static string CompileEffect(Block code)
         {
             if (code.Count == 0)
@@ -834,7 +912,10 @@ namespace Arc
                     g = Args.GetArgs(g, out Args args);
                     ArcString name = args.Get(ArcString.Constructor, "name");
                     ArcBool permanent = args.Get(ArcBool.Constructor, "permanent", new(true));
-                    ArcInt duration = args.Get(ArcInt.Constructor, "duration", new(-1));
+                    ArcInt? years = args.Get(ArcInt.Constructor, "years", null);
+                    ArcInt duration;
+                    if (years == null) duration = args.Get(ArcInt.Constructor, "duration", new(-1));
+                    else duration = args.Get(ArcInt.Constructor, "duration", new(years.Value * 365));
                     ArcString desc = args.Get(ArcString.Constructor, "desc", new(""));
                     ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
                     ArcModifier modifier = args.Get(ArcModifier.Constructor, "modifier");
@@ -861,7 +942,10 @@ namespace Arc
                 {
                     g = Args.GetArgs(g, out Args args);
                     ArcString name = args.Get(ArcString.Constructor, "name");
-                    ArcInt duration = args.Get(ArcInt.Constructor, "duration", new(-1));
+                    ArcInt? years = args.Get(ArcInt.Constructor, "years", null);
+                    ArcInt duration;
+                    if (years == null) duration = args.Get(ArcInt.Constructor, "duration", new(-1));
+                    else duration = args.Get(ArcInt.Constructor, "duration", new(years.Value*365));
                     ArcString desc = args.Get(ArcString.Constructor, "desc", new(""));
                     ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
                     ArcModifier modifier = args.Get(ArcModifier.Constructor, "modifier");
@@ -913,6 +997,22 @@ namespace Arc
                     continue;
                 }
 
+                if (g.Current == "new_custom_tooltip")
+                {
+                    string key = $"nct_{NctAmount}";
+                    result.Add("custom_tooltip", "=", $"nct_{NctAmount}");
+                    NctAmount++;
+                    g.ForceMoveNext(); g.Asssert("=");
+                    g.ForceMoveNext(); string value = g.Current;
+                    if (TranspiledString(value, '"', out string? nValue, CompileEffect))
+                    {
+                        if (nValue == null) throw new Exception();
+                        Instance.Localisation.Add(key, nValue);
+                    }
+                    else throw new NotImplementedException();
+                    continue;
+                }
+
                 Instance.Warn($"Unknown Effect: {g.Current}");
                 result.Add(g.Current);
             } while (g.MoveNext());
@@ -951,7 +1051,11 @@ namespace Arc
                                 result.Add(key, "=", "{");
                                 foreach(KeyValuePair<string, IVariable> t in @object)
                                 {
-                                    result.Add(t.Key, "=", compile(new($"args:{t.Key}")));
+                                    if(t.Value is ArcBlock)
+                                    {
+                                        result.Add(t.Key, "=", "{", compile(new($"args:{t.Key}")), "}");
+                                    }
+                                    else result.Add(t.Key, "=", compile(new($"args:{t.Key}")));
                                 }
                                 result.Add("}");
                             }
@@ -1014,7 +1118,34 @@ namespace Arc
             do
             {
                 if (AllCompile(ref g, ref result, Compile)) continue;
-                else result.Add(g.Current);
+                
+                result.Add(g.Current);
+            } while (g.MoveNext());
+
+            if (Parser.HasEnclosingBrackets(result)) result = RemoveEnclosingBrackets(result);
+
+            return string.Join(' ', result);
+        }
+        public static string FactorCompile(Block code)
+        {
+            if (code.Count == 0)
+                return "";
+
+            Block result = new();
+
+            Walker g = new(code);
+            do
+            {
+                if (AllCompile(ref g, ref result, FactorCompile)) continue;
+                if (g.Current == "modifier")
+                {
+                    g.ForceMoveNext(); g.Asssert("=");
+                    g.ForceMoveNext(); g = GetScope(g, out Block scope);
+                    result.Add("modifier", "=", "{", CompileTrigger(scope), "}");
+                    continue;
+                }
+                
+                result.Add(g.Current);
             } while (g.MoveNext());
 
             if (Parser.HasEnclosingBrackets(result)) result = RemoveEnclosingBrackets(result);

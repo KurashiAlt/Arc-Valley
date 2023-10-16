@@ -50,7 +50,8 @@ public class Incident : ArcObject
             Get<ArcEffect>("after"),
             new(),
             new(true),
-            Get<ArcList<Option>>("options")
+            Get<ArcList<Option>>("options"),
+            null
         );
 
         Instance.Localisation.Add($"{id}", name);
