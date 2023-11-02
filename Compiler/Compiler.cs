@@ -392,49 +392,6 @@ namespace Arc
 
             ObjectDeclare(Parser.ParseCode(file));
         }
-        public static void LintLoad(ref Dictionary<string, ILintCommand> dict, string file, string path, bool preprocessor = false)
-        {
-            if (preprocessor)
-                file = Parser.Preprocessor(file);
-
-            LintLoad(ref dict, Parser.ParseCode(file), path);
-        }
-        public static void LintLoad(ref Dictionary<string, ILintCommand> dict, Block code, string file)
-        {
-            if (code.Count == 0)
-                return;
-            Walker g = new(code);
-            do
-            {
-                if (g.Current == "new")
-                {
-                    if (!g.MoveNext()) throw new Exception();
-                    string datatype = g.Current;
-                    if (!g.MoveNext()) throw new Exception();
-                    string key = g.Current;
-                    g = Args.GetArgs(g, out Args args, 0, true);
-                    dict.Add($"{datatype}~{key}", new LintAdd(file, args));
-                    continue;
-                }
-                else if (TryGetVariable(g.Current, out IVariable? var))
-                {
-                    string vari = g.Current;
-                    if (!g.MoveNext()) throw new Exception();
-                    string oper = g.Current;
-                    if (!g.MoveNext()) throw new Exception();
-                    g = GetScope(g, out Block block);
-                    dict.Add($"lint_edit_{LintEdit.Edits}", new LintEdit(file, new()
-                    {
-                        vari,
-                        oper,
-                        block
-                    }));
-                    LintEdit.Edits++;
-                    continue;
-                }
-                else throw new Exception($"Invalid command in [Lint] Object Declaration: {g.Current}");
-            } while (g.MoveNext());
-        }
         public static Walker Declare(Walker g)
         {
             return (string)g.Current switch

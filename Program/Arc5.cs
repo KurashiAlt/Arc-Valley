@@ -23,8 +23,6 @@ namespace ArcInstance
 /replace r@ with regions:
 /replace s@ with superregions:
 ";
-        public static Dictionary<string, ILintCommand> linterCommands = new();
-        public static bool Lint = true;
         public static string TranspileTarget;
         public static string GfxFolder;
         public static string UnsortedFolder;
@@ -32,7 +30,6 @@ namespace ArcInstance
         public void Run(string[] args, ref Stopwatch timer)
         {
             iArgs = args;
-            Lint = iArgs.Contains("lint");
             CultureInfo.CurrentCulture = CultureInfo.CreateSpecificCulture("en");
 
             Compiler.owner = this;
@@ -625,8 +622,7 @@ namespace ArcInstance
                     try
                     {
                         string fileContent = File.ReadAllText(file);
-                        if (Lint) Compiler.LintLoad(ref linterCommands, fileContent + headers, file, true);
-                        else Compiler.ObjectDeclare(fileContent + headers, true);
+                        Compiler.ObjectDeclare(fileContent + headers, true);
                     }
                     catch (Exception)
                     {
@@ -640,8 +636,7 @@ namespace ArcInstance
                 try
                 {
                     string file = File.ReadAllText(fileLocation);
-                    if (Lint) Compiler.LintLoad(ref linterCommands, file + headers, path, true);
-                    else Compiler.ObjectDeclare(file + headers, true);
+                    Compiler.ObjectDeclare(file + headers, true);
                 }
                 catch (Exception)
                 {
@@ -650,8 +645,5 @@ namespace ArcInstance
                 }
             }
         }
-
-        [GeneratedRegex("(\\S)=(\\S)")]
-        private static partial Regex LintEqualFixer();
     }
 }
