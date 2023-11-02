@@ -333,7 +333,7 @@ else = {
             args.Get(ArcEffect.Constructor, "after", new()),
             args.Get(ArcFactor.Constructor, "mean_time_to_happen", new()),
             args.Get(ArcBool.Constructor, "is_triggered_only", new(true)),
-            args.Get((Block s) => new ArcList<Option>(s, Option.Constructor), "options"),
+            args.Get(ArcList<Option>.GetConstructor(Option.Constructor), "options"),
             args.Get(Dict<ArcTrigger>.Constructor(ArcTrigger.Constructor), "pictures", null)
         );
         return i;

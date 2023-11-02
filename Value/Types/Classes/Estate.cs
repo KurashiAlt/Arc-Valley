@@ -14,7 +14,7 @@ public class EstateAgenda : IArcObject
     public ArcString Id { get; set; }
     public ArcFloat? MaxDaysActive { get; set; }
     public ArcTrigger CanSelect { get; set; }
-    public ArcCode ProvincesToHighlight { get; set; }
+    public ArcTrigger ProvincesToHighlight { get; set; }
     public ArcCode SelectionWeight { get; set; }
     public ArcEffect PreEffect { get; set; }
     public ArcEffect ImmediateEffect { get; set; }
@@ -26,7 +26,7 @@ public class EstateAgenda : IArcObject
     public ArcTrigger InvalidTrigger { get; set; }
     public ArcModifier Modifier { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public EstateAgenda(string id, ArcString name, ArcString desc, ArcFloat? maxDaysActive, ArcTrigger canSelect, ArcCode provincesToHighlight, ArcCode selectionWeight, ArcEffect preEffect, ArcEffect immediateEffect, ArcTrigger taskRequirements, ArcEffect taskCompletedEffect, ArcEffect failingEffect, ArcTrigger failIf, ArcEffect onInvalid, ArcTrigger invalidTrigger, ArcModifier modifier)
+    public EstateAgenda(string id, ArcString name, ArcString desc, ArcFloat? maxDaysActive, ArcTrigger canSelect, ArcTrigger provincesToHighlight, ArcCode selectionWeight, ArcEffect preEffect, ArcEffect immediateEffect, ArcTrigger taskRequirements, ArcEffect taskCompletedEffect, ArcEffect failingEffect, ArcTrigger failIf, ArcEffect onInvalid, ArcTrigger invalidTrigger, ArcModifier modifier)
     {
         Id = new($"{id}_agenda");
         Name = name;
@@ -79,7 +79,7 @@ public class EstateAgenda : IArcObject
             args.Get(ArcString.Constructor, "desc"),
             args.Get(ArcFloat.Constructor, "max_days_active", null),
             args.Get(ArcTrigger.Constructor, "can_select"),
-            args.Get(ArcCode.Constructor, "provinces_to_highlight"),
+            args.Get(ArcTrigger.Constructor, "provinces_to_highlight"),
             args.Get(ArcCode.Constructor, "selection_weight"),
             args.Get(ArcEffect.Constructor, "pre_effect"),
             args.Get(ArcEffect.Constructor, "immediate_effect"),
@@ -113,7 +113,7 @@ public class EstateAgenda : IArcObject
                 b.Add(agenda.MaxDaysActive.ToString());
             }
             agenda.CanSelect.Compile("can_select", ref b);
-            agenda.ProvincesToHighlight.Compile("provines_to_highlight", ref b);
+            agenda.ProvincesToHighlight.Compile("provinces_to_highlight", ref b);
             agenda.SelectionWeight.Compile("selection_weight", ref b);
             agenda.PreEffect.Compile("pre_effect", ref b);
             agenda.ImmediateEffect.Compile("immediate_effect", ref b);
@@ -458,6 +458,78 @@ public class Estate : IArcObject
 
         return i;
     }
+    public void Transpile(ref Block estateFile, ref Block preloadFile)
+    {
+        Instance.Localisation.Add($"{Id}", Name.ToString());
+        Instance.Localisation.Add($"{Id}_desc", Desc.ToString());
+
+        estateFile.Add(Id, "=", "{");
+        estateFile.Add("icon", "=", Icon);
+        Color.Compile("color", ref estateFile);
+        Trigger.Compile("trigger", ref estateFile);
+        CountryModifierHappy.Compile("country_modifier_happy", ref estateFile, false);
+        CountryModifierNeutral.Compile("country_modifier_neutral", ref estateFile, false);
+        CountryModifierAngry.Compile("country_modifier_angry", ref estateFile, false);
+        LandOwnershipModifier.Compile("land_ownership_modifier", ref estateFile, false);
+        ProvinceIndependenceWeight.Compile("province_independence_weight", ref estateFile);
+        estateFile.Add("base_influence", "=", BaseInfluence);
+        foreach (ArcCode? s in InfluenceModifiers.Values)
+        {
+            if (s == null) continue;
+            s.Compile("influence_modifier", ref estateFile);
+        }
+        foreach (ArcCode? s in LoyaltyModifiers.Values)
+        {
+            if (s == null) continue;
+            s.Compile("loyalty_modifier", ref estateFile);
+        }
+        foreach (ArcCode? s in CustomNames.Values)
+        {
+            if (s == null) continue;
+            s.Compile("custom_name", ref estateFile);
+        }
+        estateFile.Add("contributes_to_curia_treasury", "=", ContributesToCuriaTreasury);
+        estateFile.Add("privileges", "=", "{");
+        foreach (EstatePrivilege? privilege in Privileges.Values)
+        {
+            if (privilege == null) continue;
+            estateFile.Add(privilege.Id);
+        }
+        estateFile.Add("}");
+        estateFile.Add("agendas", "=", "{");
+        foreach (EstateAgenda? agenda in Agendas.Values)
+        {
+            if (agenda == null) continue;
+            estateFile.Add(agenda.Id);
+        }
+        estateFile.Add("}");
+        estateFile.Add("influence_from_dev_modifier", "=", InfluenceFromDevModifier);
+        estateFile.Add("}");
+
+        Instance.Localisation.Add($"{Id.ToString()[7..]}_loyalty_modifier", $"{Name} Loyalty Equilibrium");
+        Instance.Localisation.Add($"{Id.ToString()[7..]}_influence_modifier", $"{Name} Influence");
+        Instance.Localisation.Add($"{Id.ToString()[7..]}_privilege_slots", $"{Name} Max Privileges");
+
+        preloadFile.Add(
+            Id, "=", "{",
+                "modifier_definition", "=", "{",
+                    "type", "=", "loyalty",
+                    "key", "=", $"{Id.ToString()[7..]}_loyalty_modifier",
+                    "trigger", "=", "{", "has_estate", "=", Id, "}",
+                "}",
+                "modifier_definition", "=", "{",
+                    "type", "=", "influence",
+                    "key", "=", $"{Id.ToString()[7..]}_influence_modifier",
+                    "trigger", "=", "{", "has_estate", "=", Id, "}",
+                "}",
+                "modifier_definition", "=", "{",
+                    "type", "=", "privileges",
+                    "key", "=", $"{Id.ToString()[7..]}_privilege_slots",
+                    "trigger", "=", "{", "has_estate", "=", Id, "}",
+                "}",
+            "}"
+        );
+    }
     public static string Transpile()
     {
         Block estateFile = new()
@@ -469,7 +541,7 @@ public class Estate : IArcObject
                 "country_modifier_neutral", "=", "{", "}",
                 "country_modifier_angry", "=", "{", "}",
                 "land_ownership_modifier", "=", "{", "}",
-                "land_ownership_modifier", "=", "{", "factor", "=", "0", "}",
+                "province_independence_weight", "=", "{", "factor", "=", "0", "}",
                 "base_influence", "=", "0",
                 "color", "=", "{", "0", "0", "0", "}",
                 "privileges", "=", "{", "}",
@@ -489,25 +561,30 @@ public class Estate : IArcObject
                 "}",
             "}"
         };
-        Block scriptedEffects = new()
+        Block SpawnRebelsFromUnhappyEstate = new()
         {
             "spawn_rebels_from_unhappy_estate", "=", "{",
                 "random_list", "=", "{"
         };
-
-        foreach (Estate estate in Estates.Values())
+        Block HasAnyEstate = new()
         {
-            Instance.Localisation.Add($"{estate.Id}", estate.Name.ToString());
-            Instance.Localisation.Add($"{estate.Id}_desc", estate.Desc.ToString());
+            "has_any_estates", "=", "{",
+                "custom_trigger_tooltip", "=", "{",
+                    "tooltip", "=", "has_any_estates_tt",
+                    "OR", "=", "{"
+        };
 
-            scriptedEffects.Add(
+        foreach (KeyValuePair<string, Estate> estate in Estates)
+        {
+            estate.Value.Transpile(ref estateFile, ref preloadFile);
+            SpawnRebelsFromUnhappyEstate.Add(
                 "1", "=", "{",
                     "trigger", "=", "{",
                         "owner", "=", "{",
-                            "has_estate", "=", estate.Id,
+                            "has_estate", "=", estate.Value.Id,
                             "NOT", "=", "{",
                                 "estate_loyalty", "=", "{",
-                                    "estate", "=", estate.Id,
+                                    "estate", "=", estate.Value.Id,
                                     "loyalty", "=", "30",
                                 "}",
                             "}",
@@ -516,88 +593,32 @@ public class Estate : IArcObject
                     "spawn_rebels", "=", "{",
                         "type", "=", "noble_rebels",
                         "size", "=", "$size$",
-                        "estate", "=", estate.Id,
+                        "estate", "=", estate.Value.Id,
                         "as_if_faction", "=", "yes",
                     "}",
                 "}"
             );
-
-            estateFile.Add(estate.Id, "=", "{");
-            estateFile.Add("icon", "=", estate.Icon);
-            estate.Color.Compile("color", ref estateFile);
-            estate.Trigger.Compile("trigger", ref estateFile);
-            estate.CountryModifierHappy.Compile("country_modifier_happy", ref estateFile, false);
-            estate.CountryModifierNeutral.Compile("country_modifier_neutral", ref estateFile, false);
-            estate.CountryModifierAngry.Compile("country_modifier_angry", ref estateFile, false);
-            estate.LandOwnershipModifier.Compile("land_ownership_modifier", ref estateFile, false);
-            estate.ProvinceIndependenceWeight.Compile("province_independence_weight", ref estateFile);
-            estateFile.Add("base_influence", "=", estate.BaseInfluence);
-            foreach(ArcCode? s in estate.InfluenceModifiers.Values)
-            {
-                if (s == null) continue;
-                s.Compile("influence_modifier", ref estateFile);
-            }
-            foreach(ArcCode? s in estate.LoyaltyModifiers.Values)
-            {
-                if (s == null) continue;
-                s.Compile("loyalty_modifier", ref estateFile);
-            }
-            foreach(ArcCode? s in estate.CustomNames.Values)
-            {
-                if (s == null) continue;
-                s.Compile("custom_name", ref estateFile);
-            }
-            estateFile.Add("contributes_to_curia_treasury", "=", estate.ContributesToCuriaTreasury);
-            estateFile.Add("privileges", "=", "{");
-            foreach(EstatePrivilege? privilege in estate.Privileges.Values)
-            {
-                if(privilege == null) continue;
-                estateFile.Add(privilege.Id);
-            }
-            estateFile.Add("}");
-            estateFile.Add("agendas", "=", "{");
-            foreach (EstateAgenda? agenda in estate.Agendas.Values)
-            {
-                if (agenda == null) continue;
-                estateFile.Add(agenda.Id);
-            }
-            estateFile.Add("}");
-            estateFile.Add("influence_from_dev_modifier", "=", estate.InfluenceFromDevModifier);
-            estateFile.Add("}");
-
-            Instance.Localisation.Add($"{estate.Id.ToString()[7..]}_loyalty_modifier", $"{estate.Name} Loyalty Equilibrium");
-            Instance.Localisation.Add($"{estate.Id.ToString()[7..]}_influence_modifier", $"{estate.Name} Influence");
-            Instance.Localisation.Add($"{estate.Id.ToString()[7..]}_privilege_slots", $"{estate.Name} Max Privileges");
-
-            preloadFile.Add(
-                estate.Id, "=", "{",
-                    "modifier_definition", "=", "{",
-                        "type", "=", "loyalty",
-                        "key", "=", $"{estate.Id.ToString()[7..]}_loyalty_modifier",
-                        "trigger", "=", "{", "has_estate", "=", estate.Id, "}",
-                    "}",
-                    "modifier_definition", "=", "{",
-                        "type", "=", "influence",
-                        "key", "=", $"{estate.Id.ToString()[7..]}_influence_modifier",
-                        "trigger", "=", "{", "has_estate", "=", estate.Id, "}",
-                    "}",
-                    "modifier_definition", "=", "{",
-                        "type", "=", "privileges",
-                        "key", "=", $"{estate.Id.ToString()[7..]}_privilege_slots",
-                        "trigger", "=", "{", "has_estate", "=", estate.Id, "}",
-                    "}",
-                "}"
-            );
+            HasAnyEstate.Add("has_estate", "=", estate.Value.Id);
         }
 
-        scriptedEffects.Add(
+        SpawnRebelsFromUnhappyEstate.Add(
+                "}",
+            "}"
+        );
+        HasAnyEstate.Add(
+                    "}",
                 "}",
             "}"
         );
 
         Instance.OverwriteFile($"{Instance.TranspileTarget}/common/estates/arc.txt", string.Join(' ', estateFile));
         Instance.OverwriteFile($"{Instance.TranspileTarget}/common/estates_preload/arc.txt", string.Join(' ', preloadFile));
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/scripted_effects/arc.txt", string.Join(' ', scriptedEffects));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/scripted_effects/arc.txt", string.Join(' ', new Block(
+            string.Join(' ', SpawnRebelsFromUnhappyEstate)
+        )));
+        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/scripted_triggers/arc.txt", string.Join(' ', new Block(
+            string.Join(' ', HasAnyEstate)
+        )));
         return "Estates";
     }
     public override string ToString() => Name.Value;

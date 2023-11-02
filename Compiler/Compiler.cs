@@ -20,13 +20,13 @@ namespace Arc
     {
         public static readonly Dict<IVariable> global = new()
         {
-            { "ai_personalities", new Dict<ArcCode>() {
+            { "ai_personalities", new Dict<ArcTrigger>() {
                 { "human", new("chance", "=", "{", "factor", "=", "0", "}", "icon", "=", "1") },
-                { "ai_capitalist", new("chance", "=", "{", "factor", "=", "0", "}", "icon", "=", "2") },
-                { "ai_diplomat", new("chance", "=", "{", "factor", "=", "0", "}", "icon", "=", "3") },
-                { "ai_militarist", new("chance", "=", "{", "factor", "=", "0", "}", "icon", "=", "4") },
-                { "ai_colonialist", new("chance", "=", "{", "factor", "=", "0", "}", "icon", "=", "5") },
-                { "ai_balanced", new("chance", "=", "{", "factor", "=", "0", "}", "icon", "=", "6") },
+                { "ai_capitalist", new("chance", "=", "{", "factor", "=", "100", "}", "icon", "=", "2") },
+                { "ai_diplomat", new("chance", "=", "{", "factor", "=", "100", "}", "icon", "=", "3") },
+                { "ai_militarist", new("chance", "=", "{", "factor", "=", "100", "}", "icon", "=", "4") },
+                { "ai_colonialist", new("chance", "=", "{", "factor", "=", "100", "}", "icon", "=", "5") },
+                { "ai_balanced", new("chance", "=", "{", "factor", "=", "100", "}", "icon", "=", "6") },
             } },
             { "centers_of_trade", new Dict<ArcCode>()
             {
@@ -321,6 +321,7 @@ namespace Arc
             { "province_triggered_modifiers", ProvinceTriggeredModifier.ProvinceTriggeredModifiers },
             { "casus_bellies", CasusBelli.CasusBellies },
             { "war_goals", WarGoal.WarGoals },
+            { "province_groups", ProvinceGroup.ProvinceGroups },
             { "default_reform", new ArcCode() },
             { "terrain_declarations", new ArcBlock() },
             { "tree", new ArcBlock() },
@@ -362,6 +363,16 @@ namespace Arc
                     { "absolutism_cost", new ArcInt(0) },
                     { "starting_strength", new ArcFloat(1.0) },
                     { "starting_morale", new ArcFloat(1.0) },
+                    { "localisation", new ArcBlock() },
+                } },
+                { "rajput", new Dict<IVariable>()
+                {
+                    { "name", new ArcString("\"Rajput\"") },
+                    { "regiment", new ArcModifier() },
+                    { "uses_construction", new ArcInt(1) },
+                    { "base_cost_modifier", new ArcFloat(1.0) },
+                    { "maximum_ratio", new ArcFloat(1.0) },
+                    { "starting_strength", new ArcFloat(1.0) },
                     { "localisation", new ArcBlock() },
                 } },
             } },
@@ -481,19 +492,25 @@ namespace Arc
                 "casus_belli" => CasusBelli.Call(g),
                 "war_goal" => WarGoal.Call(g),
                 "expedition" => Expedition.Call(g),
+                "province_group" => ProvinceGroup.Call(g),
+                "personality_trait" => RulerPersonality.Call(g),
                 _ => throw new Exception($"Unknown Object Type {g.Current} in object declaration")
             };
         }
         static Walker DefineLoc(Walker i)
         {
             if (!i.MoveNext()) throw new Exception();
-            string key = i.Current;
+            ArcString key = new(new Block(i.Current));
             if (!i.MoveNext()) throw new Exception();
             if (i.Current != "=") throw new Exception();
             if (!i.MoveNext()) throw new Exception();
             ArcString value = new(new Block(i.Current));
 
-            Instance.Localisation.Add(key, value.Value);
+            if (Instance.Localisation.ContainsKey(key.Value))
+            {
+                if (Instance.Localisation[key.Value] != value.Value) throw new Exception($"{key} already exists, and has a different value than the provided input");
+            }
+            else Instance.Localisation.Add(key.Value, value.Value);
 
             return i;
         }

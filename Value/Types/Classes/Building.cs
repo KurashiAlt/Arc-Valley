@@ -8,14 +8,20 @@ namespace Arc;
 public class BuildingLine : IArcObject
 {
     public static readonly Dict<BuildingLine> BuildingLines = new();
+    public ArcString Id { get; set; }
     public ArcString Name { get; set; }
+    public ArcList<Building> Buildings { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public BuildingLine(string id, ArcString name)
+    public BuildingLine(string id, ArcString name, ArcList<Building> buildings)
     {
+        Id = new(id);
         Name = name;
+        Buildings = buildings;
         KeyValuePairs = new()
         {
-            { "name", Name }
+            { "id", Id },
+            { "name", Name },
+            { "buildings", Buildings }
         };
 
         BuildingLines.Add(id, this);
@@ -33,6 +39,7 @@ public class BuildingLine : IArcObject
         int x = args.Get(ArcInt.Constructor, "x").Value;
         int y = args.Get(ArcInt.Constructor, "y").Value;
 
+        ArcList<Building> buildings = new();
         foreach (KeyValuePair<string, ArcCode> tier in tiers)
         {
             if (int.TryParse(tier.Key, out int i))
@@ -46,12 +53,13 @@ public class BuildingLine : IArcObject
 
             Args tArgs = Args.GetArgs(tier.Value.Value, args);
 
-            Building.Constructor($"{id}_{tier.Key}", tArgs);
+            buildings.Add(Building.Constructor($"{id}_{tier.Key}", tArgs));
         }
 
         return new(
             id,
-            args.Get(ArcString.Constructor, "name")
+            args.Get(ArcString.Constructor, "name"),
+            buildings
         );
     }
     public static Walker Call(Walker i)
@@ -66,7 +74,11 @@ public class BuildingLine : IArcObject
 
         return i;
     }
-    public Walker Call(Walker i, ref Block result) => throw new NotImplementedException();
+    public Walker Call(Walker i, ref Block result) 
+    {
+        result.Add(Id.Value);
+        return i;
+    }
     public bool CanGet(string indexer) => KeyValuePairs.CanGet(indexer);
     public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
 }

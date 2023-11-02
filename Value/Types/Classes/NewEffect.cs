@@ -250,6 +250,7 @@ public class Type : IValue, vvC
             "province_triggered_modifier" => ConstD(ProvinceTriggeredModifier.ProvinceTriggeredModifiers.Get),
             "war_goal" => ConstD(WarGoal.WarGoals.Get),
             "expedition" => ConstD(Expedition.Expeditions.Get),
+            "province_group" => ConstD(ProvinceGroup.ProvinceGroups.Get),
             _ => throw new NotImplementedException($"Unknown type {key}")
         };
     }

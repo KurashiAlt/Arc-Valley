@@ -55,263 +55,94 @@ namespace ArcInstance
                 Console.WriteLine($"{$"Finished Loading {location}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
             }
 
-            if (Lint)
+            Func<string>[] Transpilers =
             {
-                if (iArgs.Contains("nudge"))
-                {
-                    string path = iArgs[Array.IndexOf(iArgs, "nudge") + 1];
-                    Walker g;
+                Incident.Transpile,
 
-                    string tradenodePath = $"{path}/common/tradenodes/00_tradenodes.txt";
+                TranspileOnActions,
+                ReligionGroup.Transpile,
+                PersonalDeity.Transpile,
+                Decision.Transpile,
+                Event.Transpile,
+                Adjacency.Transpile,
+                Area.Transpile,
+                Bookmark.Transpile,
+                Region.Transpile,
+                Superregion.Transpile,
+                Province.Transpile,
+                TradeGood.Transpile,
+                Terrain.Transpile,
+                Blessing.Transpile,
+                Building.Transpile,
+                Country.Transpile,
+                ChurchAspect.Transpile,
+                AdvisorType.Transpile,
+                TradeNode.Transpile,
+                IdeaGroup.Transpile,
+                Relation.Transpile,
+                CultureGroup.Transpile,
+                MissionSeries.Transpile,
+                EstateAgenda.Transpile,
+                EstatePrivilege.Transpile,
+                Estate.Transpile,
+                GovernmentReform.Transpile,
+                GovernmentMechanic.Transpile,
+                Unit.Transpile,
+                GreatProject.Transpile,
+                MercenaryCompany.Transpile,
+                Advisor.Transpile,
+                Age.Transpile,
+                DiplomaticAction.Transpile,
+                SpecialUnitTranspile,
+                Government.Transpile,
+                GovernmentNames.Transpile,
+                HolyOrder.Transpile,
+                ProvinceTriggeredModifier.Transpile,
+                CasusBelli.Transpile,
+                WarGoal.Transpile,
+                ProvinceGroup.Transpile,
+                AiPersonalities,
+                CenterOfTrade,
+                RulerPersonality.Transpile,
 
-                    if (File.Exists(tradenodePath))
-                    {
-                        string tradenodeFile = File.ReadAllText(tradenodePath);
-                        tradenodeFile = LintEqualFixer().Replace(tradenodeFile, "$1 = $2");
-                        Block tradenodeCode = Parser.ParseCode(tradenodeFile);
+                OpinionModifier.Transpile,
+                EventModifier.Transpile,
+                TranspileLocalisations,
+                Gfx,
+                Unsorted,
+            };
 
-                        g = new(tradenodeCode);
-                        do
-                        {
-                            string key = g.Current;
-                            g = Arc.Args.GetArgs(g, out Args tradenode, multiKey: true);
-
-                            Block outgoings = new("{");
-                            if (tradenode.keyValuePairs == null) throw new Exception();
-                            foreach (KeyValuePair<string, Block> kvp in tradenode.keyValuePairs)
-                            {
-                                if (!kvp.Key.StartsWith("outgoing")) continue;
-
-
-                                Walker v = new(kvp.Value);
-                                v = Arc.Args.GetArgs(v, out Args outArgs, 2);
-
-                                LinkedListNode<Word>? tradenodeName = outArgs.Get("name").First;
-                                if (tradenodeName == null) throw new Exception();
-                                string tradenodeId = tradenodeName.Value.value.Trim('"')[..^3];
-                                outgoings.Add(
-                                    "{",
-                                        "node", "=", tradenodeId,
-                                        "path", "=", "{"
-                                );
-                                foreach (Word w in outArgs.Get("path"))
-                                {
-                                    if (w.value == "{" || w.value == "}") continue;
-                                    outgoings.Add(GetProvinceById(int.Parse(w.value) - 1).Item1);
-                                }
-                                outgoings.Add(
-                                        "}",
-                                        "control", "=", "{"
-                                );
-                                foreach (Word w in outArgs.Get("control"))
-                                {
-                                    if (w.value == "{" || w.value == "}") continue;
-                                    outgoings.Add(w.value);
-                                }
-                                outgoings.Add(
-                                        "}",
-                                    "}"
-                                );
-
-                            }
-                            outgoings.Add("}");
-                            ((LintAdd)linterCommands[$"tradenode~{key[..^3]}"]).Args.keyValuePairs["outgoings"] = outgoings;
-                        } while (g.MoveNext());
-
-                        File.Delete(path + "/common/tradenodes/00_tradenodes.copy");
-                        File.Copy(tradenodePath, path + "/common/tradenodes/00_tradenodes.copy");
-                        File.Delete(tradenodePath);
-                    }
-
-                    string positionPath = $"{path}/map/positions.txt";
-
-                    if (File.Exists(positionPath))
-                    {
-                        string positionFile = File.ReadAllText(positionPath);
-                        positionFile = LintEqualFixer().Replace(positionFile, "$1 = $2");
-                        Block positionCode = Parser.ParseCode(positionFile);
-
-                        g = new(positionCode);
-                        do
-                        {
-                            string key = g.Current;
-                            g = Arc.Args.GetArgs(g, out Args pos);
-                            LintAdd ar = GetProvinceById(int.Parse(key)-1).Item2;
-                            if (pos.keyValuePairs == null) throw new Exception();
-                            ar.Args["position"] = pos.keyValuePairs["position"];
-                            ar.Args["rotation"] = pos.keyValuePairs["rotation"];
-                            ar.Args["height"] = pos.keyValuePairs["height"];
-                        } while (g.MoveNext());
-
-                        File.Delete(path + "/map/positions.copy");
-                        File.Copy(positionPath, path + "/map/positions.copy");
-                        File.Delete(positionPath);
-                    }
-
-                    static (string, LintAdd) GetProvinceById(int i)
-                    {
-                        int h = 0;
-                        foreach(KeyValuePair<string, ILintCommand> v in linterCommands)
-                        {
-                            if (v.Key.StartsWith("province"))
-                            {
-                                if (h == i)
-                                {
-                                    return (v.Key.Split('~')[1], (LintAdd)v.Value);
-                                }
-
-                                h++;
-                            }
-                        }
-                        throw new Exception();
-                    }
-                }
-
-                List<string> nLocations = new();
-                foreach(string location in LoadOrder)
-                {
-                    if (location.EndsWith("/"))
-                    {
-                        string[] files = Directory.GetFiles(location);
-                        foreach (string file in files)
-                        {
-                            nLocations.Add(file);
-                        }
-                    }
-                    else
-                    {
-                        nLocations.Add(location);
-                    }
-                }
-
-                foreach(string location in nLocations)
-                {
-                    string rel = Path.GetRelativePath(directory, location);
-
-                    StringBuilder sb = new();
-                    foreach(KeyValuePair<string, ILintCommand> command in from lin in linterCommands where lin.Value.GetFile() == rel select lin)
-                    {
-                        sb.Append($"{command.Value.Lint(command.Key)} ");
-                    }
-                    OverwriteFile(rel, FormatArc(sb.ToString()), false);
-                }
-            }
-            else
+            foreach(Func<string> transpiler in Transpilers)
             {
-                Func<string>[] Transpilers =
-                {
-                    Incident.Transpile,
-
-                    TranspileOnActions,
-                    ReligionGroup.Transpile,
-                    PersonalDeity.Transpile,
-                    Decision.Transpile,
-                    Event.Transpile,
-                    Adjacency.Transpile,
-                    Area.Transpile,
-                    Bookmark.Transpile,
-                    Region.Transpile,
-                    Superregion.Transpile,
-                    Province.Transpile,
-                    TradeGood.Transpile,
-                    Terrain.Transpile,
-                    Blessing.Transpile,
-                    Building.Transpile,
-                    Country.Transpile,
-                    ChurchAspect.Transpile,
-                    AdvisorType.Transpile,
-                    TradeNode.Transpile,
-                    IdeaGroup.Transpile,
-                    Relation.Transpile,
-                    CultureGroup.Transpile,
-                    MissionSeries.Transpile,
-                    EstateAgenda.Transpile,
-                    EstatePrivilege.Transpile,
-                    Estate.Transpile,
-                    GovernmentReform.Transpile,
-                    GovernmentMechanic.Transpile,
-                    Unit.Transpile,
-                    GreatProject.Transpile,
-                    MercenaryCompany.Transpile,
-                    Advisor.Transpile,
-                    Age.Transpile,
-                    DiplomaticAction.Transpile,
-                    SpecialUnitTranspile,
-                    Government.Transpile,
-                    GovernmentNames.Transpile,
-                    HolyOrder.Transpile,
-                    ProvinceTriggeredModifier.Transpile,
-                    CasusBelli.Transpile,
-                    WarGoal.Transpile,
-
-                    OpinionModifier.Transpile,
-                    EventModifier.Transpile,
-                    TranspileLocalisations,
-                    Gfx,
-                    Unsorted,
-                };
-
-                foreach(Func<string> transpiler in Transpilers)
-                {
-                    TimeSpan start = timer.Elapsed;
-                    string type = transpiler();
-                    start = timer.Elapsed - start;
-                    Console.WriteLine($"{$"Finished Transpiling {type}".PadRight(50).Pastel(ConsoleColor.Cyan)}{$"{start.TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
-                }
-
-                Block AiPersonalityFile = new();
-                foreach(KeyValuePair<string, ArcCode> personality in Compiler.GetVariable<Dict<ArcCode>>("ai_personalities"))
-                {
-                    personality.Value.Compile(personality.Key, ref AiPersonalityFile);
-                }
-                OverwriteFile($"{TranspileTarget}/common/ai_personalities/arc.txt", string.Join(' ', AiPersonalityFile));
-
-                Block COTFile = new();
-                foreach(KeyValuePair<string, ArcCode> cot in Compiler.GetVariable<Dict<ArcCode>>("centers_of_trade"))
-                {
-                    cot.Value.Compile(cot.Key, ref COTFile);
-                }
-                OverwriteFile($"{TranspileTarget}/common/centers_of_trade/arc.txt", string.Join(' ', COTFile));
-
-                OverwriteFile($"warnings.txt", string.Join('\n', warnings));
+                TimeSpan start = timer.Elapsed;
+                string type = transpiler();
+                start = timer.Elapsed - start;
+                Console.WriteLine($"{$"Finished Transpiling {type}".PadRight(50).Pastel(ConsoleColor.Cyan)}{$"{start.TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
             }
 
-            if (args.Contains("mission"))
-            {
-                foreach(var a in MissionTree.MissionTrees)
-                {
-                    foreach(var b in a.Value.Serieses)
-                    {
-                        if (b == null) continue;
-                        foreach(var c in b.Missions)
-                        {
-                            Console.WriteLine($"mission {c.Value.Id}");
-                        }
-                    }
-                }
-            }
-
-            if (args.Contains("ideas"))
-            {
-                int i = 1;
-                foreach(var a in IdeaGroup.IdeaGroups)
-                {
-                    string color = a.Value.Category.Value switch
-                    {
-                        "ADM" => "fillColor=#d5e8d4;strokeColor=#82b366;",
-                        "DIP" => "fillColor=#dae8fc;strokeColor=#6c8ebf;",
-                        "MIL" => "fillColor=#f8cecc;strokeColor=#b85450;",
-                        _ => ""
-                    };
-                    if (color == "") continue;
-                    Console.WriteLine($"        <mxCell id=\"iTcpgkeqXsMG6gXbWK2M-{i}\" value=\"{a.Value.Name}\" style=\"rounded=0;whiteSpace=wrap;html=1;{color}\" vertex=\"1\" parent=\"1\">");
-                    Console.WriteLine($"          <mxGeometry x=\"{i*80}\" y=\"320\" width=\"80\" height=\"80\" as=\"geometry\" />");
-                    Console.WriteLine("        </mxCell>");
-                    i++;
-                }
-            }
+            OverwriteFile($"warnings.txt", string.Join('\n', warnings));
 
             return;
+        }
+        static string CenterOfTrade()
+        {
+            Block COTFile = new();
+            foreach (KeyValuePair<string, ArcCode> cot in Compiler.GetVariable<Dict<ArcCode>>("centers_of_trade"))
+            {
+                cot.Value.Compile(cot.Key, ref COTFile);
+            }
+            OverwriteFile($"{TranspileTarget}/common/centers_of_trade/arc.txt", string.Join(' ', COTFile));
+            return "Center of Trades";
+        }
+        static string AiPersonalities()
+        {
+            Block AiPersonalityFile = new();
+            foreach (KeyValuePair<string, ArcTrigger> personality in Compiler.GetVariable<Dict<ArcTrigger>>("ai_personalities"))
+            {
+                personality.Value.Compile(personality.Key, ref AiPersonalityFile);
+            }
+            OverwriteFile($"{TranspileTarget}/common/ai_personalities/arc.txt", string.Join(' ', AiPersonalityFile));
+            return "Ai Personalities";
         }
         static string Gfx()
         {
@@ -550,6 +381,7 @@ namespace ArcInstance
 
             IArcObject galleass = (IArcObject)specialUnits.Get("galleass");
             IArcObject musketeer = (IArcObject)specialUnits.Get("musketeer");
+            IArcObject rajput = (IArcObject)specialUnits.Get("rajput");
 
             Block staticModifiers = new()
             {
@@ -557,6 +389,7 @@ namespace ArcInstance
                 ((ArcModifier)galleass.Get("ship")).Compile("galleass_ship"),
                 ((ArcModifier)musketeer.Get("modifier")).Compile("musketeer_modifier"),
                 ((ArcModifier)musketeer.Get("regiment")).Compile("musketeer_regiment"),
+                ((ArcModifier)rajput.Get("regiment")).Compile("rajput_regiment"),
             };
 
             OverwriteFile($"{TranspileTarget}/common/static_modifiers/special_units.txt", string.Join(' ', staticModifiers));
@@ -576,13 +409,19 @@ namespace ArcInstance
                 "NDefines.NMilitary.MUSKETEER_ABSOLUTISM_COST", "=", musketeer.Get("absolutism_cost"),
                 "NDefines.NMilitary.MUSKETEER_STARTING_STRENGTH", "=", musketeer.Get("starting_strength"),
                 "NDefines.NMilitary.MUSKETEER_STARTING_MORALE", "=", musketeer.Get("starting_morale"),
+
+                "NDefines.NMilitary.RAJPUT_USES_CONSTRUCTION", "=", rajput.Get("uses_construction"),
+                "NDefines.NMilitary.RAJPUT_BASE_COST_MODIFIER", "=", rajput.Get("base_cost_modifier"),
+                "NDefines.NMilitary.RAJPUT_MAXIMUM_RATIO", "=", rajput.Get("maximum_ratio"),
+                "NDefines.NMilitary.RAJPUT_STARTING_STRENGTH", "=", rajput.Get("starting_strength"),
             };
             OverwriteFile($"{TranspileTarget}/common/defines/special_units.lua", string.Join(' ', defines));
 
-            Block LocBlock = new Block()
+            Block LocBlock = new()
             {
                 ((ArcBlock)galleass.Get("localisation")).Value,
                 ((ArcBlock)musketeer.Get("localisation")).Value,
+                ((ArcBlock)rajput.Get("localisation")).Value,
             };
             if (LocBlock.Any())
             {
@@ -590,9 +429,9 @@ namespace ArcInstance
                 do
                 {
                     string key = i.Current;
-                    if (!i.MoveNext()) throw new Exception();
-                    if (i.Current != "=") throw new Exception();
-                    if (!i.MoveNext()) throw new Exception();
+                    i.ForceMoveNext();
+                    i.Asssert("=");
+                    i.ForceMoveNext();
                     string value = i.Current;
                     Localisation.Add(key, value);
                 } while (i.MoveNext());
@@ -716,7 +555,7 @@ namespace ArcInstance
 
                 sb.Append($" {loc.Key}: \"{value}\"\n");
             }
-            OverwriteFile($"{TranspileTarget}/localisation/replace/arc5_l_english.yml", (sb.ToString()), false, true);
+            OverwriteFile($"{TranspileTarget}/localisation/replace/z_arc_valley_l_english.yml", (sb.ToString()), false, true);
             return "Localisations";
         }
         private static string TranspileOnActions()

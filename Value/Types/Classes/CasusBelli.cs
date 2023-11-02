@@ -54,8 +54,8 @@ public class WarSide : ArcObject
         }
         if (GetNullable("prov_desc") != null)
         {
-            s.Add("prov_desc", "=", $"{cb}_prov_desc");
-            Instance.Localisation.Add($"{cb}_prov_desc", Get("prov_desc").ToString());
+            s.Add("prov_desc", "=", $"{cb}_{side}_prov_desc");
+            Instance.Localisation.Add($"{cb}_{side}_prov_desc", Get("prov_desc").ToString());
         }
         s.Add("}");
     }
@@ -80,11 +80,11 @@ public class WarGoal : ArcObject
     {
         string id = Get("id").ToString();
         Instance.Localisation.Add($"{id}_title", Get("title").ToString());
-        Instance.Localisation.Add($"{id}_war_name", Get("war_name").ToString());
+        Instance.Localisation.Add($"{id.ToUpper()}_WAR_NAME", Get("war_name").ToString());
         s.Add(
             id, "=", "{",
                 "type", "=", Get("type").ToString(),
-                "war_name", "=", $"{id}_war_name"
+                "war_name", "=", $"{id.ToUpper()}_WAR_NAME"
         );
         Get<WarSide>("attacker").Transpile(ref s, id, "attacker");
         Get<WarSide>("defender").Transpile(ref s, id, "defender");

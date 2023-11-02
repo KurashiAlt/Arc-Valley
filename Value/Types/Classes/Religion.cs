@@ -10,17 +10,20 @@ public class AspectsName : IArcObject
     public ArcString Id { get; set; }
     public ArcString Short { get; set; }
     public ArcString Long { get; set; }
+    public ArcString PowerName { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public AspectsName(ArcString id, ArcString @short, ArcString @long)
+    public AspectsName(ArcString id, ArcString @short, ArcString @long, ArcString powerName)
     {
         Id = id;
         Short = @short;
         Long = @long;
+        PowerName = powerName;
         KeyValuePairs = new()
         {
             { "id", Id },
             { "short", Short },
             { "long", Long },
+            { "power_name", PowerName },
         };
     }
     public bool CanGet(string indexer) => KeyValuePairs.CanGet(indexer);
@@ -29,6 +32,7 @@ public class AspectsName : IArcObject
     {
         Instance.Localisation.Add($"{Id}_SHORT", Short.Value);
         Instance.Localisation.Add($"{Id}_LONG", Long.Value);
+        Instance.Localisation.Add($"{Id}_POWER_NAME", PowerName.Value);
         b.Append($"aspects_name = {Id} ");
     }
     public static AspectsName Constructor(Block block, string id)
@@ -40,7 +44,8 @@ public class AspectsName : IArcObject
         return new AspectsName(
             new(id.ToUpper()),
             args.Get(ArcString.Constructor, "short"),
-            args.Get(ArcString.Constructor, "long")
+            args.Get(ArcString.Constructor, "long"),
+            args.Get(ArcString.Constructor, "power_name", new("Church Power"))
         );
     }
     public Walker Call(Walker i, ref Block result)

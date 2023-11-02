@@ -109,8 +109,8 @@ public class TradeNode : IArcObject
         TradeNode TradeNode = new(
             new($"{id}_tn"),
             args.Get(ArcString.Constructor, "name"),
-            args.Get((Block s) => new ArcList<Area>(s, Area.Areas), "areas"),
-            args.Get((Block s) => new ArcList<Outgoing>(s, Outgoing.Constructor), "outgoings", new()),
+            args.Get(ArcList<Area>.GetConstructor(Area.Areas), "areas"),
+            args.Get(ArcList<Outgoing>.GetConstructor(Outgoing.Constructor), "outgoings", new()),
             args.GetFromList(Province.Provinces, "location"),
             args.Get(ArcBool.Constructor, "ai_will_propagate_through_trade", new(false))
         );

@@ -8,15 +8,20 @@ public class ArcFloat : IArcNumber, IValue
     }
     public ArcFloat(string value)
     {
+        if (value.EndsWith('%')) value = (double.Parse(value[..^1]) / 100).ToString("0.000");
         Value = Calculator.Calculate(value);
     }
     public ArcFloat(Block b)
     {
-        Value = Calculator.Calculate(string.Join(' ', b));
+        string value = string.Join(' ', b);
+        if (value.EndsWith('%')) value = (double.Parse(value[..^1]) / 100).ToString("0.000");
+        Value = Calculator.Calculate(value);
     }
-    public void Set(Block value)
+    public void Set(Block b)
     {
-        Value = Calculator.Calculate(string.Join(' ', value));
+        string value = string.Join(' ', b);
+        if (value.EndsWith('%')) value = (double.Parse(value[..^1]) / 100).ToString("0.000");
+        Value = Calculator.Calculate(value);
     }
     public static ArcFloat Constructor(Block b) => new ArcFloat(b);
     public double GetNum() => Value;

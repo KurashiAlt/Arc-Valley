@@ -82,6 +82,11 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
     public ArcList(Block value, Func<Block, T> Constructor)
     {
         if (Parser.HasEnclosingBrackets(value)) Compiler.RemoveEnclosingBrackets(value);
+        if (value.Count != 0 && !Parser.HasEnclosingBrackets(value))
+        {
+            value.Prepend("{");
+            value.Add("}");
+        }
 
         Values = new();
 
