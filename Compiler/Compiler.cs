@@ -291,7 +291,10 @@ namespace Arc
                 { "on_added_to_trade_company", new() },
                 { "on_removed_from_company", new() },
                 { "on_company_formed", new() },
-                { "on_company_disolved", new() }
+                { "on_company_disolved", new() },
+                { "on_overrun", new() },
+                { "on_qizilbash_raised", new() },
+                { "on_mamluks_raised", new() },
             } },
             { "adjacencies", Adjacency.Adjacencies },
             { "advisor_types", AdvisorType.AdvisorTypes },
@@ -451,6 +454,7 @@ namespace Arc
                 "expedition" => Expedition.Call(g),
                 "province_group" => ProvinceGroup.Call(g),
                 "personality_trait" => RulerPersonality.Call(g),
+                "policy" => Policy.Call(g),
                 _ => throw new Exception($"Unknown Object Type {g.Current} in object declaration")
             };
         }

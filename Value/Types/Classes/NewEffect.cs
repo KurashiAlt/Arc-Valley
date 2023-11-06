@@ -207,6 +207,7 @@ public class Type : IValue, vvC
             "mission_series" => ConstD(MissionSeries.MissionSerieses.Get),
             "agenda" => ConstD(EstateAgenda.EstateAgendas.Get),
             "privilege" => ConstD(EstatePrivilege.EstatePrivileges.Get),
+            "policy" => ConstD(Policy.Policies.Get),
             "estate" => ConstD(Estate.Estates.Get),
             "estate_privilege" => ConstC((Block b) =>
             {

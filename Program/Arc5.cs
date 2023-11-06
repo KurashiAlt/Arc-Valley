@@ -76,6 +76,7 @@ namespace ArcInstance
                 AdvisorType.Transpile,
                 TradeNode.Transpile,
                 IdeaGroup.Transpile,
+                Policy.Transpile,
                 Relation.Transpile,
                 CultureGroup.Transpile,
                 MissionSeries.Transpile,

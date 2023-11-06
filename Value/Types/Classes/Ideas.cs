@@ -12,21 +12,29 @@ public class Idea : IArcObject
     public ArcString Name { get; set; }
     public ArcString Desc { get; set; }
     public ArcModifier Modifier { get; set; }
+    public ArcEffect Effect { get; set; }
+    public ArcEffect RemovedEffect { get; set; }
     public Dict<IVariable> keyValuePairs { get; set; }
     public Idea(
         string key, 
         ArcString name, 
         ArcString desc, 
-        ArcModifier modifier
+        ArcModifier modifier,
+        ArcEffect effect,
+        ArcEffect removedEffect
     ) {
         Name = name;
         Desc = desc;
         Modifier = modifier;
+        Effect = effect;
+        RemovedEffect = removedEffect;
         keyValuePairs = new()
         {
             { "name", Name },
             { "desc", Desc },
-            { "modifier", Modifier }
+            { "modifier", Modifier },
+            { "effect", Effect },
+            { "removed_effect", RemovedEffect },
         };
 
         Id = new(key);
@@ -37,8 +45,16 @@ public class Idea : IArcObject
     public override string ToString() => Name.Value;
     public string Transpile(IdeaGroup ideaGroup)
     {
-        StringBuilder sb = new StringBuilder();
-        sb.Append($"{Id} = {{ {Modifier.Compile()} }}");
+        Block sb = new()
+        {
+            { 
+                Id, "=", "{", 
+                    Modifier.Compile(), 
+                    Effect.Compile("effect"),
+                    RemovedEffect.Compile("removed_effect"),
+                "}" 
+            }
+        };
 
         Instance.Localisation.Add($"{Id}", Name.Value);
         if (Id.Value.EndsWith("7"))
@@ -92,7 +108,7 @@ public class Idea : IArcObject
         {
             Instance.Localisation.Add($"{Id}_desc", Desc.Value);
         }
-        return sb.ToString();
+        return string.Join(' ', sb);
     }
     public Walker Call(Walker i, ref Block result)
     {
@@ -108,7 +124,9 @@ public class Idea : IArcObject
             $"{key}_{num}",
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "desc"),
-            args.Get(ArcModifier.Constructor, "modifier", new())
+            args.Get(ArcModifier.Constructor, "modifier", new()),
+            args.Get(ArcEffect.Constructor, "effect", new()),
+            args.Get(ArcEffect.Constructor, "removed_effect", new())
         );
     }
 }
@@ -189,7 +207,7 @@ public class IdeaGroup : IArcObject
         }
     }
 
-    public override string ToString() => Name.Value;
+    public override string ToString() => Id.Value;
     public static string Transpile()
     {
         StringBuilder sb = new();

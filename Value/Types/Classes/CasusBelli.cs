@@ -114,6 +114,7 @@ public class CasusBelli : ArcObject
         { "valid_for_subject", args.Get(ArcBool.Constructor, "valid_for_subject", new(false)) },
         { "is_triggered_only", args.Get(ArcBool.Constructor, "is_triggered_only", new(false)) },
         { "months", args.Get(ArcInt.Constructor, "months", null) },
+        { "prerequisites_self", args.Get(ArcTrigger.Constructor, "prerequisites_self", new()) },
         { "prerequisites", args.Get(ArcTrigger.Constructor, "prerequisites", new()) },
         { "war_goal", args.GetFromList(WarGoal.WarGoals, "war_goal") }
     };
@@ -131,6 +132,7 @@ public class CasusBelli : ArcObject
         if (Get<ArcBool>("is_triggered_only").Value == true) s.Add("is_triggered_only", "=", "yes");
         if (GetNullable("months") != null) s.Add("months", "=", Get("months").ToString());
         s.Add(
+                Get<ArcBlock>("prerequisites_self").Compile("prerequisites_self"),
                 Get<ArcBlock>("prerequisites").Compile("prerequisites"),
                 "war_goal", "=", Get("war_goal").ToString(),
             "}"
