@@ -71,7 +71,7 @@ public class CultureGroup : IArcObject
         StringBuilder sb = new();
         foreach (CultureGroup cg in CultureGroups.Values())
         {
-            Instance.Localisation.Add(cg.Id.Value, cg.Name.Value);
+            Program.Localisation.Add(cg.Id.Value, cg.Name.Value);
 
             sb.Append($"{cg.Id} = {{ ");
             foreach (Culture Culture in from rel in Culture.Cultures where rel.Value.CultureGroup == cg select rel.Value)
@@ -81,7 +81,7 @@ public class CultureGroup : IArcObject
             sb.Append($"{cg.MaleNames.Compile("male_names")} {cg.FemaleNames.Compile("female_names")} {cg.DynastyNames.Compile("dynasty_names")} {cg.CountryModifier.Compile("country")} {cg.ProvinceModifier.Compile("province")} }} ");
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/cultures/arc.txt", sb.ToString());
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/cultures/arc.txt", sb.ToString());
         return "Cultures";
     }
     public override string ToString() => Name.Value;

@@ -6,21 +6,21 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
     public List<T?> Values { get; set; }
     public Dict<T>? dict { get; set; }
     public Func<string, Args, T>? constructor { get; set; }
+    public Func<Block, T>? tConstructor { get; set; }
     public bool IsObject() => true;
     public ArcList()
     {
         Values = new();
     }
+    public ArcList(Func<Block, T> Constructor)
+    {
+        Values = new();
+        tConstructor = Constructor;
+    }
     public ArcList(Dict<T> _dict)
     {
         Values = new();
         dict = _dict;
-    }
-    public ArcList(Dict<T> _dict, Func<string, Args, T> _constructor)
-    {
-        Values = new();
-        dict = _dict;
-        constructor = _constructor;
     }
     public ArcList(Block value, Func<Block, int, T> Constructor)
     {
@@ -37,35 +37,11 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
             Values.Add(Constructor(f, Values.Count));
         } while (i.MoveNext());
     }
-    public ArcList(Block value, Func<string, Args, T> Constructor, Dict<T> Dictionary, Func<string, string>? KeyMorpher = null)
-    {
-        if (Parser.HasEnclosingBrackets(value)) Compiler.RemoveEnclosingBrackets(value);
-
-        Values = new();
-
-        if (value.Count == 0) return;
-
-        Walker i = new(value);
-        do
-        {
-            if(i.Current == "new")
-            {
-                if (!i.MoveNext()) throw new Exception();
-                string key = i.Current;
-                i = Args.GetArgs(i, out Args args);
-
-                if (KeyMorpher != null) key = KeyMorpher(key);
-
-                Values.Add(Constructor(key, args));
-            }
-            else
-                Values.Add((T?)Dictionary.Get(i.Current));
-        } while (i.MoveNext());
-    }
     public ArcList(Block value, Func<string, Args, T> Constructor)
     {
         if (Parser.HasEnclosingBrackets(value)) Compiler.RemoveEnclosingBrackets(value);
 
+        constructor = Constructor;
         Values = new();
 
         if (value.Count == 0) return;
@@ -88,6 +64,7 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
             value.Add("}");
         }
 
+        tConstructor = Constructor;
         Values = new();
 
         if (value.Count == 0) return;
@@ -103,6 +80,7 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
     {
         if(Parser.HasEnclosingBrackets(value)) Compiler.RemoveEnclosingBrackets(value);
 
+        dict = Dictionary;
         Values = new();
 
         if (value.Count == 0) return;
@@ -129,6 +107,17 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
             i = Args.GetArgs(i, out Args args);
 
             Values.Add(constructor(id, args));
+        }
+        else if (i.Current == "{")
+        {
+            if (tConstructor == null) throw new Exception();
+            i.ForceMoveNext();
+
+            i = Compiler.GetScope(i, out Block scope);
+
+            Values.Add(tConstructor(scope));
+            i.ForceMoveNext();
+            i.Asssert("}");
         }
         else
         {

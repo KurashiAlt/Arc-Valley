@@ -69,10 +69,10 @@ public class Blessing : IArcObject
         foreach (Blessing blessing in Blessings.Values())
         {
             sb.Append($"{blessing.Id} = {{ is_blessing = yes potential = {{ {blessing.Potential.Compile()} }} modifier = {{ {blessing.Modifier.Compile()} }} effect = {{ {blessing.Effect.Compile()} }} ai_will_do = {{ {blessing.AiWillDo.Compile()} }} }}");
-            Instance.Localisation.Add($"{blessing.Id}", blessing.Name.Value);
-            Instance.Localisation.Add($"desc_{blessing.Id}", blessing.Desc.Value);
+            Program.Localisation.Add($"{blessing.Id}", blessing.Name.Value);
+            Program.Localisation.Add($"desc_{blessing.Id}", blessing.Desc.Value);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/church_aspects/blessings.txt", sb.ToString());
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/church_aspects/blessings.txt", sb.ToString());
         return "Blessings";
     }
 }

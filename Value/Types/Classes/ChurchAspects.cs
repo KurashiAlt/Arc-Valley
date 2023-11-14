@@ -89,8 +89,8 @@ public class ChurchAspect : IArcObject
             "}"
         );
 
-        Instance.Localisation.Add($"{Id}", Name.Value);
-        Instance.Localisation.Add($"desc_{Id}", Desc.Value);
+        Program.Localisation.Add($"{Id}", Name.Value);
+        Program.Localisation.Add($"desc_{Id}", Desc.Value);
     }
     public static string Transpile()
     {
@@ -99,7 +99,7 @@ public class ChurchAspect : IArcObject
         {
             ChurchAspect.TranspileThis(ref b);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/church_aspects/ChurchAspects.txt", string.Join(' ', b));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/church_aspects/ChurchAspects.txt", string.Join(' ', b));
         return "Church Aspects";
     }
 }

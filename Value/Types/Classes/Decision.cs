@@ -96,8 +96,8 @@ public class Decision : IArcObject
     public Walker Call(Walker i, ref Block result) { result.Add(Id.Value); return i; }
     public void Transpile(ref Block s)
     {
-        Instance.Localisation.Add($"{Id}_title", Name.Value);
-        Instance.Localisation.Add($"{Id}_desc", Desc.Value);
+        Program.Localisation.Add($"{Id}_title", Name.Value);
+        Program.Localisation.Add($"{Id}_desc", Desc.Value);
         s.Add(
             Id, "=", "{",
                 "major", "=", Major
@@ -121,7 +121,7 @@ public class Decision : IArcObject
             Decision.Transpile(ref s);
         }
         s.Add("}");
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/decisions/arc.txt", string.Join(' ', s));
+        Program.OverwriteFile($"{Program.TranspileTarget}/decisions/arc.txt", string.Join(' ', s));
         return "Decisions";
     }
 }

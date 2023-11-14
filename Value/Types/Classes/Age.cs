@@ -46,8 +46,8 @@ public class Objective : IArcObject
     }
     public void TranspileSingular(ref Block s)
     {
-        Instance.Localisation.Add($"{Id}", Name.Value);
-        Instance.Localisation.Add($"{Id}_desc", Desc.Value);
+        Program.Localisation.Add($"{Id}", Name.Value);
+        Program.Localisation.Add($"{Id}_desc", Desc.Value);
         s.Add(
             Id, "=", "{",
                 Trigger.Compile(),
@@ -110,7 +110,7 @@ public class Ability : IArcObject
     }
     public void TranspileSingular(ref Block s)
     {
-        Instance.Localisation.Add(Id.Value, Name.Value);
+        Program.Localisation.Add(Id.Value, Name.Value);
         s.Add(
             Id, "=", "{"
         );
@@ -213,8 +213,8 @@ public class Age : IArcObject
     }
     private void TranspileSingular(ref Block s)
     {
-        Instance.Localisation.Add($"{Id}", Name.Value);
-        Instance.Localisation.Add($"{Id}_desc", Desc.Value);
+        Program.Localisation.Add($"{Id}", Name.Value);
+        Program.Localisation.Add($"{Id}_desc", Desc.Value);
         s.Add(
             Id, "=", "{",
                 "start", "=", Start,
@@ -248,7 +248,7 @@ public class Age : IArcObject
         {
             Age.TranspileSingular(ref s);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/ages/ages.txt", string.Join(' ', s));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/ages/ages.txt", string.Join(' ', s));
         return "Ages";
     }
     public override string ToString() => Name.Value;

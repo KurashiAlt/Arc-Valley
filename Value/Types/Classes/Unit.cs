@@ -88,8 +88,8 @@ public class Unit : IArcObject
     }
     private void TranspileSingular()
     {
-        Instance.Localisation.Add($"{Id}", Name.Value);
-        Instance.Localisation.Add($"{Id}DESCR", Desc.Value);
+        Program.Localisation.Add($"{Id}", Name.Value);
+        Program.Localisation.Add($"{Id}DESCR", Desc.Value);
         Block b = new()
         {
             { "type", "=", Type },
@@ -101,7 +101,7 @@ public class Unit : IArcObject
         {
             attribute.Value.Compile(attribute.Key, ref b, true, true);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/units/{Id}.txt", string.Join(' ', b));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/units/{Id}.txt", string.Join(' ', b));
     }
     public static string Transpile()
     {

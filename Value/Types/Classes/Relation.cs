@@ -50,7 +50,7 @@ public class Relation : ArcBlock
             throw new Exception("Emperor does not exist");
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/history/diplomacy/arc.txt", string.Join(' ', b));
+        Program.OverwriteFile($"{Program.TranspileTarget}/history/diplomacy/arc.txt", string.Join(' ', b));
         return "Relations";
     }
     public override string Compile()

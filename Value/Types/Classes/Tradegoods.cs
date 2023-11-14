@@ -77,11 +77,11 @@ public class TradeGood : IArcObject
         {
             sb.Append($"{tradeGood.Id} = {{ color = {{ {tradeGood.Color} }} modifier = {{ {tradeGood.Modifier.Compile()} }} province = {{ {tradeGood.Province.Compile()} }} chance = {{ {tradeGood.Chance} }} }} ");
             sa.Append($"{tradeGood.Id} = {{ base_price = {tradeGood.BasePrice} goldtype = {tradeGood.IsGold} }} ");
-            Instance.Localisation.Add(tradeGood.Id.Value, tradeGood.Name.Value);
-            Instance.Localisation.Add($"{tradeGood.Id}DESC", tradeGood.Description.Value);
+            Program.Localisation.Add(tradeGood.Id.Value, tradeGood.Name.Value);
+            Program.Localisation.Add($"{tradeGood.Id}DESC", tradeGood.Description.Value);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/tradegoods/00_tradegoods.txt", sb.ToString());
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/prices/00_prices.txt", sa.ToString());
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/tradegoods/00_tradegoods.txt", sb.ToString());
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/prices/00_prices.txt", sa.ToString());
         return "Trade Goods";
     }
 }

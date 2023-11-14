@@ -244,7 +244,7 @@ public class GreatProject : IArcObject
         Tier3.TranspileSingular("tier_3", ref b);
         b.Add("}");
 
-        Instance.Localisation.Add(Id.Value, Name.Value);
+        Program.Localisation.Add(Id.Value, Name.Value);
     }
     public static string Transpile()
     {
@@ -255,7 +255,7 @@ public class GreatProject : IArcObject
             GreatProject.TranspileSingular(ref b);
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/great_projects/arc.txt", string.Join(' ', b));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/great_projects/arc.txt", string.Join(' ', b));
         return "Great Projects";
     }
     public override string ToString() => Name.Value;

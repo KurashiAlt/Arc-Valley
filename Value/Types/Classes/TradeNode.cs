@@ -146,10 +146,10 @@ public class TradeNode : IArcObject
                 sb.Append("end = yes ");
             }
             sb.Append("} ");
-            Instance.Localisation.Add(node.Id.Value, node.Name.Value);
+            Program.Localisation.Add(node.Id.Value, node.Name.Value);
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/tradenodes/arc.txt", sb.ToString());
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/tradenodes/arc.txt", sb.ToString());
         return "Trade Nodes";
     }
     public Walker Call(Walker i, ref Block result)

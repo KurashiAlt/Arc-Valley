@@ -72,8 +72,8 @@ public class Bookmark : IArcObject
         foreach (Bookmark bookmark in Bookmarks.Values())
         {
             StringBuilder sb = new("");
-            Instance.Localisation.Add($"{bookmark.Id}_name", bookmark.Name.Value);
-            Instance.Localisation.Add($"{bookmark.Id}_desc", bookmark.Desc.Value);
+            Program.Localisation.Add($"{bookmark.Id}_name", bookmark.Name.Value);
+            Program.Localisation.Add($"{bookmark.Id}_desc", bookmark.Desc.Value);
             sb.Append($"bookmark = {{ name = {bookmark.Id}_name desc = {bookmark.Id}_desc date = {bookmark.Date} center = {bookmark.Center.Id} ");
             foreach (Country? country in bookmark.Countries.Values)
             {
@@ -88,7 +88,7 @@ public class Bookmark : IArcObject
             if (bookmark.Default) sb.Append("default = yes ");
             if (!bookmark.Effect.IsEmpty()) sb.Append($"effect = {{ {bookmark.Effect.Compile()} }} ");
             sb.Append($"}} ");
-            Instance.OverwriteFile($"{Instance.TranspileTarget}/common/bookmarks/{bookmark.Id}.txt", sb.ToString());
+            Program.OverwriteFile($"{Program.TranspileTarget}/common/bookmarks/{bookmark.Id}.txt", sb.ToString());
         }
         return "Bookmarks";
     }

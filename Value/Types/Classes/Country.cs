@@ -181,7 +181,7 @@ public class Country : IArcObject
             "fleet_names", "=", "{", FleetNames, "}",
             Definitions.Compile()
         };
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/countries/{Tag}.txt", string.Join(' ', countryDef));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/countries/{Tag}.txt", string.Join(' ', countryDef));
 
         Block countryHistory = new()
         {
@@ -202,10 +202,10 @@ public class Country : IArcObject
 
         countryHistory.Add(History.Compile());
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/history/countries/{Tag}.txt", string.Join(' ', countryHistory));
+        Program.OverwriteFile($"{Program.TranspileTarget}/history/countries/{Tag}.txt", string.Join(' ', countryHistory));
 
-        Instance.Localisation.Add($"{Tag}", $"{Name}");
-        Instance.Localisation.Add($"{Tag}_ADJ", $"{Adj}");
+        Program.Localisation.Add($"{Tag}", $"{Name}");
+        Program.Localisation.Add($"{Tag}_ADJ", $"{Adj}");
     }
     public static string Transpile()
     {
@@ -219,18 +219,18 @@ public class Country : IArcObject
         {
             ctr.Value.Transpile(ref countryDefinitions);
 
-            //Instance.Warn($"(\"add_core = {ctr.Value.Tag}\", \"add_core = {ctr.Key}\"),");
+            //Program.Warn($"(\"add_core = {ctr.Value.Tag}\", \"add_core = {ctr.Key}\"),");
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/countries/REB.txt", "graphical_culture = westerngfx color = { 30 30 30 } historical_idea_groups = { administrative_ideas quantity_ideas defensive_ideas humanist_ideas trade_ideas quality_ideas economic_ideas maritime_ideas } monarch_names = { \"Corneles #0\" = 10 \"Moise #0\" = 10 \"Mahieu #0\" = 10 \"Daniel #0\" = 10 \"Jacob #0\" = 10 \"Piet #0\" = 10 \"Hendrik #0\" = 10 \"David #0\" = 10 \"John #0\" = 10 \"Eric #0\" = 10 \"Boel #0\" = -1 \"Alexandra #0\" = -1 \"Regina #0\" = -1 \"Miriam #0\" = -1 } leader_names = { Lowther Quelch Condent Dalzeel Spriggs Condon Angre Anstis Chivers Searle Hout Coxon Vynne Vane Worley }");
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/countries/NAT.txt", "graphical_culture = westerngfx color = { 203 164 103 } historical_idea_groups = { expansion_ideas trade_ideas plutocracy_ideas economic_ideas quality_ideas maritime_ideas quantity_ideas administrative_ideas } monarch_names = { \"Mapi #0\" = 10 \"Quando #0\" = 10 \"Illa #0\" = 10 \"Rimac #0\" = 10 \"Tiso #0\" = 10 \"Cusi #0\" = 10 \"Mayta #0\" = 10 \"Roca #0\" = 10 \"Zope #0\" = 10 \"Curiatao #0\" = 10 \"Guacra #0\" = 10 \"Maila #0\" = 10 \"Tanqui #0\" = 10 \"Taipi #0\" = 10 \"Sanga #0\" = -1 } leader_names = { Tywan Toto Iawi Gasana Wyoh Illa Maila Quizo Tanqui Taraque Tari Pacon } ship_names = { Yamro Sanga Mani Mutara Gasana Yuhi Kigeri Kemba Adero Ayan Mahdi Gukunda Nalungo Kilolo Gahiji }");
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/countries/PIR.txt", "graphical_culture = westerngfx color = { 10 10 10 } monarch_names = { \"Woodes #0\" = 10 \"Black #0\" = 10 \"Howell #0\" = 10 \"Calico #0\" = 10 \"Lessone #0\" = 10 \"Lawrence #0\" = 10 \"Lewis #0\" = 10 \"John #0\" = 10 \"Roche #0\" = 10 \"James #0\" = 10 \"Assan #0\" = 10 \"Dirck #0\" = 10 \"Jane #0\" = -1 } leader_names = { Alvel Cavendish \"de Bouff\" Brower Barton Hein Noort Easton Rais Verney Rous Reis Davis Collier Greaves Bellamy Every Vane Rogers Taylor Vorley Kelly Howard Halsey } ship_names = { \"Captain's Horror\" \"Death\" \"Disgraceful Strumpet\" \"Dragon's Gold\" \"Executioner\" \"Killer's Fearful Storm\" \"Murderer's Death\" \"Privateer's Strumpet\" \"The Damned Killer\" \"The Dark Dagger\" \"The Dirty Blade\" \"The Dirty Scream\" \"The Doom of the Ocean\" \"The Dreaming Demon\" \"The Fallen Raider\" \"The Fear of the Demon\" \"The Foul Whore\" \"The Gold Cutlass\" \"The Hell-born\" \"The Horrid Compass\" \"The Horrible Raider\" \"The Howling Wolf\" \"The Lustful Hangman\" \"The Nightmare\" \"The Poison Death\" \"The Serpent\" \"The Vicious Murderer\" \"The Vile Saber\" }");
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/countries/REB.txt", "graphical_culture = westerngfx color = { 30 30 30 } historical_idea_groups = { administrative_ideas quantity_ideas defensive_ideas humanist_ideas trade_ideas quality_ideas economic_ideas maritime_ideas } monarch_names = { \"Corneles #0\" = 10 \"Moise #0\" = 10 \"Mahieu #0\" = 10 \"Daniel #0\" = 10 \"Jacob #0\" = 10 \"Piet #0\" = 10 \"Hendrik #0\" = 10 \"David #0\" = 10 \"John #0\" = 10 \"Eric #0\" = 10 \"Boel #0\" = -1 \"Alexandra #0\" = -1 \"Regina #0\" = -1 \"Miriam #0\" = -1 } leader_names = { Lowther Quelch Condent Dalzeel Spriggs Condon Angre Anstis Chivers Searle Hout Coxon Vynne Vane Worley }");
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/countries/NAT.txt", "graphical_culture = westerngfx color = { 203 164 103 } historical_idea_groups = { expansion_ideas trade_ideas plutocracy_ideas economic_ideas quality_ideas maritime_ideas quantity_ideas administrative_ideas } monarch_names = { \"Mapi #0\" = 10 \"Quando #0\" = 10 \"Illa #0\" = 10 \"Rimac #0\" = 10 \"Tiso #0\" = 10 \"Cusi #0\" = 10 \"Mayta #0\" = 10 \"Roca #0\" = 10 \"Zope #0\" = 10 \"Curiatao #0\" = 10 \"Guacra #0\" = 10 \"Maila #0\" = 10 \"Tanqui #0\" = 10 \"Taipi #0\" = 10 \"Sanga #0\" = -1 } leader_names = { Tywan Toto Iawi Gasana Wyoh Illa Maila Quizo Tanqui Taraque Tari Pacon } ship_names = { Yamro Sanga Mani Mutara Gasana Yuhi Kigeri Kemba Adero Ayan Mahdi Gukunda Nalungo Kilolo Gahiji }");
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/countries/PIR.txt", "graphical_culture = westerngfx color = { 10 10 10 } monarch_names = { \"Woodes #0\" = 10 \"Black #0\" = 10 \"Howell #0\" = 10 \"Calico #0\" = 10 \"Lessone #0\" = 10 \"Lawrence #0\" = 10 \"Lewis #0\" = 10 \"John #0\" = 10 \"Roche #0\" = 10 \"James #0\" = 10 \"Assan #0\" = 10 \"Dirck #0\" = 10 \"Jane #0\" = -1 } leader_names = { Alvel Cavendish \"de Bouff\" Brower Barton Hein Noort Easton Rais Verney Rous Reis Davis Collier Greaves Bellamy Every Vane Rogers Taylor Vorley Kelly Howard Halsey } ship_names = { \"Captain's Horror\" \"Death\" \"Disgraceful Strumpet\" \"Dragon's Gold\" \"Executioner\" \"Killer's Fearful Storm\" \"Murderer's Death\" \"Privateer's Strumpet\" \"The Damned Killer\" \"The Dark Dagger\" \"The Dirty Blade\" \"The Dirty Scream\" \"The Doom of the Ocean\" \"The Dreaming Demon\" \"The Fallen Raider\" \"The Fear of the Demon\" \"The Foul Whore\" \"The Gold Cutlass\" \"The Hell-born\" \"The Horrid Compass\" \"The Horrible Raider\" \"The Howling Wolf\" \"The Lustful Hangman\" \"The Nightmare\" \"The Poison Death\" \"The Serpent\" \"The Vicious Murderer\" \"The Vile Saber\" }");
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/history/countries/REB.txt", "technology_group = nord_tg");
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/history/countries/NAT.txt", "technology_group = nord_tg");
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/history/countries/PIR.txt", "technology_group = nord_tg");
+        Program.OverwriteFile($"{Program.TranspileTarget}/history/countries/REB.txt", "technology_group = nord_tg");
+        Program.OverwriteFile($"{Program.TranspileTarget}/history/countries/NAT.txt", "technology_group = nord_tg");
+        Program.OverwriteFile($"{Program.TranspileTarget}/history/countries/PIR.txt", "technology_group = nord_tg");
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/country_tags/countries.txt", string.Join(' ', countryDefinitions));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/country_tags/countries.txt", string.Join(' ', countryDefinitions));
         return "Countries";
     }
     public override string ToString() => Name.Value;

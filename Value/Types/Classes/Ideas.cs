@@ -56,7 +56,7 @@ public class Idea : IArcObject
             }
         };
 
-        Instance.Localisation.Add($"{Id}", Name.Value);
+        Program.Localisation.Add($"{Id}", Name.Value);
         if (Id.Value.EndsWith("7"))
         {
             bool addedSpacing = false;
@@ -102,11 +102,11 @@ public class Idea : IArcObject
                 }
             }
 
-            Instance.Localisation.Add($"{Id}_desc", desc.ToString());
+            Program.Localisation.Add($"{Id}_desc", desc.ToString());
         }
         else
         {
-            Instance.Localisation.Add($"{Id}_desc", Desc.Value);
+            Program.Localisation.Add($"{Id}_desc", Desc.Value);
         }
         return string.Join(' ', sb);
     }
@@ -217,7 +217,7 @@ public class IdeaGroup : IArcObject
 
             if (ideaGroup.Category.Value == "national")
             {
-                Instance.Localisation.Add($"{ideaGroup.Id}_start", $"{ideaGroup.Name.Value.Trim('"')} Traditions");
+                Program.Localisation.Add($"{ideaGroup.Id}_start", $"{ideaGroup.Name.Value.Trim('"')} Traditions");
                 sb.Append($"free = yes ");
             }
             else
@@ -245,11 +245,11 @@ public class IdeaGroup : IArcObject
 
             sb.Append(" } ");
 
-            Instance.Localisation.Add($"{ideaGroup.Id}", $"{ideaGroup.Name.Value.Trim('"')} Ideas");
-            Instance.Localisation.Add($"{ideaGroup.Id}_bonus", $"{ideaGroup.Name.Value.Trim('"')} Ambitions");
+            Program.Localisation.Add($"{ideaGroup.Id}", $"{ideaGroup.Name.Value.Trim('"')} Ideas");
+            Program.Localisation.Add($"{ideaGroup.Id}_bonus", $"{ideaGroup.Name.Value.Trim('"')} Ambitions");
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/ideas/arc.txt", sb.ToString());
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/ideas/arc.txt", sb.ToString());
         return "Idea Groups";
     }
     public Walker Call(Walker i, ref Block result)

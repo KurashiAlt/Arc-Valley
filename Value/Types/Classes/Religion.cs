@@ -30,9 +30,9 @@ public class AspectsName : IArcObject
     public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
     public void Transpile(ref StringBuilder b)
     {
-        Instance.Localisation.Add($"{Id}_SHORT", Short.Value);
-        Instance.Localisation.Add($"{Id}_LONG", Long.Value);
-        Instance.Localisation.Add($"{Id}_POWER_NAME", PowerName.Value);
+        Program.Localisation.Add($"{Id}_SHORT", Short.Value);
+        Program.Localisation.Add($"{Id}_LONG", Long.Value);
+        Program.Localisation.Add($"{Id}_POWER_NAME", PowerName.Value);
         b.Append($"aspects_name = {Id} ");
     }
     public static AspectsName Constructor(Block block, string id)
@@ -214,10 +214,10 @@ public class Religion : IArcObject
     }
     public void Transpile(StringBuilder sb)
     {
-        Instance.Localisation.Add($"{Id}", Name.Value);
-        Instance.Localisation.Add($"{Id}_desc", Desc.Value);
-        Instance.Localisation.Add($"{Id}_demand", "");
-        Instance.Localisation.Add($"{Id}_demand_desc", "");
+        Program.Localisation.Add($"{Id}", Name.Value);
+        Program.Localisation.Add($"{Id}_desc", Desc.Value);
+        Program.Localisation.Add($"{Id}_demand", "");
+        Program.Localisation.Add($"{Id}_demand_desc", "");
 
         sb.Append($"{Id} = {{ color = {{ {Color} }} icon = {Icon} heretic = {{ {Heretic} }} country = {{ {CountryModifier} }} province = {{ {ProvinceModifier} }} country_as_secondary = {{ {CountryAsSecondary} }} ");
         if (!AllowedConversions.IsEmpty()) sb.Append($"allowed_conversion = {{ {AllowedConversions} }} ");

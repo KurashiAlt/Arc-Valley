@@ -32,9 +32,9 @@ public class RulerPersonality : ArcObject
     public void Transpile(ref Block s)
     {
         string id = ToString();
-        Instance.Localisation.Add($"{id}", Get("name").ToString());
-        Instance.Localisation.Add($"desc_{id}", Get("desc").ToString());
-        Instance.Localisation.Add($"{id}_die_desc", Get("death").ToString());
+        Program.Localisation.Add($"{id}", Get("name").ToString());
+        Program.Localisation.Add($"desc_{id}", Get("desc").ToString());
+        Program.Localisation.Add($"{id}_die_desc", Get("death").ToString());
         s.Add(id, "=", "{");
         Get<ArcTrigger>("ruler_allow").Compile("ruler_allow", ref s);
         Get<ArcTrigger>("heir_allow").Compile("heir_allow", ref s);
@@ -54,7 +54,7 @@ public class RulerPersonality : ArcObject
         {
             Advisor.Value.Transpile(ref s);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/ruler_personalities/arc.txt", string.Join(' ', s));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/ruler_personalities/arc.txt", string.Join(' ', s));
         return "Ruler Personalities";
     }
 }

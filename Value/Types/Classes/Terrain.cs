@@ -86,13 +86,13 @@ public class Terrain : IArcObject
         foreach (KeyValuePair<string, Terrain> terrain in Terrain.Terrains)
         {
             sb.Append($"{terrain.Key} = {{ color = {{ {terrain.Value.Color} }} sound_type = {terrain.Value.SoundType} {(terrain.Value.IsWater ? "is_water = yes" : "")}  {(terrain.Value.InlandSea ? "inland_sea = yes" : "")} {(terrain.Value.Type != null ? $"type = {terrain.Value.Type}" : "")} movement_cost = {terrain.Value.MovementCost} {(terrain.Value.Defence.Value == 0 ? "" : $"defence = {terrain.Value.Defence}")} {terrain.Value.Modifier.Compile()} terrain_override = {{ {(string.Join(' ', from Province in Province.Provinces.Values() where Province.Terrain == terrain.Value select Province.Id))} }} }} ");
-            Instance.Localisation.Add(terrain.Value.Id.Value, terrain.Value.Name.Value);
-            Instance.Localisation.Add($"{terrain.Value.Id}_desc", terrain.Value.Description.Value);
+            Program.Localisation.Add(terrain.Value.Id.Value, terrain.Value.Name.Value);
+            Program.Localisation.Add($"{terrain.Value.Id}_desc", terrain.Value.Description.Value);
         }
         sb.Append(" } ");
         sb.Append($"terrain = {{ {Compiler.global["terrain_declarations"]} }}");
         sb.Append($"tree = {{ {Compiler.global["tree"]} }}");
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/terrain.txt", sb.ToString());
+        Program.OverwriteFile($"{Program.TranspileTarget}/map/terrain.txt", sb.ToString());
         return "Terrains";
     }
 }

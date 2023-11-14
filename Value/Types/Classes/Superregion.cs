@@ -58,11 +58,11 @@ public class Superregion : IArcObject
         foreach (Superregion superregion in Superregion.Superregions.Values())
         {
             sb.Append($"{superregion.Id} = {{ {string.Join(' ', from Region in Region.Regions.Values() where Region.Superregion == superregion select Region.Id)} }} ");
-            Instance.Localisation.Add($"{superregion.Id.Value}", superregion.Name.Value);
-            Instance.Localisation.Add($"{superregion.Id.Value}_name", superregion.Name.Value);
-            Instance.Localisation.Add($"{superregion.Id.Value}_adj", superregion.Adj.Value);
+            Program.Localisation.Add($"{superregion.Id.Value}", superregion.Name.Value);
+            Program.Localisation.Add($"{superregion.Id.Value}_name", superregion.Name.Value);
+            Program.Localisation.Add($"{superregion.Id.Value}_adj", superregion.Adj.Value);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/superregion.txt", sb.ToString());
+        Program.OverwriteFile($"{Program.TranspileTarget}/map/superregion.txt", sb.ToString());
         return "Superregion";
     }
     public override string ToString() => Name.Value;

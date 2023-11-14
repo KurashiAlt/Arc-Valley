@@ -44,8 +44,8 @@ public class Policy : ArcObject
     public void Transpile(ref Block s)
     {
         string id = ToString();
-        Instance.Localisation.Add($"{id}", Get("name").ToString());
-        Instance.Localisation.Add($"desc_{id}", Get("desc").ToString());
+        Program.Localisation.Add($"{id}", Get("name").ToString());
+        Program.Localisation.Add($"desc_{id}", Get("desc").ToString());
 
         IdeaGroup? i0 = GetNullable<IdeaGroup>("group");
         IdeaGroup? i1 = GetNullable<IdeaGroup>("group_1");
@@ -115,7 +115,7 @@ public class Policy : ArcObject
         {
             Policy.Value.Transpile(ref s);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/policies/arc.txt", string.Join(' ', s));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/policies/arc.txt", string.Join(' ', s));
         return "Policies";
     }
 }

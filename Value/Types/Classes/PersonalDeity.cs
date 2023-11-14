@@ -77,8 +77,8 @@ public class PersonalDeity : IArcObject
         StringBuilder sb = new();
         foreach (PersonalDeity PersonalDeity in PersonalDeitys.Values())
         {
-            Instance.Localisation.Add($"{PersonalDeity.Id}", PersonalDeity.Name.Value);
-            Instance.Localisation.Add($"{PersonalDeity.Id}_desc", PersonalDeity.Desc.Value);
+            Program.Localisation.Add($"{PersonalDeity.Id}", PersonalDeity.Name.Value);
+            Program.Localisation.Add($"{PersonalDeity.Id}_desc", PersonalDeity.Desc.Value);
 
             sb.Append($"{PersonalDeity.Id} = {{ sprite = {PersonalDeity.Sprite} {PersonalDeity.AiWillDo.Compile("ai_will_do")} ");
             if (!PersonalDeity.Potential.IsEmpty()) sb.Append(PersonalDeity.Potential.Compile("potential"));
@@ -87,7 +87,7 @@ public class PersonalDeity : IArcObject
             if (!PersonalDeity.RemovedEffect.IsEmpty()) sb.Append(PersonalDeity.RemovedEffect.Compile("removed_effect"));
             sb.Append($"{PersonalDeity.Modifiers.Compile()} }} ");
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/personal_deities/arc.txt", sb.ToString());
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/personal_deities/arc.txt", sb.ToString());
         return "Personal Deitys";
     }
     public override string ToString() => Id.Value;

@@ -102,8 +102,8 @@ public class GovernmentMechanicInteraction : IArcObject
     }
     public void Transpile(ref Block b, ref Block g)
     {
-        Instance.Localisation.Add($"{Id}", Name.Value);
-        Instance.Localisation.Add($"{Id}_desc", Desc.Value);
+        Program.Localisation.Add($"{Id}", Name.Value);
+        Program.Localisation.Add($"{Id}_desc", Desc.Value);
 
         b.Add(Id, "=", "{");
         if (Gui != null)
@@ -127,7 +127,7 @@ public class GovernmentMechanicInteraction : IArcObject
         if (CooldownToken != null) b.Add("cooldown_token", "=", CooldownToken);
         if (CooldownDesc != null)
         {
-            Instance.Localisation.Add($"{Id}_cooldown_desc", CooldownDesc.Value);
+            Program.Localisation.Add($"{Id}_cooldown_desc", CooldownDesc.Value);
             b.Add("cooldown_desc", "=", $"{Id}_cooldown_desc");
         }
         b.Add("}");
@@ -141,7 +141,7 @@ public class GovernmentMechanicPower : IArcObject
     public ArcString Id { get; set; }
     public ArcString Name { get; set; }
     public ArcString Desc { get; set; }
-    public ArcCode Gui { get; set; }
+    public ArcCode? Gui { get; set; }
     public ArcInt? Min { get; set; }
     public ArcInt Max { get; set; }
     public ArcInt? Default { get; set; }
@@ -161,7 +161,7 @@ public class GovernmentMechanicPower : IArcObject
         string id, 
         ArcString name, 
         ArcString desc,
-        ArcCode gui, 
+        ArcCode? gui, 
         ArcInt? min, 
         ArcInt max, 
         ArcInt? @default, 
@@ -226,7 +226,7 @@ public class GovernmentMechanicPower : IArcObject
     public static GovernmentMechanicPower Constructor(string id, Args args) => new(id,
         args.Get(ArcString.Constructor, "name"),
         args.Get(ArcString.Constructor, "desc", new("")),
-        args.Get(ArcCode.Constructor, "gui"),
+        args.Get(ArcCode.Constructor, "gui", null),
         args.Get(ArcInt.Constructor, "min", null),
         args.Get(ArcInt.Constructor, "max"),
         args.Get(ArcInt.Constructor, "default", null),
@@ -244,10 +244,10 @@ public class GovernmentMechanicPower : IArcObject
     );
     public void Transpile(ref Block b, ref Block g)
     {
-        Instance.Localisation.Add($"{Id}", Name.Value);
-        Instance.Localisation.Add($"{Id}_desc", Desc.Value);
-        Instance.Localisation.Add($"monthly_{Id}", $"Monthly {Name}");
-        Instance.Localisation.Add($"{Id}_gain_modifier", $"{Name} Gain Modifier");
+        Program.Localisation.Add($"{Id}", Name.Value);
+        Program.Localisation.Add($"{Id}_desc", Desc.Value);
+        Program.Localisation.Add($"monthly_{Id}", $"Monthly {Name}");
+        Program.Localisation.Add($"{Id}_gain_modifier", $"{Name} Gain Modifier");
 
         b.Add(Id, "=", "{");
         if (Gui != null)
@@ -338,7 +338,7 @@ public class GovernmentMechanic : IArcObject
     );
     public void Transpile(ref Block b, ref Block g)
     {
-        Instance.Localisation.Add($"ability_{Id}", Name.Value);
+        Program.Localisation.Add($"ability_{Id}", Name.Value);
 
         b.Add(
             Id, "=", "{"
@@ -381,8 +381,8 @@ public class GovernmentMechanic : IArcObject
         }
 
         g.Add("}");
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/interface/government_mechanics/arc.gui", string.Join(' ', g));
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/government_mechanics/arc.txt", string.Join(' ', b));
+        Program.OverwriteFile($"{Program.TranspileTarget}/interface/government_mechanics/arc.gui", string.Join(' ', g));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/government_mechanics/arc.txt", string.Join(' ', b));
         return "Government Mechanics";
     }
     public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }

@@ -33,8 +33,8 @@ public class HolyOrder : ArcObject
     public void Transpile(ref Block b)
     {
         string id = Get("id").ToString();
-        Instance.Localisation.Add($"{id}", Get("name").ToString());
-        Instance.Localisation.Add($"{id}_desc", Get("desc").ToString());
+        Program.Localisation.Add($"{id}", Get("name").ToString());
+        Program.Localisation.Add($"{id}_desc", Get("desc").ToString());
 
         b.Add(
             id, "=", "{",
@@ -58,7 +58,7 @@ public class HolyOrder : ArcObject
         {
             HolyOrder.Value.Transpile(ref b);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/holy_orders/arc.txt", string.Join(' ', b));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/holy_orders/arc.txt", string.Join(' ', b));
         return "Holy Orders";
     }
     public override Walker Call(Walker i, ref Block result) 

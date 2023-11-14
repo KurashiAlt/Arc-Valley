@@ -50,12 +50,12 @@ public class WarSide : ArcObject
         if (GetNullable("country_desc") != null)
         {
             s.Add("country_desc", "=", $"{cb}_country_desc");
-            Instance.Localisation.Add($"{cb}_country_desc", Get("country_desc").ToString());
+            Program.Localisation.Add($"{cb}_country_desc", Get("country_desc").ToString());
         }
         if (GetNullable("prov_desc") != null)
         {
             s.Add("prov_desc", "=", $"{cb}_{side}_prov_desc");
-            Instance.Localisation.Add($"{cb}_{side}_prov_desc", Get("prov_desc").ToString());
+            Program.Localisation.Add($"{cb}_{side}_prov_desc", Get("prov_desc").ToString());
         }
         s.Add("}");
     }
@@ -79,8 +79,8 @@ public class WarGoal : ArcObject
     public void Transpile(ref Block s)
     {
         string id = Get("id").ToString();
-        Instance.Localisation.Add($"{id}_title", Get("title").ToString());
-        Instance.Localisation.Add($"{id.ToUpper()}_WAR_NAME", Get("war_name").ToString());
+        Program.Localisation.Add($"{id}_title", Get("title").ToString());
+        Program.Localisation.Add($"{id.ToUpper()}_WAR_NAME", Get("war_name").ToString());
         s.Add(
             id, "=", "{",
                 "type", "=", Get("type").ToString(),
@@ -97,7 +97,7 @@ public class WarGoal : ArcObject
         {
             Advisor.Value.Transpile(ref s);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/wargoal_types/arc.txt", string.Join(' ', s));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/wargoal_types/arc.txt", string.Join(' ', s));
         return "War Goals";
     }
 }
@@ -123,8 +123,8 @@ public class CasusBelli : ArcObject
     public void Transpile(ref Block s)
     {
         string id = Get("id").ToString();
-        Instance.Localisation.Add($"{id}", Get("name").ToString());
-        Instance.Localisation.Add($"{id}_desc", Get("desc").ToString());
+        Program.Localisation.Add($"{id}", Get("name").ToString());
+        Program.Localisation.Add($"{id}_desc", Get("desc").ToString());
         s.Add(
             id, "=", "{",
                 "valid_for_subject", "=", Get("valid_for_subject")
@@ -145,7 +145,7 @@ public class CasusBelli : ArcObject
         {
             Advisor.Value.Transpile(ref s);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/cb_types/arc.txt", string.Join(' ', s));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/cb_types/arc.txt", string.Join(' ', s));
         return "Casus Bellies";
     }
 }

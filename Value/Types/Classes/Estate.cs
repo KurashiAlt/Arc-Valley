@@ -100,8 +100,8 @@ public class EstateAgenda : IArcObject
 
         foreach(EstateAgenda agenda in EstateAgendas.Values())
         {
-            Instance.Localisation.Add($"{agenda.Id}", agenda.Name.Value);
-            Instance.Localisation.Add($"{agenda.Id}_desc", agenda.Desc.Value);
+            Program.Localisation.Add($"{agenda.Id}", agenda.Name.Value);
+            Program.Localisation.Add($"{agenda.Id}_desc", agenda.Desc.Value);
 
             b.Add(agenda.Id);
             b.Add("=");
@@ -127,7 +127,7 @@ public class EstateAgenda : IArcObject
             b.Add("}");
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/estate_agendas/arc.txt", string.Join(' ', b));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/estate_agendas/arc.txt", string.Join(' ', b));
         return "Agendas";
     }
     public override string ToString() => Name.Value;
@@ -294,8 +294,8 @@ public class EstatePrivilege : IArcObject
 
         foreach (EstatePrivilege privilege in EstatePrivileges.Values())
         {
-            Instance.Localisation.Add($"{privilege.Id}", privilege.Name.Value);
-            Instance.Localisation.Add($"{privilege.Id}_desc", privilege.Desc.Value);
+            Program.Localisation.Add($"{privilege.Id}", privilege.Name.Value);
+            Program.Localisation.Add($"{privilege.Id}_desc", privilege.Desc.Value);
 
             b.Add(privilege.Id.ToString(), "=", "{");
             b.Add("icon", "=", privilege.Icon.ToString());
@@ -327,7 +327,7 @@ public class EstatePrivilege : IArcObject
             b.Add("}");
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/estate_privileges/arc.txt", string.Join(' ', b));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/estate_privileges/arc.txt", string.Join(' ', b));
         return "Privileges";
     }
     public override string ToString() => Name.Value;
@@ -460,8 +460,8 @@ public class Estate : IArcObject
     }
     public void Transpile(ref Block estateFile, ref Block preloadFile)
     {
-        Instance.Localisation.Add($"{Id}", Name.ToString());
-        Instance.Localisation.Add($"{Id}_desc", Desc.ToString());
+        Program.Localisation.Add($"{Id}", Name.ToString());
+        Program.Localisation.Add($"{Id}_desc", Desc.ToString());
 
         estateFile.Add(Id, "=", "{");
         estateFile.Add("icon", "=", Icon);
@@ -506,9 +506,9 @@ public class Estate : IArcObject
         estateFile.Add("influence_from_dev_modifier", "=", InfluenceFromDevModifier);
         estateFile.Add("}");
 
-        Instance.Localisation.Add($"{Id.ToString()[7..]}_loyalty_modifier", $"{Name} Loyalty Equilibrium");
-        Instance.Localisation.Add($"{Id.ToString()[7..]}_influence_modifier", $"{Name} Influence");
-        Instance.Localisation.Add($"{Id.ToString()[7..]}_privilege_slots", $"{Name} Max Privileges");
+        Program.Localisation.Add($"{Id.ToString()[7..]}_loyalty_modifier", $"{Name} Loyalty Equilibrium");
+        Program.Localisation.Add($"{Id.ToString()[7..]}_influence_modifier", $"{Name} Influence");
+        Program.Localisation.Add($"{Id.ToString()[7..]}_privilege_slots", $"{Name} Max Privileges");
 
         preloadFile.Add(
             Id, "=", "{",
@@ -611,12 +611,12 @@ public class Estate : IArcObject
             "}"
         );
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/estates/arc.txt", string.Join(' ', estateFile));
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/estates_preload/arc.txt", string.Join(' ', preloadFile));
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/scripted_effects/arc.txt", string.Join(' ', new Block(
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/estates/arc.txt", string.Join(' ', estateFile));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/estates_preload/arc.txt", string.Join(' ', preloadFile));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/scripted_effects/arc.txt", string.Join(' ', new Block(
             string.Join(' ', SpawnRebelsFromUnhappyEstate)
         )));
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/scripted_triggers/arc.txt", string.Join(' ', new Block(
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/scripted_triggers/arc.txt", string.Join(' ', new Block(
             string.Join(' ', HasAnyEstate)
         )));
         return "Estates";

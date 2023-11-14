@@ -28,7 +28,7 @@ public class ProvinceGroup : ArcObject
     public void Transpile(ref Block b)
     {
         string id = Get("id").ToString();
-        Instance.Localisation.Add($"{id}", Get("name").ToString());
+        Program.Localisation.Add($"{id}", Get("name").ToString());
         b.Add(id, "=", "{");
         foreach(Province? prov in Get<ArcList<Province>>("provinces").Values)
         {
@@ -46,7 +46,7 @@ public class ProvinceGroup : ArcObject
             p.Value.Transpile(ref b);
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/provincegroup.txt", string.Join(' ', b));
+        Program.OverwriteFile($"{Program.TranspileTarget}/map/provincegroup.txt", string.Join(' ', b));
         return "Province Groups";
     }
 }

@@ -189,10 +189,10 @@ public class GovernmentReform : IArcObject
             }
             file.Add("}");
 
-            Instance.Localisation.Add($"{reform.Id}", reform.Name.Value);
-            Instance.Localisation.Add($"{reform.Id}_desc", reform.Desc.Value);
+            Program.Localisation.Add($"{reform.Id}", reform.Name.Value);
+            Program.Localisation.Add($"{reform.Id}_desc", reform.Desc.Value);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/government_reforms/reforms.txt", string.Join(' ', file));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/government_reforms/reforms.txt", string.Join(' ', file));
         return "Government Reforms";
     }
     public override string ToString() => Name.Value;

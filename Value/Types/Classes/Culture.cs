@@ -72,7 +72,7 @@ public class Culture : IArcObject
     }
     public void Transpile(StringBuilder sb)
     {
-        Instance.Localisation.Add($"{Id}", Name.Value);
+        Program.Localisation.Add($"{Id}", Name.Value);
 
         sb.Append($"{Id} = {{ {CountryModifier.Compile("country")} {ProvinceModifier.Compile("province")} ");
         if (Primary != null) sb.Append($"primary = {Primary.Tag}");

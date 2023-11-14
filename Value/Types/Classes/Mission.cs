@@ -66,8 +66,8 @@ public class Mission : IArcObject
         Effect.Compile("effect", ref b);
         b.Add("}");
 
-        Instance.Localisation.Add($"{Id}_title", Name.Value);
-        Instance.Localisation.Add($"{Id}_desc", Desc.Value);
+        Program.Localisation.Add($"{Id}_title", Name.Value);
+        Program.Localisation.Add($"{Id}_desc", Desc.Value);
     }
     public Walker Call(Walker i, ref Block result)
     {
@@ -250,7 +250,7 @@ public class MissionSeries : IArcObject
             b.Add("}");
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/missions/arc.txt", string.Join(' ', b));
+        Program.OverwriteFile($"{Program.TranspileTarget}/missions/arc.txt", string.Join(' ', b));
         return "Missions";
     }
     public Walker Call(Walker i, ref Block result)

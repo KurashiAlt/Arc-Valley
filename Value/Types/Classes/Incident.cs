@@ -54,7 +54,7 @@ public class Incident : ArcObject
             null
         );
 
-        Instance.Localisation.Add($"{id}", name);
+        Program.Localisation.Add($"{id}", name);
     }
     public static string Transpile()
     {
@@ -65,7 +65,7 @@ public class Incident : ArcObject
             reform.Transpile(ref file, i);
             i++;
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/imperial_incidents/arc.txt", string.Join(' ', file));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/imperial_incidents/arc.txt", string.Join(' ', file));
         return "Incidents";
     }
     public override string ToString() => Get<ArcString>("id").Value;

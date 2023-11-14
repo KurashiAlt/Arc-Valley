@@ -88,7 +88,7 @@ public class Option : IArcObject
     public override string ToString() => Name.Value;
     public void Transpile(ref Block sb, string key)
     {
-        Instance.Localisation.Add(key, Name.Value);
+        Program.Localisation.Add(key, Name.Value);
         sb.Add("option", "=", "{",
             "name", "=", key);
         if (Goto != null) sb.Add("goto", "=", Goto.Id);
@@ -322,8 +322,8 @@ else = {
             key,
             new(eventType),
             args.Get(ArcString.Constructor, "title"),
-            args.Get(ArcString.Constructor, "desc"),
-            args.Get(ArcString.Constructor, "picture"),
+            args.Get(ArcString.Constructor, "desc", new("")),
+            args.Get(ArcString.Constructor, "picture", new("template_eventPicture")),
             args.Get(ArcBool.Constructor, "major", new(false)),
             args.Get(ArcTrigger.Constructor, "major_trigger", new()),
             args.Get(ArcBool.Constructor, "fire_only_once", new(false)),
@@ -342,8 +342,8 @@ else = {
     public override string ToString() => Id.Value;
     public void Transpile(ref Block b)
     {
-        Instance.Localisation.Add($"{Id}.title", Title.Value);
-        Instance.Localisation.Add($"{Id}.desc", Desc.Value);
+        Program.Localisation.Add($"{Id}.title", Title.Value);
+        Program.Localisation.Add($"{Id}.desc", Desc.Value);
 
         if (ProvinceEvent) b.Add("province_event", "=", "{");
         else b.Add("country_event", "=", "{");
@@ -404,7 +404,7 @@ else = {
             ev.Transpile(ref b);
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/events/arc.txt", string.Join(' ', b));
+        Program.OverwriteFile($"{Program.TranspileTarget}/events/arc.txt", string.Join(' ', b));
         return "Events";
     }
     public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }

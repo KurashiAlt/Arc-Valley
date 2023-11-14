@@ -23,6 +23,10 @@ public class ArcTrigger : ArcBlock
     {
         return Compiler.CompileTrigger(Value);
     }
+    public override string Compile(Block b)
+    {
+        return Compiler.CompileTrigger(b);
+    }
     internal static ArcTrigger Constructor(Block block) => new(block);
 }
 public class ArcEffect : ArcBlock
@@ -49,6 +53,10 @@ public class ArcEffect : ArcBlock
     {
         return Compiler.CompileEffect(Value);
     }
+    public override string Compile(Block b)
+    {
+        return Compiler.CompileEffect(b);
+    }
     internal static ArcEffect Constructor(Block block) => new(block);
 }
 public class ArcModifier : ArcBlock
@@ -74,6 +82,10 @@ public class ArcModifier : ArcBlock
     public override string Compile()
     {
         return Compiler.CompileModifier(Value);
+    }
+    public override string Compile(Block b)
+    {
+        return Compiler.CompileModifier(b);
     }
     internal static ArcModifier Constructor(Block block) => new(block);
 }
@@ -110,6 +122,10 @@ public class ArcCode : ArcBlock
     {
         return Compiler.Compile(Value);
     }
+    public override string Compile(Block b)
+    {
+        return Compiler.Compile(b);
+    }
     internal static ArcCode Constructor(Block block) => new(block);
 }
 public class ArcFactor : ArcBlock
@@ -144,6 +160,10 @@ public class ArcFactor : ArcBlock
     public override string Compile()
     {
         return Compiler.FactorCompile(Value);
+    }
+    public override string Compile(Block b)
+    {
+        return Compiler.FactorCompile(b);
     }
     internal static ArcFactor Constructor(Block block) => new(block);
 }

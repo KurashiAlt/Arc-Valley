@@ -16,7 +16,7 @@ public partial class Compiler
     //
     //	Defines def = new(Right);
     //
-    //	Instance.TranspileTarget(def);
+    //	Program.TranspileTarget(def);
     //
     //	return i;
     //}

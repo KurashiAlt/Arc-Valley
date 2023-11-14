@@ -112,8 +112,8 @@ public class Province : IArcObject
             string name = province.Value.Name.Value;
             Block color = province.Value.Color.RemoveEnclosingBrackets().Value;
             ArcBlock history = province.Value.History;
-            Instance.Localisation.Add($"PROV{id}", name);
-            Instance.Localisation.Add($"PROV_ADJ{id}", name);
+            Program.Localisation.Add($"PROV{id}", name);
+            Program.Localisation.Add($"PROV_ADJ{id}", name);
             ProvinceDefines.Append($"{id};{string.Join(';', color)};;x\n");
 
             if (province.Value.Impassible.Value)
@@ -144,7 +144,7 @@ public class Province : IArcObject
 
             if (province.Value.IsLand() || province.Value.Impassible) Continent.Append($" {province.Value.Id}");
 
-            Instance.OverwriteFile($"{Instance.TranspileTarget}/history/provinces/{id} - ARC.txt", res.ToString());
+            Program.OverwriteFile($"{Program.TranspileTarget}/history/provinces/{id} - ARC.txt", res.ToString());
         }
         Continent.Append(" }");
 
@@ -160,10 +160,10 @@ public class Province : IArcObject
             return $"base_tax = {first} base_production = {second} base_manpower = {third} ";
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/continent.txt", Continent.ToString());
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/positions.txt", Positions.ToString());
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/definition.csv", ProvinceDefines.ToString(), false);
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/climate.txt", $@"
+        Program.OverwriteFile($"{Program.TranspileTarget}/map/continent.txt", Continent.ToString());
+        Program.OverwriteFile($"{Program.TranspileTarget}/map/positions.txt", Positions.ToString());
+        Program.OverwriteFile($"{Program.TranspileTarget}/map/definition.csv", ProvinceDefines.ToString(), false);
+        Program.OverwriteFile($"{Program.TranspileTarget}/map/climate.txt", $@"
 tropical = {{
     
 }}
@@ -206,7 +206,7 @@ severe_monsoon = {{
 }}
 
 equator_y_on_province_image = 224");
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/default.map", $@"
+        Program.OverwriteFile($"{Program.TranspileTarget}/map/default.map", $@"
 width = 4096
 height = 2816
 

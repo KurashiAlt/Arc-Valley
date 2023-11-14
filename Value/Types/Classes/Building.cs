@@ -225,8 +225,8 @@ public class Building : ArcObject
             }
         }
 
-        Instance.Localisation.Add($"building_{id}", Get<ArcString>("name").Value);
-        Instance.Localisation.Add($"building_{id}_desc", desc);
+        Program.Localisation.Add($"building_{id}", Get<ArcString>("name").Value);
+        Program.Localisation.Add($"building_{id}_desc", desc);
 
         ArcInt? x = GetNullable<ArcInt>("x");
         ArcInt? y = GetNullable<ArcInt>("y");
@@ -266,15 +266,15 @@ public class Building : ArcObject
         {
             building.TranspileThis(ref b, ref a);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/buildings/arc.txt", string.Join(' ', b));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/buildings/arc.txt", string.Join(' ', b));
 
         string macro = Compiler.global.Get<Dict<IValue>>("interface").Get<ArcString>("macrobuildinterface").Value;
         string provinceview = Compiler.global.Get<Dict<IValue>>("interface").Get<ArcString>("provinceview").Value;
         macro = macro.Replace("$buildings$", string.Join(' ', a)).Trim('`');
         provinceview = provinceview.Replace("$buildings$", string.Join(' ', a)).Trim('`');
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/interface/macrobuildinterface.gui", macro, false);
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/interface/provinceview.gui", provinceview, false);
+        Program.OverwriteFile($"{Program.TranspileTarget}/interface/macrobuildinterface.gui", macro, false);
+        Program.OverwriteFile($"{Program.TranspileTarget}/interface/provinceview.gui", provinceview, false);
 
         return "Buildings";
     }

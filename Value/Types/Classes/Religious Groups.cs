@@ -74,8 +74,8 @@ public class ReligionGroup : IArcObject
         StringBuilder sb = new();
         foreach (ReligionGroup religionGroup in ReligionGroups.Values())
         {
-            Instance.Localisation.Add($"{religionGroup.Id}", religionGroup.Name.Value);
-            Instance.Localisation.Add($"{religionGroup.Id}_crusade", religionGroup.CrusadeName.Value);
+            Program.Localisation.Add($"{religionGroup.Id}", religionGroup.Name.Value);
+            Program.Localisation.Add($"{religionGroup.Id}_crusade", religionGroup.CrusadeName.Value);
 
             sb.Append($"{religionGroup.Id} = {{ ");
             if (religionGroup.DefenderOfFaith) sb.Append("defender_of_faith = yes ");
@@ -100,9 +100,9 @@ public class ReligionGroup : IArcObject
         }
         countryreligionview = countryreligionview.Replace("$church_aspects$", sa.ToString()).Trim('`');
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/interface/countryreligionview.gui", countryreligionview, false);
+        Program.OverwriteFile($"{Program.TranspileTarget}/interface/countryreligionview.gui", countryreligionview, false);
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/religions/arc.txt", sb.ToString());
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/religions/arc.txt", sb.ToString());
         return "Religions";
     }
     public override string ToString() => Name.Value;

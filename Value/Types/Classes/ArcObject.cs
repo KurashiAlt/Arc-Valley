@@ -14,6 +14,7 @@ public class ArcObject : Dict<IVariable>, Arg
 
         return i;
     }
+    public virtual void Initialize(Args args) => throw new NotImplementedException();
     public override Walker Call(Walker i, ref Block result) { result.Add(Get<ArcString>("id").Value); return i; }
     public static Arg FromArgs<T>(Args args, T b) where T : ArcObject
     {

@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.IO;
 using System.Security.Cryptography;
 
 namespace Arc;
@@ -13,30 +14,37 @@ public class Args
         if (block == null) throw new Exception();
         return block;
     }
-    public Block Get(string key, Block defaultValue)
-    {
-        if (keyValuePairs == null) throw new Exception($"Non object type arguments; Trying to get: {key}");
-        if (!keyValuePairs.ContainsKey(key)) return defaultValue;
-        return keyValuePairs[key];
-    }
     public Block Get(string key)
     {
         if (keyValuePairs == null) throw new Exception($"Non object type arguments; Trying to get: {key}");
         if (!keyValuePairs.ContainsKey(key)) throw new Exception($"Arguments do not include {key}");
         return keyValuePairs[key];
     }
+    public Block Get(string key, Block defaultValue)
+    {
+        if (keyValuePairs == null) throw new Exception($"Non object type arguments; Trying to get: {key}");
+        if (!keyValuePairs.ContainsKey(key)) return defaultValue;
+        return keyValuePairs[key];
+    }
     public T Get<T>(Func<Block,T> Constructor, string key) where T : IVariable
     {
         if (keyValuePairs == null) throw new Exception($"Non object type arguments; Trying to get: {key}");
         if (!keyValuePairs.ContainsKey(key)) throw new Exception($"Arguments do not include {key}");
+        if (Compiler.TryGetVariable(string.Join(' ', keyValuePairs[key]), out var value))
+        {
+            if(value is T @val) return @val;
+            else if (value is ArgList aList)
+            {
+                if (ArgList.list.First.Value is vx v && v.va.Value is T @val2) return @val2;
+            }
+        }
         return Constructor(keyValuePairs[key]);
     }
     public T Get<T>(Func<Block,T> Constructor, string key, T defaultValue) where T : IVariable? => GetDefault(Constructor, key, defaultValue);
     public T GetDefault<T>(Func<Block, T> Constructor, string key, T defaultValue) where T : IVariable?
     {
         if (keyValuePairs == null) throw new Exception();
-        if (keyValuePairs.ContainsKey(key))
-            return Constructor(keyValuePairs[key]);
+        if (keyValuePairs.ContainsKey(key)) return Constructor(keyValuePairs[key]);
         return defaultValue;
     }
     public LazyPointer<T> GetLazyFromList<T>(Dict<T> List, string key) where T : IVariable
@@ -70,22 +78,6 @@ public class Args
         T? Item = (T?)List.Get(s);
         return Item;
     }
-
-    public Block this[string indexer]
-    {
-        get
-        {
-            if (keyValuePairs == null)
-                throw new Exception();
-            return keyValuePairs[indexer];
-        }
-        set
-        {
-            if (keyValuePairs == null)
-                throw new Exception();
-            keyValuePairs[indexer] = value;
-        }
-    }
     public static Walker Call(Walker i)
     {
         if (!i.MoveNext()) throw new Exception();
@@ -114,6 +106,13 @@ public class Args
         Walker i = new(b);
         i = GetArgs(i, out Args args, 2, globalInherit: inherit);
         return args;
+    }
+    public static Args GetArgsFromFile(string filename)
+    {
+        Block va = Parser.ParseCode(File.ReadAllText(Path.Combine(Program.directory, filename)));
+        va.Prepend("{");
+        va.Add("}");
+        return GetArgs(va);
     }
     public static Walker GetArgs(Walker i, out Args args, int StartOffset = 0, bool noInherit = false, bool multiKey = false, Args? globalInherit = null)
     {

@@ -50,10 +50,10 @@ public class EventModifier : IArcObject
         foreach (EventModifier mod in EventModifiers.Values())
         {
             sb.Append($"{mod.Id} = {{ {mod.Modifier.Compile()} }}");
-            Instance.Localisation.Add(mod.Id.Value, mod.Name.Value);
+            Program.Localisation.Add(mod.Id.Value, mod.Name.Value);
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/event_modifiers/arc.txt", sb.ToString());
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/event_modifiers/arc.txt", sb.ToString());
         return "Event Modifiers";
     }
 }
@@ -86,7 +86,7 @@ public class OpinionModifier : ArcObject
     void TranspileThis(ref Block a)
     {
         string id = Get<ArcString>("id").Value;
-        Instance.Localisation.Add(id, Get<ArcString>("name").Value);
+        Program.Localisation.Add(id, Get<ArcString>("name").Value);
 
         a.Add(id, "=", "{");
         a.Add("opinion", "=", Get<ArcInt>("opinion"));
@@ -115,7 +115,7 @@ public class OpinionModifier : ArcObject
             mod.Value.TranspileThis(ref a);
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/opinion_modifiers/arc.txt", string.Join(' ', a));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/opinion_modifiers/arc.txt", string.Join(' ', a));
         return "Opinion Modifiers";
     }
 }
@@ -139,7 +139,7 @@ public class ProvinceTriggeredModifier : ArcObject
     public void Transpile(ref Block s)
     {
         string id = Get("id").ToString();
-        Instance.Localisation.Add(id, Get("name").ToString());
+        Program.Localisation.Add(id, Get("name").ToString());
         s.Add(
             id, "=", "{",
                 Get<ArcBlock>("modifier").Compile(),
@@ -157,7 +157,7 @@ public class ProvinceTriggeredModifier : ArcObject
         {
             ProvinceTriggeredModifier.Value.Transpile(ref s);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/province_triggered_modifiers/arc.txt", string.Join(' ', s));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/province_triggered_modifiers/arc.txt", string.Join(' ', s));
         return "Province Triggered Modifiers";
     }
 }

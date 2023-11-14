@@ -36,7 +36,7 @@ public class Adjacency : ArcObject
             adjacency.Transpile(ref sb);
         }
         sb.Append("-1;-1;;-1;-1;-1;-1;-1;-1");
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/adjacencies.csv", sb.ToString(), false);
+        Program.OverwriteFile($"{Program.TranspileTarget}/map/adjacencies.csv", sb.ToString(), false);
         return "Adjacencies";
     }
     public override Walker Call(Walker i, ref Block result) => throw new Exception();

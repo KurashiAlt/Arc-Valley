@@ -44,6 +44,18 @@ public class ArcBlock : IValue
         {
             switch (i.Current)
             {
+                case "+=!":
+                    {
+                        if (!i.MoveNext())
+                            throw new Exception();
+
+                        i = Compiler.GetScope(i, out Block newbv);
+
+                        if (Parser.HasEnclosingBrackets(newbv)) newbv = Compiler.RemoveEnclosingBrackets(newbv);
+
+                        Value.Add(Compile(newbv));
+                    }
+                    break;
                 case "+=":
                     {
                         if (!i.MoveNext())
@@ -82,6 +94,10 @@ public class ArcBlock : IValue
         }
         else result.Add(Compile());
         return i;
+    }
+    public virtual string Compile(Block b)
+    {
+        throw new Exception();
     }
     public override string ToString()
     {

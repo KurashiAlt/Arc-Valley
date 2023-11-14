@@ -49,7 +49,7 @@ public class Advisor : ArcObject
         {
             Advisor.Value.Transpile(ref s);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/history/advisors/arc.txt", string.Join(' ', s));
+        Program.OverwriteFile($"{Program.TranspileTarget}/history/advisors/arc.txt", string.Join(' ', s));
         return "Advisor Types";
     }
 }
@@ -59,6 +59,15 @@ public class AdvisorType : ArcObject
     public static readonly Dict<AdvisorType> AdvisorTypes = new();
     public AdvisorType(string id) { AdvisorTypes.Add(id, this); }
     public static new Walker Call(Walker i) => Call(i, Constructor);
+    public static ArcObject SkillScaledModifierConstructor(Block b)
+    {
+        Args gArgs = Args.GetArgs(b);
+        return new ArcObject()
+        {
+            { "trigger", gArgs.Get(ArcTrigger.Constructor, "trigger") },
+            { "modifier", gArgs.Get(ArcModifier.Constructor, "modifier") },
+        };
+    }
     public static AdvisorType Constructor(string id, Args args) => new(id)
     {
         { "id", new ArcString(id) },
@@ -71,6 +80,7 @@ public class AdvisorType : ArcObject
         { "allow_only_owner_religion", args.Get(ArcBool.Constructor, "allow_only_owner_religion", new(false)) },
         { "chance", args.Get(ArcCode.Constructor, "chance", new("factor = 1")) },
         { "monarch_power", args.Get(ArcString.Constructor, "monarch_power") },
+        { "skill_scaled_modifiers", args.Get(ArcList<ArcObject>.GetConstructor(SkillScaledModifierConstructor), "skill_scaled_modifier", new(SkillScaledModifierConstructor)) },
     };
     public override string ToString() => Get("id").ToString();
     public override Walker Call(Walker i, ref Block result) { result.Add(ToString()); return i; }
@@ -81,12 +91,21 @@ public class AdvisorType : ArcObject
         if (Get("allow_only_female") is ArcBool allowOnlyFemale && allowOnlyFemale == true) s.Add("allow_only_female", "=", allowOnlyFemale);
         if (Get("allow_only_male") is ArcBool allowOnlyMale && allowOnlyMale == true) s.Add("allow_only_male", "=", allowOnlyMale);
         if (Get("allow_only_owner_religion") is ArcBool allowOnlyOwnerReligion && allowOnlyOwnerReligion == true) s.Add("allow_only_owner_religion", "=", allowOnlyOwnerReligion);
+        foreach (ArcObject skillScaledModifier in Get<ArcList<ArcObject>>("skill_scaled_modifiers"))
+        {
+            s.Add(
+                "skill_scaled_modifier", "=", "{",
+                    skillScaledModifier.Get<ArcTrigger>("trigger").Compile("trigger"),
+                    skillScaledModifier.Get<ArcModifier>("modifier").Compile("modifier"),
+                "}"
+            );
+        }
         Get<ArcModifier>("modifier").Compile(ref s);
         Get<ArcCode>("ai_will_do").Compile("ai_will_do", ref s);
         Get<ArcCode>("chance").Compile("chance", ref s);
         s.Add("}");
-        Instance.Localisation.Add($"{Get("id")}", Get("name").ToString());
-        Instance.Localisation.Add($"{Get("id")}_desc", Get("desc").ToString());
+        Program.Localisation.Add($"{Get("id")}", Get("name").ToString());
+        Program.Localisation.Add($"{Get("id")}_desc", Get("desc").ToString());
     }
     public static string Transpile()
     {
@@ -95,7 +114,7 @@ public class AdvisorType : ArcObject
         {
             Advisor.Value.Transpile(ref s);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/advisortypes/arc.txt", string.Join(' ', s));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/advisortypes/arc.txt", string.Join(' ', s));
         return "Advisor Types";
     }
 }

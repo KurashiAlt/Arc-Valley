@@ -154,7 +154,7 @@ public class Type : IValue, vvC
             "bool" => ConstC(ArcBool.Constructor),
             "string" => ConstC(ArcString.Constructor),
             "text" => ConstD((string s) => {
-                ArcString c = new ArcString(s);
+                ArcString c = new(s);
                 c.Value = $"{s}";
                 return c;
             }),
@@ -173,7 +173,12 @@ public class Type : IValue, vvC
                 if (Compiler.IsDefaultScope(tag) || Compiler.IsBaseScope(tag) || tag.StartsWith("event_target") || tag == "emperor") return ArcString.Constructor(b);
                 return Country.Countries.Get(tag);
             }),
-
+            "province_scope" => ConstC((Block b) =>
+            {
+                string tag = string.Join(' ', b);
+                if (Compiler.IsBaseScope(tag) || tag.StartsWith("event_target")) return ArcString.Constructor(b);
+                return Province.Provinces.Get(tag);
+            }),
             "province" => ConstD(Province.Provinces.Get),
             "area" => ConstD(Area.Areas.Get),
             "region" => ConstD(Region.Regions.Get),

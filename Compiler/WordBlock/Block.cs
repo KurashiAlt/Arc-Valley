@@ -67,7 +67,10 @@ public class Block : LinkedList<Word>
 public class Walker
 {
     private LinkedListNode<Word> node;
-
+    public Walker(Walker w)
+    {
+        node = w.node;
+    }
     public Walker(LinkedListNode<Word> node)
     {
         this.node = node;

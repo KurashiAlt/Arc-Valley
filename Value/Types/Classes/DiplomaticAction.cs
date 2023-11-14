@@ -111,11 +111,11 @@ public class DiplomaticAction : IArcObject
     );
     public void Transpile(ref Block b)
     {
-        Instance.Localisation.Add($"{Id}", Name.Value);
-        Instance.Localisation.Add($"{Id}_title", Title.Value);
-        Instance.Localisation.Add($"{Id}_desc", Desc.Value);
-        Instance.Localisation.Add($"{Id}_tooltip", Tooltip.Value);
-        if(AlertTooltip != null) Instance.Localisation.Add($"{Id}_alert_tooltip", AlertTooltip.Value);
+        Program.Localisation.Add($"{Id}", Name.Value);
+        Program.Localisation.Add($"{Id}_title", Title.Value);
+        Program.Localisation.Add($"{Id}_desc", Desc.Value);
+        Program.Localisation.Add($"{Id}_tooltip", Tooltip.Value);
+        if(AlertTooltip != null) Program.Localisation.Add($"{Id}_alert_tooltip", AlertTooltip.Value);
 
         b.Add(
             Id, "=", "{",
@@ -151,7 +151,7 @@ public class DiplomaticAction : IArcObject
             action.Transpile(ref b);
         }
 
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/new_diplomatic_actions/arc.txt", string.Join(' ', b));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/new_diplomatic_actions/arc.txt", string.Join(' ', b));
         return "Government Mechanics";
     }
     public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }

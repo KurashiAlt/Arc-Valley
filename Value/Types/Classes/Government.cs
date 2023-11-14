@@ -18,7 +18,7 @@ public class ReformLevel : ArcObject
     public void Transpile(string id, ref Block b)
     {
         string levelId = $"{id}_{Get<ArcString>("id").Value}";
-        Instance.Localisation.Add(levelId, Get<ArcString>("name").Value);
+        Program.Localisation.Add(levelId, Get<ArcString>("name").Value);
         b.Add(
             levelId, "=", "{",
                 "reforms", "=", "{");
@@ -70,7 +70,7 @@ public class Government : ArcObject
     public void Transpile(ref Block a, ref Block b)
     {
         string id = Get<ArcString>("id").Value;
-        Instance.Localisation.Add(id, Get<ArcString>("name").Value);
+        Program.Localisation.Add(id, Get<ArcString>("name").Value);
 
         a.Add(
             id, "=", "{",
@@ -96,8 +96,8 @@ public class Government : ArcObject
         {
             gov.Transpile(ref a, ref b);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/governments/arc.txt", string.Join(' ', a));
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/government_reforms/basic_reforms.txt", string.Join(' ', b));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/governments/arc.txt", string.Join(' ', a));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/government_reforms/basic_reforms.txt", string.Join(' ', b));
         return "Governments";
     }
 }
@@ -142,7 +142,7 @@ public class GovernmentNames : ArcObject
             {
                 string locKey = $"{id}_{type}_{kvp.Key}";
                 a.Add(kvp.Key, "=", locKey);
-                Instance.Localisation.Add(locKey, kvp.Value.Value);
+                Program.Localisation.Add(locKey, kvp.Value.Value);
             }
             a.Add("}");
         }
@@ -154,7 +154,7 @@ public class GovernmentNames : ArcObject
         {
             gv.Transpile(ref a);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/common/government_names/arc.txt", string.Join(' ', a));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/government_names/arc.txt", string.Join(' ', a));
         return "Government Names";
     }
 

@@ -51,9 +51,9 @@ public class Area : IArcObject
         foreach (Area area in Area.Areas.Values())
         {
             sb.Append($"{area.Id} = {{ {string.Join(' ', from Province in Province.Provinces.Values() where Province.Area == area select Province.Id)} }} ");
-            Instance.Localisation.Add($"{area.Id.Value}", area.Name.Value);
+            Program.Localisation.Add($"{area.Id.Value}", area.Name.Value);
         }
-        Instance.OverwriteFile($"{Instance.TranspileTarget}/map/area.txt", sb.ToString());
+        Program.OverwriteFile($"{Program.TranspileTarget}/map/area.txt", sb.ToString());
         return "Areas";
     }
     public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
