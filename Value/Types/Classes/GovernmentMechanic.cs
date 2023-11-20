@@ -1,5 +1,5 @@
 ﻿using Arc;
-using ArcInstance;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -320,7 +320,7 @@ public class GovernmentMechanic : IArcObject
     {
         i.ForceMoveNext();
 
-        string id = i.Current;
+        string id = Compiler.GetId(i.Current);
 
         i = Args.GetArgs(i, out Args args);
 

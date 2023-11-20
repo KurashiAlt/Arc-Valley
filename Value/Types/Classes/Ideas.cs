@@ -1,4 +1,4 @@
-﻿using ArcInstance;
+﻿
 using Pastel;
 using System.ComponentModel;
 using System.Text;
@@ -183,7 +183,7 @@ public class IdeaGroup : IArcObject
     {
         if (!i.MoveNext()) throw new Exception();
 
-        string id = i.Current;
+        string id = Compiler.GetId(i.Current);
         try
         {
             i = Args.GetArgs(i, out Args args);

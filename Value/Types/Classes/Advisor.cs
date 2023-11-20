@@ -1,5 +1,4 @@
-﻿using ArcInstance;
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
 using Pastel;
 using System.ComponentModel;
 using System.IO;

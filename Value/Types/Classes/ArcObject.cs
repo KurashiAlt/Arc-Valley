@@ -1,12 +1,12 @@
 ﻿using Arc;
 
-public class ArcObject : Dict<IVariable>, Arg
+public class ArcObject : Dict<IVariable?>, Arg
 {
     protected static Walker Call<T>(Walker i, Func<string, Args, T> func)
     {
         i.ForceMoveNext();
 
-        string id = i.Current;
+        string id = Compiler.GetId(i.Current);
 
         i = Args.GetArgs(i, out Args args);
 

@@ -1,4 +1,4 @@
-﻿using ArcInstance;
+﻿
 using Pastel;
 using System.IO;
 using System.Text;
@@ -170,7 +170,7 @@ public class Religion : IArcObject
     {
         if (!i.MoveNext()) throw new Exception();
 
-        string id = i.Current;
+        string id = Compiler.GetId(i.Current);
 
         i = Args.GetArgs(i, out Args args);
         ArcModifier country = args.Get(ArcModifier.Constructor, "country");
@@ -215,7 +215,7 @@ public class Religion : IArcObject
     public void Transpile(StringBuilder sb)
     {
         Program.Localisation.Add($"{Id}", Name.Value);
-        Program.Localisation.Add($"{Id}_desc", Desc.Value);
+        Program.Localisation.Add($"{Id}_religion_desc", Desc.Value);
         Program.Localisation.Add($"{Id}_demand", "");
         Program.Localisation.Add($"{Id}_demand_desc", "");
 

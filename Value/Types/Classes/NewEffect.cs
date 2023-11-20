@@ -1,5 +1,5 @@
 ﻿using Arc;
-using ArcInstance;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
@@ -203,6 +203,7 @@ public class Type : IValue, vvC
             "advisor_type" => ConstD(AdvisorType.AdvisorTypes.Get),
             "tradenode" => ConstD(TradeNode.TradeNodes.Get),
             "idea_group" => ConstD(IdeaGroup.IdeaGroups.Get),
+            "static_modifier" => ConstD(StaticModifier.StaticModifiers.Get),
             "event_modifier" => ConstD(EventModifier.EventModifiers.Get),
             "opinion_modifier" => ConstD(OpinionModifier.OpinionModifiers.Get),
             "relation" => ConstD(Relation.Relations.Get),
@@ -216,7 +217,7 @@ public class Type : IValue, vvC
             "estate" => ConstD(Estate.Estates.Get),
             "estate_privilege" => ConstC((Block b) =>
             {
-                string id = string.Join(' ', b);
+                string id = Compiler.GetId(string.Join(' ', b));
                 string[] parts = id.Split(':');
                 Estate est = Estate.Estates[parts[0]];
                 EstatePrivilege pr = est.Privileges.dict[parts[1]];
@@ -228,14 +229,14 @@ public class Type : IValue, vvC
             "event" => ConstD(Event.Events.Get),
             "country_event" => ConstC((Block b) =>
             {
-                string id = string.Join(' ', b);
+                string id = Compiler.GetId(string.Join(' ', b));
                 Event c = (Event)Event.Events.Get(id);
                 if (c.ProvinceEvent.Value) throw new Exception($"{id} is not a country_event");
                 return c;
             }),
             "province_event" => ConstC((Block b) =>
             {
-                string id = string.Join(' ', b);
+                string id = Compiler.GetId(string.Join(' ', b));
                 Event c = (Event)Event.Events.Get(id);
                 if (!c.ProvinceEvent.Value) throw new Exception($"{id} is not a province_event");
                 return c;
@@ -257,6 +258,7 @@ public class Type : IValue, vvC
             "war_goal" => ConstD(WarGoal.WarGoals.Get),
             "expedition" => ConstD(Expedition.Expeditions.Get),
             "province_group" => ConstD(ProvinceGroup.ProvinceGroups.Get),
+            "subject_type" => ConstD(SubjectType.SubjectTypes.Get),
             _ => throw new NotImplementedException($"Unknown type {key}")
         };
     }

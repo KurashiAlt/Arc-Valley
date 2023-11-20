@@ -1,8 +1,40 @@
-﻿using ArcInstance;
+﻿
 using Pastel;
 using System.Text;
 
 namespace Arc;
+public class StaticModifier : ArcModifier
+{
+    public static readonly Dict<StaticModifier> StaticModifiers = new();
+    public StaticModifier(Block b)
+    {
+        Value = b;
+    }
+    public static Walker Call(Walker i)
+    {
+        if (!i.MoveNext()) throw new Exception();
+
+        string id = Compiler.GetId(i.Current);
+
+        i = Args.GetArgs(i, out Args args);
+        StaticModifier mod = new(args.block);
+        StaticModifiers.Add(id, mod);
+
+        return i;
+    }
+    public static string Transpile()
+    {
+        Block b = new();
+
+        foreach (var mod in StaticModifiers)
+        {
+            mod.Value.Compile(mod.Key, ref b);
+        }
+
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/static_modifiers/arc.txt", string.Join(' ', b));
+        return "Static Modifiers";
+    }
+}
 public class EventModifier : IArcObject
 {
     public static readonly Dict<EventModifier> EventModifiers = new();
@@ -31,7 +63,7 @@ public class EventModifier : IArcObject
     {
         if (!i.MoveNext()) throw new Exception();
 
-        string id = i.Current;
+        string id = Compiler.GetId(i.Current);
 
         i = Args.GetArgs(i, out Args args);
         EventModifier mod = new(

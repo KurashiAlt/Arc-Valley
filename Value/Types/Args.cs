@@ -8,7 +8,7 @@ public class Args
 {
     public static readonly Dictionary<string, Args> Inheritables = new Dictionary<string, Args>();
     public Dictionary<string, Block>? keyValuePairs;
-    public Block? block;
+    public Block block;
     public Block Get()
     {
         if (block == null) throw new Exception();
@@ -82,7 +82,7 @@ public class Args
     {
         if (!i.MoveNext()) throw new Exception();
 
-        string id = i.Current;
+        string id = Compiler.GetId(i.Current);
 
         i = GetArgs(i, out Args args);
 
@@ -114,7 +114,7 @@ public class Args
         va.Add("}");
         return GetArgs(va);
     }
-    public static Walker GetArgs(Walker i, out Args args, int StartOffset = 0, bool noInherit = false, bool multiKey = false, Args? globalInherit = null)
+    public static Walker GetArgs(Walker i, out Args args, int StartOffset = 0, Args? globalInherit = null)
     {
         /*EXAMPLE
         western_sea_of_thule = {
@@ -149,9 +149,9 @@ public class Args
         if (Parser.HasEnclosingBrackets(scope))
             scope = Compiler.RemoveEnclosingBrackets(scope);
 
+        args.block = scope;
         if (scope.Count == 1)
         {
-            args.block = scope;
             return i;
         }
 
@@ -165,46 +165,53 @@ public class Args
             do //name = "Western Sea of Thule"
             {
                 string Key = q.Current; //name
-                if (!q.MoveNext()) throw new Exception(); //name
+                q.ForceMoveNext();
 
-                if (q.Current != "=") throw new Exception(Key);
-                if (!q.MoveNext()) throw new Exception(); //=
-
-                if(Key == "inherit")
+                switch (q.Current)
                 {
-                    if (noInherit)
-                    {
-                        Key = $"{Key}~{Inherits}";
+                    case "=":
+                        {
+                            q.ForceMoveNext();
 
-                        q = Compiler.GetScope(q, out Block Value);
-                        if (args.keyValuePairs.ContainsKey(Key))
-                            args.keyValuePairs[Key] = Value;
-                        else
-                            args.keyValuePairs.Add(Key, Value);
+                            if (Key == "inherit")
+                            {
+                                Args inherit = Inheritables[q.Current];
+                                if (inherit.keyValuePairs == null)
+                                    throw new Exception();
+                                foreach (KeyValuePair<string, Block> kvp in inherit.keyValuePairs)
+                                {
+                                    args.keyValuePairs.Add(kvp.Key, kvp.Value);
+                                }
+                            }
+                            else
+                            {
+                                q = Compiler.GetScope(q, out Block Value);
+                                if (args.keyValuePairs.ContainsKey(Key))
+                                    args.keyValuePairs[Key] = Value;
+                                else
+                                    args.keyValuePairs.Add(Key, Value);
+                            }
+                        }
+                        break;
+                    case "+=":
+                        {
+                            q.ForceMoveNext();
 
-                        Inherits++;
-                        continue;
-                    }
-                    Args inherit = Inheritables[q.Current];
-                    if (inherit.keyValuePairs == null)
-                        throw new Exception();
-                    foreach(KeyValuePair<string, Block> kvp in inherit.keyValuePairs)
-                    {
-                        args.keyValuePairs.Add(kvp.Key, kvp.Value);
-                    }
-                }
-                else if (multiKey)
-                {
-                    q = Compiler.GetScope(q, out Block Value);
-                    args.keyValuePairs.Add($"{Key}_{(from a in args.keyValuePairs where a.Key.StartsWith(Key) select a).Count()}", Value);
-                }
-                else
-                {
-                    q = Compiler.GetScope(q, out Block Value);
-                    if(args.keyValuePairs.ContainsKey(Key))
-                        args.keyValuePairs[Key] = Value;
-                    else
-                        args.keyValuePairs.Add(Key, Value);
+                            q = Compiler.GetScope(q, out Block Value);
+
+                            if (args.keyValuePairs.ContainsKey(Key))
+                            {
+                                Block original = args.keyValuePairs[Key];
+                                if (Parser.HasEnclosingBrackets(Value)) Value = Compiler.RemoveEnclosingBrackets(Value);
+                                if (Parser.HasEnclosingBrackets(original)) Value = Compiler.RemoveEnclosingBrackets(original);
+
+                                args.keyValuePairs[Key] = new Block("{") + original + Value + new Block("}");
+                            } 
+                            else
+                                args.keyValuePairs.Add(Key, Value);
+                        }
+                        break;
+                    default: throw new Exception();
                 }
             } while (q.MoveNext());
 

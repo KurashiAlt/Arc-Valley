@@ -1,4 +1,4 @@
-﻿using ArcInstance;
+﻿
 using Pastel;
 using System.Text;
 
@@ -41,7 +41,7 @@ public class MercenaryCompany : IArcObject
     {
         if (!i.MoveNext()) throw new Exception();
 
-        string id = i.Current;
+        string id = Compiler.GetId(i.Current);
 
         i = Args.GetArgs(i, out Args args);
         MercenaryCompany adj = new(

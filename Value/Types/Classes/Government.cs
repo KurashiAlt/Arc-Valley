@@ -1,5 +1,5 @@
 ﻿using Arc;
-using ArcInstance;
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -38,7 +38,7 @@ public class ReformLevel : ArcObject
         {
             i.ForceMoveNext();
 
-            string id = i.Current;
+            string id = Compiler.GetId(i.Current);
 
             i = Args.GetArgs(i, out Args args);
 

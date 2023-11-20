@@ -11,14 +11,8 @@ internal class Program
     public static string directory = AppDomain.CurrentDomain.BaseDirectory;
     public static Dictionary<string, string> Localisation = new();
     public static List<string> Vanilla = new();
-    public static string headers = @"
-/replace p@ with provinces:
-/replace c@ with countries:
-/replace a@ with areas:
-/replace r@ with regions:
-/replace s@ with superregions:
-";
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+    public static string headers;
     public static string TranspileTarget;
     public static string GfxFolder;
     public static string UnsortedFolder;
@@ -36,6 +30,7 @@ internal class Program
         CultureInfo.CurrentCulture = CultureInfo.CreateSpecificCulture("en");
 
         Args arcDefines = Args.GetArgsFromFile(Path.Combine(directory, "arc.defines"));
+        headers = arcDefines.Get(ArcString.Constructor, "headers").Value;
         UnsortedFolder = arcDefines.Get(ArcString.Constructor, "unsorted_target").Value;
         TranspileTarget = arcDefines.Get(ArcString.Constructor, "transpile_target").Value;
         GfxFolder = arcDefines.Get(ArcString.Constructor, "gfx_folder").Value;
@@ -50,6 +45,14 @@ internal class Program
             LoadTarget(location);
             TimeSpan end = timer.Elapsed;
             Console.WriteLine($"{$"Finished Loading {location}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
+        }
+
+        if (Debugger.IsAttached)
+        {
+            args = new string[]
+            {
+                "script"
+            };
         }
 
         (string, Func<string>)[] Transpilers =
@@ -102,7 +105,9 @@ internal class Program
             ("script", CenterOfTrade),
             ("script", RulerPersonality.Transpile),
             ("script", OpinionModifier.Transpile),
+            ("script", StaticModifier.Transpile),
             ("script", EventModifier.Transpile),
+            ("script", SubjectType.Transpile),
             ("script", TranspileLocalisations),
             ("gfx", Gfx),
             ("map", Map),
@@ -117,6 +122,13 @@ internal class Program
             string type = transpiler.Item2();
             start = timer.Elapsed - start;
             Console.WriteLine($"{$"Finished Transpiling {type}".PadRight(50).Pastel(ConsoleColor.Cyan)}{$"{start.TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
+        }
+
+        if (args.Contains("test"))
+        {
+            foreach (string n in args) {
+                if(int.TryParse(n, out int t)) Console.Write($"{Province.Provinces.ElementAt(t - 1).Key} ");
+            }
         }
 
         OverwriteFile($"warnings.txt", string.Join('\n', warnings));
@@ -136,7 +148,7 @@ internal class Program
         string title = Console.Title;
 
         // Check if the console or PowerShell window title contains certain keywords
-        if (title.Contains("cmd.exe") || title.Contains("powershell.exe"))
+        if (title.Contains("cmd.exe") || title.Contains("Command Prompt") || title.Contains("powershell.exe"))
         {
             return true;
         }

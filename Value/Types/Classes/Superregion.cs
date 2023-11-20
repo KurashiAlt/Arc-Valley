@@ -1,4 +1,4 @@
-﻿using ArcInstance;
+﻿
 using System.Collections.Generic;
 using System.Text;
 
@@ -38,7 +38,7 @@ public class Superregion : IArcObject
     {
         if (!i.MoveNext()) throw new Exception();
 
-        string id = i.Current;
+        string id = Compiler.GetId(i.Current);
 
         i = Args.GetArgs(i, out Args args);
 

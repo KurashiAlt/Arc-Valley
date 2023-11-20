@@ -1,5 +1,4 @@
-﻿using ArcInstance;
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using System.Diagnostics;
@@ -319,6 +318,8 @@ public static partial class Compiler
         { "casus_bellies", CasusBelli.CasusBellies },
         { "war_goals", WarGoal.WarGoals },
         { "province_groups", ProvinceGroup.ProvinceGroups },
+        { "subject_types", SubjectType.SubjectTypes },
+        { "static_modifiers", StaticModifier.StaticModifiers },
         { "default_reform", new ArcCode() },
         { "terrain_declarations", new ArcBlock() },
         { "tree", new ArcBlock() },
@@ -374,7 +375,10 @@ public static partial class Compiler
             } },
         } },
     };
-
+    public static string GetId(string i)
+    {
+        return new ArcString(i).Value;
+    }
     public static void ObjectDeclare(string file, bool preprocessor = false)
     {
         if (preprocessor)
@@ -443,6 +447,8 @@ public static partial class Compiler
             "personality_trait" => RulerPersonality.Call(g),
             "policy" => Policy.Call(g),
             "scholarly_research" => ScholarlyResearch(g),
+            "subject_type" => SubjectType.Call(g),
+            "static_modifier" => StaticModifier.Call(g),
             _ => throw new Exception($"Unknown Object Type {g.Current} in object declaration")
         };
     }
@@ -450,7 +456,7 @@ public static partial class Compiler
     {
         i.ForceMoveNext();
 
-        string id = i.Current;
+        string id = GetId(i.Current);
 
         i = Args.GetArgs(i, out Args args);
 
@@ -520,6 +526,8 @@ public static partial class Compiler
         if (code.Count == 0)
             return;
 
+        Block result = new();
+
         Walker g = new(code);
         do
         {
@@ -542,6 +550,7 @@ public static partial class Compiler
                 if (var == null) throw new Exception();
                 g = var.Call(g, ref f);
             }
+            else if (NewFunctions<NewEffect, ArcEffect>(g, ref result, NewEffects, CompileEffect)) continue;
             else throw new Exception($"Invalid command in Object Declaration: {g.Current}");
         } while (g.MoveNext());
     }
@@ -590,6 +599,26 @@ public static partial class Compiler
     }
     public static bool AllCompile(ref Walker g, ref Block result, Func<Block, string> compile)
     {
+        if (g.Current == "new")
+        {
+            if (!g.MoveNext()) throw new Exception();
+            g = Declare(g);
+            return true;
+        }
+        if (g.Current == "replace")
+        {
+            g.ForceMoveNext(); string what = GetId(g.Current);
+            g.ForceMoveNext(); g.Asssert("with");
+            g.ForceMoveNext(); string with = GetId(g.Current);
+
+            Walker f = new(g);
+            do
+            {
+                f.Current.value = f.Current.value.Replace(what, with);
+            } while (f.MoveNext());
+
+            return true;
+        }
         if (g.Current == "defineloc") {
             DefineLoc(g);
             return true;

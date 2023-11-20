@@ -1,4 +1,4 @@
-﻿using ArcInstance;
+﻿
 using Pastel;
 using System.IO;
 using System.Linq;
@@ -119,7 +119,7 @@ public class GovernmentReform : IArcObject
     {
         i.ForceMoveNext();
 
-        string id = i.Current;
+        string id = Compiler.GetId(i.Current);
 
         i = Args.GetArgs(i, out Args args);
 

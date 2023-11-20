@@ -1,4 +1,4 @@
-﻿using ArcInstance;
+﻿
 using System.Text;
 
 namespace Arc;
@@ -72,7 +72,7 @@ public class Province : IArcObject
     {
         if (!i.MoveNext()) throw new Exception();
 
-        string id = i.Current;
+        string id = Compiler.GetId(i.Current);
 
         i = Args.GetArgs(i, out Args args);
         Terrain terrain = Terrain.Terrains[args.GetDefault(ArcString.Constructor, "terrain", new("grasslands")).Value];
@@ -135,11 +135,6 @@ public class Province : IArcObject
             {
                 res.Add(history.Compile());
             }
-            res.Add(
-                "2500.1.1", "=", "{",
-                    string.Join(' ', from ctr in Country.Countries select $"discover_country = {ctr.Value.Tag.Value}"),
-                "}"
-            );
             Positions.Append($"{province.Value.Id} = {{ position = {{ {province.Value.Position} }} rotation = {{ {province.Value.Rotation} }} height = {{ {province.Value.Height} }} }} ");
 
             if (province.Value.IsLand() || province.Value.Impassible) Continent.Append($" {province.Value.Id}");

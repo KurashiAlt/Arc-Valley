@@ -1,4 +1,4 @@
-﻿using ArcInstance;
+﻿
 using Pastel;
 using System.Diagnostics.Metrics;
 using System.Runtime.ConstrainedExecution;
@@ -200,7 +200,9 @@ public class Country : IArcObject
 
         if (StartingReform != null) countryHistory.Add("add_government_reform", "=", StartingReform.Get().Id);
 
+        Compiler.global.Add("$tag", this);
         countryHistory.Add(History.Compile());
+        Compiler.global.Delete("$tag");
 
         Program.OverwriteFile($"{Program.TranspileTarget}/history/countries/{Tag}.txt", string.Join(' ', countryHistory));
 

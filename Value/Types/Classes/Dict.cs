@@ -54,7 +54,7 @@ public class Dict<Type> : IArcObject, ArcEnumerable, IEnumerable<KeyValuePair<st
             return dict;
         };
     }
-    private readonly Dictionary<string, DictPointer<Type>> Kvps;
+    protected readonly Dictionary<string, DictPointer<Type>> Kvps;
     public Dictionary<string, Type>.ValueCollection Values() => Kvps.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Value).Values;
     public Dict() { Kvps = new(); }
     public Dict(Block s, Func<string, Args, Type> constructor) 
@@ -73,7 +73,12 @@ public class Dict<Type> : IArcObject, ArcEnumerable, IEnumerable<KeyValuePair<st
         } while (i.MoveNext());
     }
     public bool IsObject() => true;
-    public IVariable? Get(string indexer) => Kvps[indexer].Value;
+    public IVariable? Get(string indexer) 
+    {
+        if (indexer == "first") return Kvps.Values.First().Value;
+        if (indexer == "last") return Kvps.Values.Last().Value;
+        return Kvps[indexer].Value;
+    }
     public T Get<T>(string indexer)
     {
         IVariable? v = Get(indexer);

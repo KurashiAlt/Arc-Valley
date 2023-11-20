@@ -1,4 +1,4 @@
-﻿using ArcInstance;
+﻿
 using System.Text;
 
 namespace Arc;
@@ -33,9 +33,9 @@ public class Region : IArcObject
 	{
 		if (!i.MoveNext()) throw new Exception();
 
-		string id = i.Current;
+        string id = Compiler.GetId(i.Current);
 
-		i = Args.GetArgs(i, out Args args);
+        i = Args.GetArgs(i, out Args args);
 
 		Region Region = new(
 			args.Get(ArcString.Constructor, "name"),

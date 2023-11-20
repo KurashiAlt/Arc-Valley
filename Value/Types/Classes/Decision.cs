@@ -1,4 +1,4 @@
-﻿using ArcInstance;
+﻿
 using Pastel;
 using System.ComponentModel;
 using System.IO;
@@ -69,7 +69,7 @@ public class Decision : IArcObject
     {
         i.ForceMoveNext();
 
-        string id = i.Current;
+        string id = Compiler.GetId(i.Current);
 
         i = Args.GetArgs(i, out Args args);
 

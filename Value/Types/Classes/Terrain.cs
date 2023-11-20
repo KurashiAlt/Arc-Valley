@@ -1,4 +1,4 @@
-﻿using ArcInstance;
+﻿
 using System.Text;
 
 namespace Arc;
@@ -55,7 +55,7 @@ public class Terrain : IArcObject
     {
         if (!i.MoveNext()) throw new Exception();
 
-        string id = i.Current;
+        string id = Compiler.GetId(i.Current);
 
         i = Args.GetArgs(i, out Args args);
 

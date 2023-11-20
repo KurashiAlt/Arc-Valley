@@ -102,7 +102,7 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
             if (constructor == null) throw new Exception();
             i.ForceMoveNext();
 
-            string id = i.Current;
+            string id = Compiler.GetId(i.Current);
 
             i = Args.GetArgs(i, out Args args);
 

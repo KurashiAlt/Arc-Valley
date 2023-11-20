@@ -1,4 +1,4 @@
-﻿using ArcInstance;
+﻿
 
 namespace Arc;
 public class Relation : ArcBlock
@@ -12,7 +12,7 @@ public class Relation : ArcBlock
     {
         if (!i.MoveNext()) throw new Exception();
 
-        string id = i.Current;
+        string id = Compiler.GetId(i.Current);
         if (!i.MoveNext()) throw new Exception();
         if (i.Current != "=") throw new Exception();
         if (!i.MoveNext()) throw new Exception();

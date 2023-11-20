@@ -25,13 +25,7 @@ public class Block : LinkedList<Word>
     }
     public override string ToString()
     {
-        Walker i = new(this);
-        StringBuilder sb = new();
-        do
-        {
-            sb.Append($"{i.Current} ");
-        } while (i.MoveNext());
-        return sb.ToString();
+        return string.Join(' ', this);
     }
     public void Add(string id, ArcBool value)
     {
@@ -62,6 +56,14 @@ public class Block : LinkedList<Word>
         {
             Add(w);
         }
+    }
+    public static Block operator +(Block a, Block b)
+    {
+        return new Block()
+        {
+            a,
+            b
+        };
     }
 }
 public class Walker

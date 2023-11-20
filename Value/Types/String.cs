@@ -13,21 +13,33 @@ public class ArcString : IValue
     }
     public ArcString(string value)
     {
-        Value = TrimOneQuote(value);
-    }
-    public ArcString(Block b)
-    {
-        if (Compiler.TranspiledString(string.Join(' ', b), '`', out string? newValue, Compiler.Compile) && newValue != null)
+        if (Compiler.TranspiledString(value, '`', out string? newValue, Compiler.Compile) && newValue != null)
         {
             Value = newValue;
         }
-        else if (Compiler.TranspiledString(string.Join(' ', b), '"', out string? nw2, Compiler.Compile) && nw2 != null)
+        else if (Compiler.TranspiledString(value, '"', out string? nw2, Compiler.Compile) && nw2 != null)
+        {
+            Value = nw2;
+        }
+        else
+        {
+            Value = TrimOneQuote(value);
+        }
+    }
+    public ArcString(Block b)
+    {
+        string value = string.Join(' ', b);
+        if (Compiler.TranspiledString(value, '`', out string? newValue, Compiler.Compile) && newValue != null)
+        {
+            Value = newValue;
+        }
+        else if (Compiler.TranspiledString(value, '"', out string? nw2, Compiler.Compile) && nw2 != null)
         {
             Value = nw2;
         }
         else 
         {
-            Value = TrimOneQuote(string.Join(' ', b));
+            Value = TrimOneQuote(value);
         }
     }
     public void Set(Block value)
