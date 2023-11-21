@@ -1,10 +1,9 @@
-﻿using Pastel;
+﻿using Arc;
+using Pastel;
+using System.Data;
 using System.Diagnostics;
 using System.Globalization;
-using Arc;
-using System.IO;
 using System.Text;
-using System.Data;
 internal class Program
 {
     public static Stopwatch timer = Stopwatch.StartNew();
@@ -17,6 +16,7 @@ internal class Program
     public static string GfxFolder;
     public static string UnsortedFolder;
     public static string MapFolder;
+    public static string SelectorFolder;
     public static IEnumerable<string> LoadOrder;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     public static List<string> warnings = new();
@@ -35,9 +35,45 @@ internal class Program
         TranspileTarget = arcDefines.Get(ArcString.Constructor, "transpile_target").Value;
         GfxFolder = arcDefines.Get(ArcString.Constructor, "gfx_folder").Value;
         MapFolder = arcDefines.Get(ArcString.Constructor, "map_folder").Value;
+        SelectorFolder = arcDefines.Get(ArcString.Constructor, "selector_folder").Value;
         LoadOrder = from c in arcDefines.Get(ArcCode.Constructor, "load_order").Value select new string(c.value);
 
+        if (Debugger.IsAttached)
+        {
+            args = new string[]
+            {
+                "format"
+            };
+        }
+
         Format = args.Contains("format");
+
+        List<(string, List<Rgba32>)> selectors = new();
+        using (ImageFrame<Rgba32> provmap = (ImageFrame<Rgba32>)Image.Load($"{directory}/{MapFolder}/provinces.bmp").Frames[0])
+        {
+            foreach (string file in GetFiles($"{SelectorFolder}"))
+            {
+                List<Rgba32> colors = new();
+
+                using ImageFrame<Rgba32> img = (ImageFrame<Rgba32>)Image.Load(file).Frames[0];
+
+                string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
+
+                for (int x = 0; x < img.Width; x++)
+                {
+                    for (int y = 0; y < img.Height; y++)
+                    {
+                        if (img[x, y].A == 0) continue;
+
+                        Rgba32 color = provmap[x, y];
+
+                        if (!colors.Contains(color)) colors.Add(color);
+                    }
+                }
+
+                selectors.Add((name, colors));
+            }
+        }
 
         foreach (string location in LoadOrder)
         {
@@ -47,11 +83,25 @@ internal class Program
             Console.WriteLine($"{$"Finished Loading {location}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
         }
 
-        if (Debugger.IsAttached)
+        foreach((string, List<Rgba32>) selector in selectors)
         {
-            args = new string[]
+            ArcList<Province> list = new ArcList<Province>();
+
+            foreach(Province v in from prov in Province.Provinces where selector.Item2.Contains(
+                new Rgba32(
+                    byte.Parse(prov.Value.Color.Value.ElementAt(0)), 
+                    byte.Parse(prov.Value.Color.Value.ElementAt(1)), 
+                    byte.Parse(prov.Value.Color.Value.ElementAt(2))
+                )
+            ) select prov.Value)
             {
-                "script"
+                list.Add(v);
+            }
+
+            new ProvinceGroup(selector.Item1, new())
+            {
+                { "id", new ArcString(selector.Item1) },
+                { "provinces", list }
             };
         }
 

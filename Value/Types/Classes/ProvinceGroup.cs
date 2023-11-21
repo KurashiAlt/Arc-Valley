@@ -28,7 +28,7 @@ public class ProvinceGroup : ArcObject
     public void Transpile(ref Block b)
     {
         string id = Get("id").ToString();
-        Program.Localisation.Add($"{id}", Get("name").ToString());
+        if(CanGet("name")) Program.Localisation.Add($"{id}", Get("name").ToString());
         b.Add(id, "=", "{");
         foreach(Province? prov in Get<ArcList<Province>>("provinces").Values)
         {
