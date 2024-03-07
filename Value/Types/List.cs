@@ -118,8 +118,27 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
     }
     public Walker Call(Walker i, ref Block result)
     {
-        i.ForceMoveNext();
-        if (i.Current != "+=") throw new Exception();
+
+        if (!i.MoveNext())
+        {
+            foreach (T? t in Values)
+            {
+                if (t == null) continue;
+                t.Call(i, ref result);
+            }
+            return i;
+        }
+
+        if (i.Current != "+=")
+        {
+            i.ForceMoveBack();
+            foreach (T? t in Values)
+            {
+                if (t == null) continue;
+                t.Call(i, ref result);
+            }
+            return i;
+        }
         i.ForceMoveNext();
         if(i.Current == "new")
         {

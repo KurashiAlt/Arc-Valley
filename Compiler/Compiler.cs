@@ -801,6 +801,16 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
                 string key = string.Join(' ', args.block);
                 if (!TryGetVariable(key, out _)) return false;
             }
+            else if (g.Current == "force:str:contains")
+            {
+                g = Args.GetArgs(g, out Args args);
+                string str = GetVariable<IVariable>(args.Get("variable").ToString()).ToString();
+                string value = args.Get(ArcString.Constructor, "value").Value;
+                if (!str.Contains(value))
+                {
+                    return false;
+                }
+            }
             else if (g.Current == "str:contains")
             {
                 g = Args.GetArgs(g, out Args args);

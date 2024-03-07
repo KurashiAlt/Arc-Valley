@@ -49,9 +49,14 @@ public class Outgoing : IArcObject
 
     public Walker Call(Walker i, ref Block result)
     {
-        throw new NotImplementedException();
+        result.Add(ToString());
+        return i;
     }
-
+    public override string ToString()
+    {
+        string s = $"node = {Node.Id}";
+        return s;
+    }
     public static Outgoing Constructor(Block block)
     {
         Walker i = new(block);
@@ -68,7 +73,6 @@ public class Outgoing : IArcObject
 public class TradeNode : IArcObject
 {
     public static readonly Dict<TradeNode> TradeNodes = new();
-    public string Class => "TradeNode";
     public ArcString Id { get; set; }
     public ArcString Name { get; set; }
     public ArcList<Area> Areas { get; set; }
