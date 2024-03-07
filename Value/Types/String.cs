@@ -13,11 +13,11 @@ public class ArcString : IValue
     }
     public ArcString(string value)
     {
-        if (Compiler.TranspiledString(value, '`', out string? newValue, Compiler.Compile) && newValue != null)
+        if (Compiler.TranspiledString(value, '`', out string? newValue, Compiler.Compile, "unknown") && newValue != null)
         {
             Value = newValue;
         }
-        else if (Compiler.TranspiledString(value, '"', out string? nw2, Compiler.Compile) && nw2 != null)
+        else if (Compiler.TranspiledString(value, '"', out string? nw2, Compiler.Compile, "unknown") && nw2 != null)
         {
             Value = nw2;
         }
@@ -29,11 +29,11 @@ public class ArcString : IValue
     public ArcString(Block b)
     {
         string value = string.Join(' ', b);
-        if (Compiler.TranspiledString(value, '`', out string? newValue, Compiler.Compile) && newValue != null)
+        if (Compiler.TranspiledString(value, '`', out string? newValue, Compiler.Compile, "unknown") && newValue != null)
         {
             Value = newValue;
         }
-        else if (Compiler.TranspiledString(value, '"', out string? nw2, Compiler.Compile) && nw2 != null)
+        else if (Compiler.TranspiledString(value, '"', out string? nw2, Compiler.Compile, "unknown") && nw2 != null)
         {
             Value = nw2;
         }
@@ -66,8 +66,7 @@ public class ArcString : IValue
             {
                 case "+=":
                     {
-                        if (!i.MoveNext())
-                            throw new Exception();
+                        i.ForceMoveNext();
 
                         i = Compiler.GetScope(i, out Block newbv);
 
@@ -78,8 +77,7 @@ public class ArcString : IValue
                     break;
                 case ":=":
                     {
-                        if (!i.MoveNext())
-                            throw new Exception();
+                        i.ForceMoveNext();
 
                         i = Compiler.GetScope(i, out Block newbv);
 

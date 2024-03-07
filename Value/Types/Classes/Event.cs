@@ -98,10 +98,7 @@ public class Option : IArcObject
         Effect.Compile(ref sb);
         sb.Add("}");
     }
-    public Walker Call(Walker i, ref Block result)
-    {
-        throw new NotImplementedException();
-    }
+    public Walker Call(Walker i, ref Block result) => Get("id").Call(i, ref result);
     public static Option Constructor(Block block)
     {
         Walker i = new(block);
@@ -201,7 +198,7 @@ public class Event : IArcObject
     public IVariable? Get(string indexer) => keyValuePairs.Get(indexer);
     public static Walker Call(Walker i, bool eventType)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string key = Compiler.GetId(i.Current);
         i = Args.GetArgs(i, out Args args);

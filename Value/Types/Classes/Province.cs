@@ -37,7 +37,7 @@ public class Province : IArcObject
     ) {
         if ((from s in Provinces where string.Join(' ',s.Value.Color) == string.Join(' ', Color) select s.Key).Any())
         {
-            throw new Exception($"Existing Color {string.Join(' ', Color)}, on creating province: {Name}");
+            throw ArcException.Create($"Existing Color {string.Join(' ', Color)}, on creating province: {Name}", this);
         }
 
         this.Name = Name;
@@ -70,7 +70,7 @@ public class Province : IArcObject
     public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
     public static Walker Call(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string id = Compiler.GetId(i.Current);
 

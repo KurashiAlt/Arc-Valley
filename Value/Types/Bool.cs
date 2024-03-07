@@ -17,21 +17,21 @@ public class ArcBool : IValue
     public ArcBool(Block value)
     {
         if (value.Count > 1)
-            throw new Exception("Too many elements given to ArcString");
+            throw ArcException.Create("Too many elements given to ArcBool", value);
         if (value.Count < 0)
-            throw new Exception("Too few elements given to ArcString");
+            throw ArcException.Create("Too few elements given to ArcBool", value);
         if (value.First == null)
-            throw new Exception();
+            throw ArcException.Create(value);
         Value = new ArcBool(value.First.Value).Value;
     }
     public void Set(Block value)
     {
         if (value.Count > 1)
-            throw new Exception("Too many elements given to ArcString");
+            throw ArcException.Create("Too many elements given to ArcBool", value);
         if (value.Count < 0)
-            throw new Exception("Too few elements given to ArcString");
+            throw ArcException.Create("Too few elements given to ArcBool", value);
         if (value.First == null)
-            throw new Exception();
+            throw ArcException.Create(value);
         Value = new ArcBool(value.First.Value).Value;
     }
     public bool IsBool() => true;
@@ -48,8 +48,7 @@ public class ArcBool : IValue
             {
                 case ":=":
                     {
-                        if (!i.MoveNext())
-                            throw new Exception();
+                        i.ForceMoveNext();
 
                         string k = i.Current;
                         k = k.Replace("yes", "true");

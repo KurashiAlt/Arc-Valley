@@ -1,5 +1,6 @@
 ﻿
 using Pastel;
+using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -138,7 +139,7 @@ public class GovernmentReform : IArcObject
 
             void AddToReformLevel(string type)
             {
-                ReformLevel b = Government.Governments[type].Get<ArcList<ReformLevel>>("reform_levels").Values[tier - 1] ?? throw new Exception();
+                ReformLevel b = Government.Governments[type].Get<ArcList<ReformLevel>>("reform_levels").Values[tier - 1] ?? throw ArcException.Create(type, i, id, args, regex, match, tier);
                 b.Get<ArcList<GovernmentReform>>("reforms").Values.Add(reform);
             }
         }

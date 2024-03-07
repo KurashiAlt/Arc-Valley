@@ -40,8 +40,7 @@ public class ArcFloat : IArcNumber, IValue
             {
                 case "+=":
                     {
-                        if (!i.MoveNext())
-                            throw new Exception();
+                        i.ForceMoveNext();
 
                         string k = i.Current;
 
@@ -50,8 +49,7 @@ public class ArcFloat : IArcNumber, IValue
                     break;
                 case ":=":
                     {
-                        if (!i.MoveNext())
-                            throw new Exception();
+                        i.ForceMoveNext();
 
                         string k = i.Current;
 

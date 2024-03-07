@@ -187,7 +187,7 @@ public class SubjectType : ArcObject
                                 }, ref s);
                             }
                         }
-                        else throw new Exception($"Arc-Valley is not supported in space or another high radiation location.");
+                        else throw ArcException.Create($"Arc-Valley is not supported in space or another high radiation location.");
                     }
                     break;
                 default:

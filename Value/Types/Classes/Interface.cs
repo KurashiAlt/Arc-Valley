@@ -105,9 +105,11 @@ public class InterfaceNode : IArcObject
         do
         {
             string nid = i.Current;
-            i.ForceMoveNext(); if (i.Current != "=") throw new Exception(nid); ;
-            i.ForceMoveNext(); i = Compiler.GetScope(i, out Block nScope);
-            children.Add(Constructor(nid, Parser.ParseCode(new ArcCode(nScope).Compile())));
+            i.ForceMoveNext(); 
+            i.Asssert("=");
+            i.ForceMoveNext(); 
+            i = Compiler.GetScope(i, out Block nScope);
+            children.Add(Constructor(nid, Parser.ParseCode(new ArcCode(nScope).Compile(), i.Current.GetFile())));
         } while (i.MoveNext());
     }
     public Walker Call(Walker i, ref Block result)

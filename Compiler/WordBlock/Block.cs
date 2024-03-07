@@ -8,16 +8,16 @@ public class Block : LinkedList<Word>
     {
         foreach(string s2 in s)
         {
-            AddLast(s2);
+            AddLast(new Word(s2, 0, "unknown"));
         }
     }
     public Block(string s)
     {
-        AddLast(s);
+        AddLast(new Word(s, 0, "unknown"));
     }
     public void Prepend(string s)
     {
-        AddFirst(s);
+        AddFirst(new Word(s, 0, "unknown"));
     }
     public Block()
     {
@@ -46,20 +46,19 @@ public class Block : LinkedList<Word>
         foreach(object? v in s)
         {
             if (v == null) continue;
-            string? c = v.ToString();
-            if (c == null) throw new Exception();
-            AddLast(c);
+            string c = v.ToString() ?? throw new Exception();
+            AddLast(new Word(c, 0, "unknown"));
         }
     }
     public void Add(params string[] s)
     {
         foreach(string v in s)
         {
-            AddLast(v);
+            AddLast(new Word(v, 0, "unknown"));
         }
     }
-    public void Add(string s) => AddLast(s);
-    public void Add(ArcString s) => AddLast(s.Value);
+    public void Add(string s) => AddLast(new Word(s, 0, "unknown"));
+    public void Add(ArcString s) => AddLast(new Word(s.ToString(), 0, "unknown"));
     public void Add(Block s)
     {
         foreach (Word w in s)
@@ -95,15 +94,15 @@ public class Walker
     }
     public void Asssert(string s)
     {
-        if (Current != s) throw new Exception(s);
+        if (Current != s) throw ArcException.Create(s, this);
     }
     public void ForceMoveNext()
     {
-        if (!MoveNext()) throw new Exception();
+        if (!MoveNext()) throw ArcException.Create(this);
     }
     public void ForceMoveBack()
     {
-        if (!MoveBack()) throw new Exception();
+        if (!MoveBack()) throw ArcException.Create(this);
     }
     public bool MoveNext()
     {

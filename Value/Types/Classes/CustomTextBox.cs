@@ -50,5 +50,4 @@ public class CustomTextBox : ArcObject
         Program.OverwriteFile($"{Program.TranspileTarget}/common/custom_gui/custom_text_boxes.txt", b.ToString());
         return "Custom Text Boxes";
     }
-    public override Walker Call(Walker i, ref Block result) => throw new Exception();
 }

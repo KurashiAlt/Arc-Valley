@@ -69,10 +69,6 @@ public class Mission : IArcObject
         Program.Localisation.Add($"{Id}_title", Name.Value);
         Program.Localisation.Add($"{Id}_desc", Desc.Value);
     }
-    public Walker Call(Walker i, ref Block result)
-    {
-        throw new NotImplementedException();
-    }
     public static Mission Constructor(string key, Args args) => new(
         key,
         args.Get(ArcString.Constructor, "name"),
@@ -178,7 +174,7 @@ public class MissionTree : ArcObject
     public override Walker Call(Walker i, ref Block result)
     {
         i.ForceMoveNext();
-        if (i.Current != "+=") throw new Exception();
+        i.Asssert("+=");
         i.ForceMoveNext();
         i = Args.GetArgs(i, out Args args, 2);
         AddFromArgs(args);
@@ -228,7 +224,7 @@ public class MissionSeries : IArcObject
     public IVariable? Get(string indexer) => keyValuePairs.Get(indexer);
     public static Walker Call(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string id = Compiler.GetId(i.Current);
         try
@@ -279,9 +275,5 @@ public class MissionSeries : IArcObject
 
         Program.OverwriteFile($"{Program.TranspileTarget}/missions/arc.txt", string.Join(' ', b));
         return "Missions";
-    }
-    public Walker Call(Walker i, ref Block result)
-    {
-        throw new NotImplementedException();
     }
 }

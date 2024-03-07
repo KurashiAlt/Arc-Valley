@@ -39,5 +39,5 @@ public class Adjacency : ArcObject
         Program.OverwriteFile($"{Program.TranspileTarget}/map/adjacencies.csv", sb.ToString(), false);
         return "Adjacencies";
     }
-    public override Walker Call(Walker i, ref Block result) => throw new Exception();
+    public override Walker Call(Walker i, ref Block result) => throw ArcException.Create(i, result);
 }

@@ -6,10 +6,6 @@ public class ArcBlock : IValue
     {
         Value = new();
     }
-    public ArcBlock(string s)
-    {
-        Value = Parser.ParseCode(s);
-    }
     public ArcBlock(params string[] s)
     {
         Value = new()
@@ -46,8 +42,7 @@ public class ArcBlock : IValue
             {
                 case "+=!":
                     {
-                        if (!i.MoveNext())
-                            throw new Exception();
+                        i.ForceMoveNext();
 
                         i = Compiler.GetScope(i, out Block newbv);
 
@@ -58,8 +53,7 @@ public class ArcBlock : IValue
                     break;
                 case "+=":
                     {
-                        if (!i.MoveNext())
-                            throw new Exception();
+                        i.ForceMoveNext();
 
                         i = Compiler.GetScope(i, out Block newbv);
 
@@ -73,8 +67,7 @@ public class ArcBlock : IValue
                     break;
                 case ":=":
                     {
-                        if (!i.MoveNext())
-                            throw new Exception();
+                        i.ForceMoveNext();
 
                         i = Compiler.GetScope(i, out Block newbv);
 
@@ -97,7 +90,7 @@ public class ArcBlock : IValue
     }
     public virtual string Compile(Block b)
     {
-        throw new Exception();
+        throw ArcException.Create(b, this);
     }
     public override string ToString()
     {
@@ -121,7 +114,7 @@ public class ArcBlock : IValue
         if (CanBeEmpty && s == "") return;
         b.Add(wrapper);
         b.Add("=");
-        if (CanBeSingular && Parser.ParseCode(s).Count == 1)
+        if (CanBeSingular && Parser.ParseCode(s, "unknown").Count == 1)
         {
             b.Add(s);
         }
@@ -135,7 +128,7 @@ public class ArcBlock : IValue
 
     public virtual string Compile()
     {
-        throw new Exception();
+        throw ArcException.Create(this);
     }
     internal int Count() => Value.Count;
 }

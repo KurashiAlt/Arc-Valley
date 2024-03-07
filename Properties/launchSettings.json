@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Arc-Valley": {
+      "commandName": "Project",
+      "commandLineArgs": "all",
+      "hotReloadEnabled": false
+    }
+  }
+}

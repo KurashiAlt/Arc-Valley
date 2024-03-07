@@ -68,5 +68,4 @@ public class CustomIcon : ArcObject
         Program.OverwriteFile($"{Program.TranspileTarget}/common/custom_gui/custom_icons.txt", b.ToString());
         return "Custom Icons";
     }
-    public override Walker Call(Walker i, ref Block result) => throw new Exception();
 }

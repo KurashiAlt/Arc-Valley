@@ -38,8 +38,8 @@ internal class Program
         GfxFolder = arcDefines.Get(ArcString.Constructor, "gfx_folder").Value;
         MapFolder = arcDefines.Get(ArcString.Constructor, "map_folder").Value;
         SelectorFolder = arcDefines.Get(ArcString.Constructor, "selector_folder").Value;
-        LoadOrder = from c in arcDefines.Get(ArcCode.Constructor, "load_order").Value select new string(c.value);
-        PartialMod = (from a in arcDefines.Get(ArcCode.Constructor, "partial_mod", new()).Value select a.value).ToArray();
+        LoadOrder = from c in arcDefines.Get(ArcCode.Constructor, "load_order").Value select new string(c.Value);
+        PartialMod = (from a in arcDefines.Get(ArcCode.Constructor, "partial_mod", new()).Value select a.Value).ToArray();
 
         if (Debugger.IsAttached)
         {
@@ -56,7 +56,7 @@ internal class Program
             int lIndex = Array.IndexOf(args, "lint");
             string lFile = args[lIndex + 1];
             List<(string type, string id, Args args)> lst = new();
-            Walker ig = new(Parser.ParseCode(File.ReadAllText(Path.Combine(directory, lFile))));
+            Walker ig = new(Parser.ParseFile(Path.Combine(directory, lFile)));
             do
             {
                 ig.Asssert("new"); ig.ForceMoveNext();
@@ -65,28 +65,6 @@ internal class Program
                 ig = Args.GetArgs(ig, out Args args1, hasInherit: false);
                 lst.Add((cls, id, args1));
             } while (ig.MoveNext());
-            if (args.Contains("update"))
-            {
-                int uIndex = Array.IndexOf(args, "update");
-                string uFile = args[uIndex + 1];
-                Walker ie = new(Parser.ParseCode(File.ReadAllText(Path.Combine(directory, uFile))));
-                do
-                {
-                    string id = ie.Current;
-                    ie = Args.GetArgs(ie, out Args args1);
-                    foreach ((string type, string id, Args args) item in from a in lst where a.Item2.ToUpper() == id.ToUpper() select a)
-                    {
-                        if (args1.keyValuePairs != null)
-                        {
-                            foreach(string iid in args1.keyValuePairs.Keys)
-                            {
-                                item.args.keyValuePairs[iid] = args1.keyValuePairs[iid];
-                            }
-                        }
-                        else throw new Exception();
-                    }
-                } while (ie.MoveNext());
-            }
             Block b = new();
             foreach((string type, string id, Args args) item in lst)
             {
@@ -176,7 +154,7 @@ internal class Program
                 string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
 
                 ArcList<Province> list = new();
-                foreach (Word w in Parser.ParseCode(File.ReadAllText(file)))
+                foreach (Word w in Parser.ParseFile(file))
                 {
                     list.Add(Province.Provinces[w]);
                 }
@@ -659,61 +637,6 @@ internal class Program
         }
         return "Special Units";
     }
-    public static string FormatArc(string s)
-    {
-        try
-        {
-            List<(List<string> line, int tabs)> sb = new();
-            Block code = Parser.ParseCode(s);
-            int tab = 0;
-            bool eq = false;
-
-            sb.Add((new(), 0));
-            foreach (Word w in code)
-            {
-                if (eq)
-                {
-                    if (w == "{") tab++;
-                    if (w == "}") tab--;
-
-                    eq = false;
-                    sb.Last().line.Add(w);
-                    sb.Add((new(), tab));
-                    continue;
-                }
-
-                if (w == "}")
-                {
-                    tab--;
-
-                    sb.Add((new(), tab));
-                    sb.Last().line.Add(w);
-                    sb.Add((new(), tab));
-                    continue;
-                }
-
-                if (w == "{")
-                {
-
-                    sb.Add((new(), tab));
-                    tab++;
-                    sb.Last().line.Add(w);
-                    sb.Add((new(), tab));
-                    continue;
-                }
-
-                if (w == "=" || w == ":=" || w == "+=" || w == "-=") eq = true;
-                sb.Last().line.Add(w);
-            }
-            var a = from c in sb select (new string('\t', c.tabs) + string.Join(' ', c.line));
-            return string.Join(Environment.NewLine, from f in a where !string.IsNullOrWhiteSpace(f) select f);
-        }
-        catch (Exception)
-        {
-            Console.WriteLine(s);
-            throw;
-        }
-    }
     public static void CreateTillFolder(string fold)
     {
         string[] paths = fold.Split('/');
@@ -859,30 +782,14 @@ internal class Program
             string[] files = GetFiles(fileLocation);
             foreach (string file in files)
             {
-                try
-                {
-                    string fileContent = File.ReadAllText(file);
-                    Compiler.ObjectDeclare(fileContent + headers, true);
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine(Path.GetRelativePath(directory, file).Pastel(ConsoleColor.Red));
-                    throw;
-                }
+                string fileContent = File.ReadAllText(file);
+                Compiler.ObjectDeclare(fileContent + headers, file, true);
             }
         }
         else
         {
-            try
-            {
-                string file = File.ReadAllText(fileLocation);
-                Compiler.ObjectDeclare(file + headers, true);
-            }
-            catch (Exception)
-            {
-                Console.WriteLine(Path.GetRelativePath(directory, fileLocation).Pastel(ConsoleColor.Red));
-                throw;
-            }
+            string file = File.ReadAllText(fileLocation);
+            Compiler.ObjectDeclare(file + headers, fileLocation, true);
         }
     }
 }

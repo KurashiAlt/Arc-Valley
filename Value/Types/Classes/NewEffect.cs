@@ -23,7 +23,7 @@ public class ArgList : IArcObject, IArcNumber
                 return @object2.CanGet(indexer);
             }
         }
-        throw new Exception("args isn't of type [Arc Object]");
+        throw ArcException.Create(indexer, arg, "args isn't of type [Arc Object]");
     }
     public IVariable? Get(string indexer)
     {
@@ -36,14 +36,14 @@ public class ArgList : IArcObject, IArcNumber
                 return @object2.Get(indexer);
             }
         }
-        throw new Exception("args isn't of type [Arc Object]");
+        throw ArcException.Create(indexer, arg, "args isn't of type [Arc Object]");
     }
     public Walker Call(Walker w, ref Block result)
     {
         Arg arg = list.First();
         if (arg is vx @object) return @object.va.Value.Call(w, ref result);
         if (arg is IArcObject @objec) return @objec.Call(w, ref result);
-        throw new Exception("args isn't of type [Arc Single]");
+        throw ArcException.Create(w, result, arg, "args isn't of type [Arc Single]");
     }
     public override string ToString()
     {
@@ -53,7 +53,7 @@ public class ArgList : IArcObject, IArcNumber
     {
         Arg arg = list.First();
         if (arg is vx @object) return ((IArcNumber)@object.va.Value).GetNum();
-        throw new Exception("args isn't of type [IArcNumber]");
+        throw ArcException.Create(arg, "args isn't of type [IArcNumber]");
     }
 }
 public interface Arg 

@@ -36,7 +36,7 @@ public class Superregion : IArcObject
     }
     public static Walker Call(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string id = Compiler.GetId(i.Current);
 

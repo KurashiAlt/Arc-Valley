@@ -45,7 +45,7 @@ public class Dict<Type> : IArcObject, ArcEnumerable, IEnumerable<KeyValuePair<st
             {
                 string key = i.Current;
                 i.ForceMoveNext();
-                if (i.Current != "=") throw new Exception();
+                i.Asssert("=");
                 i.ForceMoveNext();
                 i = Compiler.GetScope(i, out Block scope);
                 dict.Add(key, constructor(scope));
@@ -83,7 +83,7 @@ public class Dict<Type> : IArcObject, ArcEnumerable, IEnumerable<KeyValuePair<st
     {
         IVariable? v = Get(indexer);
         if (v is T) return (T)v;
-        else throw new Exception($"{indexer} is of wrong type");
+        else throw ArcException.Create($"{indexer} is of wrong type", v);
     }
     public IVariable? GetNullable(string indexer) => GetNullable<IVariable>(indexer);
     public T? GetNullable<T>(string indexer)
@@ -92,7 +92,7 @@ public class Dict<Type> : IArcObject, ArcEnumerable, IEnumerable<KeyValuePair<st
         IVariable? v = Get(indexer);
         if (v == null) return default;
         else if (v is T c) return c;
-        else throw new Exception($"{indexer} is of wrong type");
+        else throw ArcException.Create($"{indexer} is of wrong type", v);
     }
     public bool CanGet(string indexer) => Kvps.ContainsKey(indexer);
     public Type this[string indexer] => Kvps[indexer].Value;

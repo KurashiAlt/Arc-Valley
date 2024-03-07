@@ -53,5 +53,4 @@ public class CustomButton : ArcObject
         Program.OverwriteFile($"{Program.TranspileTarget}/common/custom_gui/custom_buttons.txt", b.ToString());
         return "Custom Buttons";
     }
-    public override Walker Call(Walker i, ref Block result) => throw new Exception();
 }

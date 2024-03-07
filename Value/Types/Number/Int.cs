@@ -36,8 +36,7 @@ public class ArcInt : IArcNumber, IValue
             {
                 case "+=":
                     {
-                        if (!i.MoveNext())
-                            throw new Exception();
+                        i.ForceMoveNext();
 
                         string k = i.Current;
 
@@ -46,8 +45,7 @@ public class ArcInt : IArcNumber, IValue
                     break;
                 case ":=":
                     {
-                        if (!i.MoveNext())
-                            throw new Exception();
+                        i.ForceMoveNext();
 
                         string k = i.Current;
 

@@ -109,7 +109,6 @@ public class Tier : IArcObject
     }
     public bool CanGet(string indexer) => KeyValuePairs.CanGet(indexer);
     public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
-    public Walker Call(Walker i, ref Block result) => throw new Exception();
 }
 public class GreatProject : IArcObject
 {
@@ -206,7 +205,7 @@ public class GreatProject : IArcObject
     public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
     public static Walker Call(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string id = Compiler.GetId(i.Current);
 

@@ -12,7 +12,7 @@ public class StaticModifier : ArcModifier
     }
     public static Walker Call(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string id = Compiler.GetId(i.Current);
 
@@ -61,7 +61,7 @@ public class EventModifier : IArcObject
     public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
     public static Walker Call(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string id = Compiler.GetId(i.Current);
 
@@ -74,7 +74,7 @@ public class EventModifier : IArcObject
 
         return i;
     }
-    public Walker Call(Walker i, ref Block result) => throw new Exception();
+    public Walker Call(Walker i, ref Block result) => Get("id").Call(i, ref result);
     public static string Transpile()
     {
         StringBuilder sb = new();

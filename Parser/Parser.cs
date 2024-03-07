@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -24,10 +25,15 @@ public static partial class Parser
 
         return input;
     }
-    public static Block ParseCode(string str)
+    public static Block ParseFile(string filename)
     {
-        int line = 0;
+        return ParseCode(File.ReadAllText(filename), filename);
+    }
+    public static Block ParseCode(string str, string fileName)
+    {
+        int line = 1;
         str = CommentRemover().Replace(str, "");
+        str = str.Replace("\r\n", "\n");
 
         Block retval = new();
         if (string.IsNullOrWhiteSpace(str)) return retval;
@@ -40,33 +46,34 @@ public static partial class Parser
 
         while (ndx < str.Length)
         {
+            if (str[ndx] == '\n') line++;
             if (!insideDoubleQuote && !insideSpecialQuote && circleIndent == 0 && squareIndent == 0)
             {
                 if(str[ndx] == '{' || str[ndx] == '}')
                 {
                     string a = s.ToString();
-                    if (!string.IsNullOrWhiteSpace(a)) retval.AddLast(a);
+                    if (!string.IsNullOrWhiteSpace(a)) retval.AddLast(new Word(a, line, fileName));
                     s.Clear();
                     s.Append(str[ndx]);
                     a = s.ToString();
-                    if (!string.IsNullOrWhiteSpace(a)) retval.AddLast(a);
+                    if (!string.IsNullOrWhiteSpace(a)) retval.AddLast(new Word(a, line, fileName));
                     s.Clear();
-                    ndx++;
+                    incr();
                     continue;
                 }
                 else if (str[ndx] == '=')
                 {
                     string a = s.ToString();
                     if (a == "+" || a == "-" || a == ":") goto end;
-                    if (!string.IsNullOrWhiteSpace(a)) retval.AddLast(a);
+                    if (!string.IsNullOrWhiteSpace(a)) retval.AddLast(new Word(a, line, fileName));
                     s.Clear();
                 }
                 else if (char.IsWhiteSpace(str[ndx]))
                 {
                     string a = s.ToString().Trim();
-                    if (!string.IsNullOrWhiteSpace(a)) retval.AddLast(a);
+                    if (!string.IsNullOrWhiteSpace(a)) retval.AddLast(new Word(a, line, fileName));
                     s.Clear();
-                    ndx++;
+                    incr();
                     continue;
                 }
             }
@@ -78,10 +85,14 @@ public static partial class Parser
             if (str[ndx] == ']') squareIndent--;
             end:
             s.Append(str[ndx]);
-            ndx++;
+            incr();
+            void incr()
+            {
+                ndx++;
+            }
         }
         string v = s.ToString();
-        if (!string.IsNullOrWhiteSpace(v)) retval.AddLast(v);
+        if (!string.IsNullOrWhiteSpace(v)) retval.AddLast(new Word(v, line, fileName));
         return retval;
     }
     public static string FormatCode(string str)

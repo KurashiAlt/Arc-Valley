@@ -112,7 +112,7 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
         Walker i = new(value);
         do
         {
-            if (!Dictionary.CanGet(i.Current)) throw new Exception($"{i.Current} does not exist within dictionary while creating a list");
+            if (!Dictionary.CanGet(i.Current)) throw ArcException.Create($"{i.Current} does not exist within dictionary while creating a list", value, Dictionary);
             Values.Add((T?)Dictionary.Get(i.Current));
         } while (i.MoveNext());
     }
@@ -142,7 +142,7 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
         i.ForceMoveNext();
         if(i.Current == "new")
         {
-            if (constructor == null) throw new Exception();
+            if (constructor == null) throw ArcException.Create(i);
             i.ForceMoveNext();
 
             string id = Compiler.GetId(i.Current);
@@ -153,7 +153,7 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
         }
         else if (i.Current == "{")
         {
-            if (tConstructor == null) throw new Exception();
+            if (tConstructor == null) throw ArcException.Create(i);
             i.ForceMoveNext();
 
             i = Compiler.GetScope(i, out Block scope);
@@ -164,7 +164,7 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
         }
         else
         {
-            if (dict == null) throw new Exception();
+            if (dict == null) throw ArcException.Create(i);
             Values.Add(dict[i.Current]);
         }
         return i;
@@ -196,7 +196,7 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
             res -= 1;
             return Values[res];
         }
-        throw new Exception();
+        throw ArcException.Create(indexer);
     }
 
     public virtual bool CanGet(string indexer)

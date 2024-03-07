@@ -32,7 +32,7 @@ public class ReformLevel : ArcObject
     }
     public override Walker Call(Walker i, ref Block result) {
         i.ForceMoveNext();
-        if (i.Current != "+=") throw new Exception();
+        i.Asssert("+=");
         i.ForceMoveNext();
         if (i.Current == "new")
         {

@@ -41,19 +41,19 @@ public class Country : IArcObject
             Block names = new();
             foreach (Word w in primaryCulture.MaleNames.Value)
             {
-                names.Add($"\"{w.value.Trim('"')}\" = 1");
+                names.Add($"\"{w.Value.Trim('"')}\" = 1");
             }
             foreach (Word w in primaryCulture.CultureGroup.MaleNames.Value)
             {
-                names.Add($"\"{w.value.Trim('"')}\" = 1");
+                names.Add($"\"{w.Value.Trim('"')}\" = 1");
             }
             foreach (Word w in primaryCulture.FemaleNames.Value)
             {
-                names.Add($"\"{w.value.Trim('"')}\" = -1");
+                names.Add($"\"{w.Value.Trim('"')}\" = -1");
             }
             foreach (Word w in primaryCulture.CultureGroup.FemaleNames.Value)
             {
-                names.Add($"\"{w.value.Trim('"')}\" = -1");
+                names.Add($"\"{w.Value.Trim('"')}\" = -1");
             }
             MonarchNames = new(names);
         }
@@ -64,19 +64,19 @@ public class Country : IArcObject
         Block fNames = new();
         foreach (Word w in primaryCulture.MaleNames.Value)
         {
-            fNames.Add($"{w.value.Trim('"')}");
+            fNames.Add($"{w.Value.Trim('"')}");
         }
         foreach (Word w in primaryCulture.CultureGroup.MaleNames.Value)
         {
-            fNames.Add($"{w.value.Trim('"')}");
+            fNames.Add($"{w.Value.Trim('"')}");
         }
         foreach (Word w in primaryCulture.FemaleNames.Value)
         {
-            fNames.Add($"{w.value.Trim('"')}");
+            fNames.Add($"{w.Value.Trim('"')}");
         }
         foreach (Word w in primaryCulture.CultureGroup.FemaleNames.Value)
         {
-            fNames.Add($"{w.value.Trim('"')}");
+            fNames.Add($"{w.Value.Trim('"')}");
         }
         if (leaderNames.IsEmpty()) LeaderNames = new(fNames);
         else LeaderNames = leaderNames;
@@ -85,7 +85,7 @@ public class Country : IArcObject
         ArmyNames = armyNames;
         FleetNames = fleetNames;
         Tag = tag;
-        if ((from ctr in Countries where ctr.Value.Tag.Value == Tag.Value select ctr).Any()) throw new Exception($"while creating {key} caught {Tag} already exists");
+        if ((from ctr in Countries where ctr.Value.Tag.Value == Tag.Value select ctr).Any()) throw ArcException.Create($"while creating {key} caught {Tag} already exists", this);
         Name = name;
         Adj = adj;
         Color = color;
@@ -132,7 +132,7 @@ public class Country : IArcObject
     public IVariable? Get(string indexer) => keyValuePairs.Get(indexer);
     public static Walker Call(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string key = i.Current;
 
@@ -197,7 +197,7 @@ public class Country : IArcObject
 
 
 
-        if (GovernmentRank.Value > 6 || GovernmentRank.Value < 1) throw new Exception();
+        if (GovernmentRank.Value > 6 || GovernmentRank.Value < 1) throw ArcException.Create(GovernmentRank, "Outside expected range");
 
         if (StartingReform != null) countryHistory.Add("add_government_reform", "=", StartingReform.Get().Id);
 

@@ -12,25 +12,25 @@ public class Args
     public Block block;
     public Block Get()
     {
-        if (block == null) throw new Exception();
+        if (block == null) throw ArcException.Create(this);
         return block;
     }
     public Block Get(string key)
     {
-        if (keyValuePairs == null) throw new Exception($"Non object type arguments; Trying to get: {key}");
-        if (!keyValuePairs.ContainsKey(key)) throw new Exception($"Arguments do not include {key}");
+        if (keyValuePairs == null) throw ArcException.Create($"Non object type arguments; Trying to get: {key}", key, this);
+        if (!keyValuePairs.ContainsKey(key)) throw ArcException.Create($"Arguments do not include {key}", key, this);
         return keyValuePairs[key];
     }
     public Block Get(string key, Block defaultValue)
     {
-        if (keyValuePairs == null) throw new Exception($"Non object type arguments; Trying to get: {key}");
+        if (keyValuePairs == null) throw ArcException.Create($"Non object type arguments; Trying to get: {key}", key, this);
         if (!keyValuePairs.ContainsKey(key)) return defaultValue;
         return keyValuePairs[key];
     }
     public T Get<T>(Func<Block,T> Constructor, string key) where T : IVariable
     {
-        if (keyValuePairs == null) throw new Exception($"Non object type arguments; Trying to get: {key}");
-        if (!keyValuePairs.ContainsKey(key)) throw new Exception($"Arguments do not include {key}");
+        if (keyValuePairs == null) throw ArcException.Create($"Non object type arguments; Trying to get: {key}", key, this);
+        if (!keyValuePairs.ContainsKey(key)) throw ArcException.Create($"Arguments do not include {key}", key, this);
         if (Compiler.TryGetVariable(string.Join(' ', keyValuePairs[key]), out var value))
         {
             if(value is T @val) return @val;
@@ -44,19 +44,19 @@ public class Args
     public T Get<T>(Func<Block,T> Constructor, string key, T defaultValue) where T : IVariable? => GetDefault(Constructor, key, defaultValue);
     public T GetDefault<T>(Func<Block, T> Constructor, string key, T defaultValue) where T : IVariable?
     {
-        if (keyValuePairs == null) throw new Exception();
+        if (keyValuePairs == null) throw ArcException.Create(this);
         if (keyValuePairs.ContainsKey(key)) return Constructor(keyValuePairs[key]);
         return defaultValue;
     }
     public LazyPointer<T> GetLazyFromList<T>(Dict<T> List, string key) where T : IVariable
     {
         LazyPointer<T>? Item = GetLazyFromListNullable(List, key);
-        if (Item == null) throw new Exception();
+        if (Item == null) throw ArcException.Create(this);
         return Item;
     }
     public LazyPointer<T>? GetLazyFromListNullable<T>(Dict<T> List, string key) where T : IVariable
     {
-        if (keyValuePairs == null) throw new Exception("Arguments for call were not of type [ArcObject]");
+        if (keyValuePairs == null) throw ArcException.Create("Arguments for call were not of type [ArcObject]", key, this, List);
         if (!keyValuePairs.ContainsKey(key)) return null;
 
         string s = string.Join(' ', keyValuePairs[key]);
@@ -66,12 +66,12 @@ public class Args
     public T GetFromList<T>(Dict<T> List, string key) where T : IVariable
     {
         T? Item = GetFromListNullable(List, key);
-        if (Item == null) throw new Exception();
+        if (Item == null) throw ArcException.Create(List, key, this);
         return Item;
     }
     public T? GetFromListNullable<T>(Dict<T> List, string key) where T : IVariable
     {
-        if (keyValuePairs == null) throw new Exception("Arguments for call were not of type [ArcObject]");
+        if (keyValuePairs == null) throw ArcException.Create("Arguments for call were not of type [ArcObject]", List, key, this);
         if (!keyValuePairs.ContainsKey(key)) return default;
 
         if (Compiler.TryGetVariable(string.Join(' ', keyValuePairs[key]), out var value))
@@ -84,13 +84,13 @@ public class Args
         }
 
         string s = string.Join(' ', keyValuePairs[key]);
-        if (!List.CanGet(s)) throw new Exception($"Could not get {s} from {List}");
+        if (!List.CanGet(s)) throw ArcException.Create($"Could not get {s} from {List}", key, List, this);
         T? Item = (T?)List.Get(s);
         return Item;
     }
     public static Walker Call(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string id = Compiler.GetId(i.Current);
 
@@ -119,7 +119,7 @@ public class Args
     }
     public static Args GetArgsFromFile(string filename)
     {
-        Block va = Parser.ParseCode(File.ReadAllText(Path.Combine(Program.directory, filename)));
+        Block va = Parser.ParseFile(Path.Combine(Program.directory, filename));
         va.Prepend("{");
         va.Add("}");
         return GetArgs(va);
@@ -138,13 +138,13 @@ public class Args
 
         if(StartOffset < 1)
         {
-            if (!i.MoveNext()) throw new Exception(); //western_sea_of_thule
+            i.ForceMoveNext(); //western_sea_of_thule
         }
 
         if (StartOffset < 2)
         {
-            if (i.Current != "=") throw new Exception();
-            if (!i.MoveNext()) throw new Exception(); //=
+            i.Asssert("=");
+            i.ForceMoveNext(); //=
         }
 
         i = Compiler.GetScope(i, out Block scope); /*
@@ -186,8 +186,7 @@ public class Args
                             if (Key == "inherit" && hasInherit)
                             {
                                 Args inherit = Inheritables[q.Current];
-                                if (inherit.keyValuePairs == null)
-                                    throw new Exception();
+                                if (inherit.keyValuePairs == null) throw ArcException.Create(q, Key, hasInherit, inherit);
                                 foreach (KeyValuePair<string, Block> kvp in inherit.keyValuePairs)
                                 {
                                     args.keyValuePairs.Add(kvp.Key, kvp.Value);
@@ -210,8 +209,7 @@ public class Args
                             if (Key == "inherit" && hasInherit)
                             {
                                 Args inherit = Inheritables[q.Current];
-                                if (inherit.keyValuePairs == null)
-                                    throw new Exception();
+                                if (inherit.keyValuePairs == null) throw ArcException.Create(Key, q, hasInherit, inherit);
                                 foreach (KeyValuePair<string, Block> kvp in inherit.keyValuePairs)
                                 {
                                     args.keyValuePairs.Add(kvp.Key, kvp.Value);
@@ -224,7 +222,7 @@ public class Args
                                 Block nBlock = new();
                                 foreach(Word w in Value)
                                 {
-                                    nBlock.Add(regex.Replace(w.value, (Match m) => {
+                                    nBlock.Add(regex.Replace(w.Value, (Match m) => {
                                         return Compiler.GetVariable<IVariable>(m.Groups[1].Value).ToString();
                                     }));
                                 }
@@ -253,14 +251,13 @@ public class Args
                                 args.keyValuePairs.Add(Key, Value);
                         }
                         break;
-                    default: throw new Exception();
+                    default: throw ArcException.Create(q);
                 }
             } while (q.MoveNext());
 
             if (globalInherit != null)
             {
-                if (globalInherit.keyValuePairs == null)
-                    throw new Exception();
+                if (globalInherit.keyValuePairs == null) throw ArcException.Create(q);
                 foreach (KeyValuePair<string, Block> kvp in globalInherit.keyValuePairs)
                 {
                     if (args.keyValuePairs.ContainsKey(kvp.Key)) continue;

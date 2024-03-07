@@ -67,7 +67,7 @@ public class EstateAgenda : IArcObject
     public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
     public static Walker Call(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string id = Compiler.GetId(i.Current);
 
@@ -251,7 +251,7 @@ public class EstatePrivilege : IArcObject
     public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
     public static Walker Call(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string id = Compiler.GetId(i.Current);
 
@@ -428,7 +428,7 @@ public class Estate : IArcObject
     public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
     public static Walker Call(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string id = Compiler.GetId(i.Current);
 
@@ -645,7 +645,7 @@ public class PrivilegeList : ArcList<EstatePrivilege>
         {
             if (i.Current == "new")
             {
-                if (!i.MoveNext()) throw new Exception();
+                i.ForceMoveNext();
                 string key = i.Current;
                 i = Args.GetArgs(i, out Args args);
 
@@ -661,7 +661,7 @@ public class PrivilegeList : ArcList<EstatePrivilege>
     {
         var a = from privilege in Values where privilege.Id.Value == (indexer + "_privelege") select privilege;
         if (a.Count() == 1) return a.First();
-        throw new Exception(indexer);
+        throw ArcException.Create(indexer, a);
     }
 
     public override bool CanGet(string indexer)

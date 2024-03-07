@@ -10,12 +10,12 @@ public class Relation : ArcBlock
     }
     public static Walker Call(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string id = Compiler.GetId(i.Current);
-        if (!i.MoveNext()) throw new Exception();
-        if (i.Current != "=") throw new Exception();
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
+        i.Asssert("=");
+        i.ForceMoveNext();
         i = Compiler.GetScope(i, out Block scope);
 
         scope.Prepend(new("="));
@@ -56,5 +56,4 @@ public class Relation : ArcBlock
         return Compiler.Compile(Value);
     }
     public override string ToString() => "[Arc Relation]";
-    public Walker Call(Walker i, ref List<string> result) => throw new Exception();
 }

@@ -45,7 +45,7 @@ public static partial class Calculator
         Operations(ref steps, "/", "*");
         Operations(ref steps, "+", "-");
 
-        if (steps.Count != 1) throw new Exception(string.Join(' ', steps));
+        if (steps.Count != 1) throw ArcException.Create(string.Join(' ', steps), s);
 
         return GetNum(steps[0]);
     }
@@ -71,7 +71,7 @@ public static partial class Calculator
                     "/" => left / right,
                     "*" => left * right,
                     "^" => double.Pow(left, right),
-                    _ => throw new Exception()
+                    _ => throw ArcException.Create("Unknown Operator", left, oper, right, steps, operators)
                 };
 
                 steps.Insert(i + 2, value.ToString());

@@ -385,12 +385,12 @@ public static partial class Compiler
     {
         return new ArcString(i).Value;
     }
-    public static void ObjectDeclare(string file, bool preprocessor = false)
+    public static void ObjectDeclare(string file, string fileName, bool preprocessor = false)
     {
         if (preprocessor)
             file = Parser.Preprocessor(file);
 
-        ObjectDeclare(Parser.ParseCode(file));
+        ObjectDeclare(Parser.ParseCode(file, fileName));
     }
     public static Walker Declare(Walker g)
     {
@@ -463,172 +463,11 @@ public static partial class Compiler
             "custom_text_box" => CustomTextBox.Call(g),
             "interface_file" => InterfaceNode.Call(g),
             "customizable_localization" => CustomizableLocalization.Call(g),
-            "_1" => ModType(g),
-            _ => throw new Exception($"Unknown Object Type {g.Current} in object declaration")
+            _ => throw ArcException.Create($"Unknown Object Type {g.Current} in object declaration", g)
         };
     }
     static int intId = 0;
     static Decision? logModTypeModifiers = null;
-    static Walker ModType(Walker i)
-    {
-        i.ForceMoveNext();
-
-        string id = GetId(i.Current);
-
-        i = Args.GetArgs(i, out Args args);
-
-        if (logModTypeModifiers == null)
-        {
-            logModTypeModifiers = new Decision(
-                $"modtype_decision_log",
-                new($"Log Kurashi's Modifiers"),
-                new(""),
-                new(false),
-                new("100", "100", "100"),
-                new(),
-                new("ai", "=", "no"),
-                new(),
-                new(),
-                new(),
-                new(400)
-            );
-        }
-
-        new Decision(
-            $"modtype_decision_{id}",
-            new($"Kurashi's Modifiers: {id.Replace('_', ' ')}"),
-            new(""),
-            new(false),
-            new("50", "50", "50"),
-            new(),
-            new("ai", "=", "no"),
-            new(),
-            new("country_event", "=", "{", "id", "=", $"modtype.{intId}", "days", "=", "0", "}"),
-            new(),
-            new(400)
-        );
-
-        Event v = new Event(
-            $"modtype.{intId}",
-            new(false),
-            new($"{id.Replace('_', ' ')} Modifiers"),
-            new(""),
-            new("template_eventPicture"),
-            new(false),
-            new(),
-            new(false),
-            new(false),
-            new(),
-            new(),
-            new(),
-            new(),
-            new(true),
-            new() { new Option(
-                new("Exit"),
-                new(),
-                new(false),
-                null,
-                new(),
-                new()
-            ) },
-            null
-        );
-
-        intId++;
-
-        foreach (var c in args.keyValuePairs ?? throw new Exception())
-        {
-            string key = c.Key;
-            ArcList<ArcString> lst = new ArcList<ArcString>(c.Value, ArcString.Constructor, false);
-
-            v.Options.Add(new Option(
-                new(gmn(key)),
-                new(),
-                new(false),
-                null,
-                null,
-                new("country_event", "=", "{", "id", "=", $"modtype.{intId}", "days", "=", "0", "}")
-            ));
-
-            Event va = new Event(
-                $"modtype.{intId}",
-                new(false),
-                new(gmn(key)),
-                new(""),
-                new("template_eventPicture"),
-                new(false),
-                new(),
-                new(false),
-                new(false),
-                new(),
-                new(),
-                new("country_event", "=", "{", "id", "=", $"{v.Id}", "days", "=", "0", "}"),
-                new(),
-                new(true),
-                new() { new Option(
-                    new("Back"),
-                    new(),
-                    new(false),
-                    null,
-                    new(),
-                    new("country_event", "=", "{", "id", "=", $"{v.Id}", "days", "=", "0", "}")
-                ) },
-                null
-            );
-
-            foreach (var ca in lst)
-            {
-                if (ca == null) continue;
-                va.Options.Add(new Option(
-                    new($"{gmn(c.Key)} = {ca}"),
-                    new(),
-                    new(false),
-                    null,
-                    null,
-                    new(Parser.ParseCode($@"
-new event_modifier modtype_mod_{c.Key}_{fx(ca)} = {{
-    name = ""{gmn(c.Key)} {ca}""
-    modifier = {{
-        {c.Key} = {ca}
-    }}
-}}
-if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
-    remove_country_modifier = modtype_mod_{c.Key}_{fx(ca)}
-}}
-else {{
-    add_country_modifier = {{
-        name = modtype_mod_{c.Key}_{fx(ca)}
-        duration = -1
-    }}
-}}
-"))
-                ));
-
-                logModTypeModifiers.Effect.Value.Add(Parser.ParseCode(@$"
-if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
-    log = ""add_country_modifier = {{""
-    log = ""    name = modtype_mod_{c.Key}_{fx(ca)}""
-    log = ""    duration = -1""
-    log = ""}}""
-}}
-"));
-            }
-
-            intId++;
-        }
-
-        string fx(object ke)
-        {
-            return ke.ToString().Replace(".", "_").Replace("-", "");
-        }
-
-        string gmn(string ke)
-        {
-            if (!ModifierLocs.CanGet(ke)) return ke;
-            return ModifierLocs[ke].Get("text").ToString();
-        }
-        return i;
-    }
     static Walker NamedInt(Walker i)
     {
         i.ForceMoveNext();
@@ -719,16 +558,16 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
     }
     static Walker DefineLoc(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
         ArcString key = new(new Block(i.Current));
-        if (!i.MoveNext()) throw new Exception();
-        if (i.Current != "=") throw new Exception();
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
+        i.Asssert("=");
+        i.ForceMoveNext();
         ArcString value = new(new Block(i.Current));
 
         if (Program.Localisation.ContainsKey(key.Value))
         {
-            if (Program.Localisation[key.Value] != value.Value) throw new Exception($"{key} already exists, and has a different value than the provided input");
+            if (Program.Localisation[key.Value] != value.Value) throw ArcException.Create($"{key} already exists, and has a different value than the provided input", i);
         }
         else Program.Localisation.Add(key.Value, value.Value);
 
@@ -751,25 +590,25 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
             }
             if (g.Current == "new")
             {
-                if (!g.MoveNext()) throw new Exception();
+                g.ForceMoveNext();
                 g = Declare(g);
                 continue;
             }
             else if (g.Current == "run_effect")
             {
                 g = Args.GetArgs(g, out Args args);
-                if (args.block == null) throw new Exception();
+                if (args.block == null) throw ArcException.Create("Unknown Error: Null Reference", g, args);
                 CompileEffect(args.block);
                 continue;
             }
             else if (TryGetVariable(g.Current, out IVariable? var))
             {
                 Block f = new();
-                if (var == null) throw new Exception();
+                if (var == null) throw ArcException.Create("Unknown Error: Null Reference", g);
                 g = var.Call(g, ref f);
             }
             else if (NewFunctions<NewEffect, ArcEffect>(g, ref result, NewEffects, CompileEffect)) continue;
-            else throw new Exception($"Invalid command in Object Declaration: {g.Current}");
+            else throw ArcException.Create($"Invalid command in Object Declaration: {g.Current}", g, result, code);
         } while (g.MoveNext());
     }
     public static Dict<ArcObject> ModifierLocs = Dict<ArcObject>.Constructor((string id, Args args) =>
@@ -785,7 +624,7 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
             { "is_multiplicative", new ArcBool(args.Get("is_multiplicative")) },
             { "precision", new ArcInt(args.Get("precision")) },
         };
-    })(Parser.ParseCode(File.ReadAllText($"{Program.directory}modifier_loc.txt")));
+    })(Parser.ParseFile($"{Program.directory}modifier_loc.txt"));
     public static bool When(Block code)
     {
         if (code.Count == 0)
@@ -797,7 +636,7 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
             if (g.Current == "exists")
             {
                 g = Args.GetArgs(g, out Args args);
-                if (args.block == null) throw new Exception();
+                if (args.block == null) throw ArcException.Create("Unknown Error: Null Reference", g);
                 string key = string.Join(' ', args.block);
                 if (!TryGetVariable(key, out _)) return false;
             }
@@ -849,7 +688,7 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
     {
         if (g.Current == "new")
         {
-            if (!g.MoveNext()) throw new Exception();
+            g.ForceMoveNext();
             g = Declare(g);
             return true;
         }
@@ -862,7 +701,7 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
             Walker f = new(g);
             do
             {
-                f.Current.value = f.Current.value.Replace(what, with);
+                f.Current.Value = f.Current.Value.Replace(what, with);
             } while (f.MoveNext());
 
             return true;
@@ -874,7 +713,8 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
         if (g.Current == "when")
         {
             g.ForceMoveNext();
-            string trigger = g.Current.value[1..^1];
+            string trigger = g.Current.Value[1..^1];
+            string file = g.Current.GetFile();
 
             g.ForceMoveNext();
             g = GetScope(g, out Block scope);
@@ -885,7 +725,7 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
             return true;
             bool WhenInterpret(string trigger)
             {
-                Block b = Parser.ParseCode(trigger);
+                Block b = Parser.ParseCode(trigger, file);
                 if (Parser.HasEnclosingBrackets(b)) b = RemoveEnclosingBrackets(b);
                 return When(b);
             }
@@ -895,8 +735,8 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
             g = Args.GetArgs(g, out Args args);
             if (args.block != null && TryGetVariable(string.Join(' ', args.block), out IVariable? vr))
             {
-                if (vr == null) throw new Exception();
-                if (vr is not ArcModifier) throw new Exception($"{string.Join(' ', args.block)} is not ArcModifier in modifier_to_string function");
+                if (vr == null) throw ArcException.Create("Unknown Error: Null Reference", g);
+                if (vr is not ArcModifier) throw ArcException.Create($"{string.Join(' ', args.block)} is not ArcModifier in modifier_to_string function", g);
                 Block c = new("{");
                 foreach (Word w in ((ArcModifier)vr).Value)
                 {
@@ -906,7 +746,7 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
 
                 args = Args.GetArgs(c);
             }
-            if (args.keyValuePairs == null) throw new Exception();
+            if (args.keyValuePairs == null) throw ArcException.Create("Unknown Error: Null Reference", g);
             string str = "";
             foreach (KeyValuePair<string, Block> b in args.keyValuePairs)
             {
@@ -946,7 +786,7 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
             IVariable i0 = GetVariable<IVariable>(args.block.ToString());
             string? i1 = i0.ToString();
             string i2 = i1.Replace('_', ' ');
-            Block i3 = Parser.ParseCode(i2);
+            Block i3 = Parser.ParseCode(i2, g.Current.GetFile());
             IEnumerable<string> i4 = from iz in i3 select ToUpperFirstLetter(iz);
             result.Add(string.Join(' ', i4));
             return true;
@@ -975,7 +815,7 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
             g.ForceMoveNext(); string dictKey = g.Current;
             g.ForceMoveNext();
             string? whenBlock = null;
-            if (g.Current.value.StartsWith("[") && g.Current.value.EndsWith("]"))
+            if (g.Current.Value.StartsWith("[") && g.Current.Value.EndsWith("]"))
             {
                 whenBlock = g.Current;
                 g.ForceMoveNext();
@@ -990,9 +830,9 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
             }
             if (Parser.HasEnclosingBrackets(scope)) RemoveEnclosingBrackets(scope);
 
-            if (TryGetVariable(varKey, out IVariable? _)) throw new Exception($"Variable {varKey} already exists");
+            if (TryGetVariable(varKey, out IVariable? _)) throw ArcException.Create($"Variable {varKey} already exists", g);
             TryGetVariable(dictKey, out IVariable? dictValue);
-            if (dictValue == null) throw new Exception($"Variable {dictKey} does not exist");
+            if (dictValue == null) throw ArcException.Create($"Variable {dictKey} does not exist", g);
 
             if (dictValue is ArgList)
             {
@@ -1035,7 +875,7 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
             g.ForceMoveNext(); GetScope(g, out Block scope);
             if (Parser.HasEnclosingBrackets(scope)) RemoveEnclosingBrackets(scope);
 
-            if (TryGetVariable(varKey, out IVariable? _)) throw new Exception($"Variable {varKey} already exists");
+            if (TryGetVariable(varKey, out IVariable? _)) throw ArcException.Create($"Variable {varKey} already exists", g);
             ArcInt varValue = new(start);
             global.Add(varKey, varValue);
 
@@ -1084,7 +924,7 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
             NctAmount++;
             g.ForceMoveNext(); g.Asssert("=");
             g.ForceMoveNext(); string value = g.Current;
-            if (TranspiledString(value, '"', out string? nValue, CompileEffect))
+            if (TranspiledString(value, '"', out string? nValue, CompileEffect, g.Current.GetFile()))
             {
                 if (nValue == null) throw new Exception();
                 Program.Localisation.Add(key, nValue);
@@ -1092,36 +932,37 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
             else throw new NotImplementedException();
             return true;
         }
-        if (g.Current.value.EndsWith(',') || g.Current.value.EndsWith(';'))
+        if (g.Current.Value.EndsWith(',') || g.Current.Value.EndsWith(';'))
         {
-            string pre = g.Current.value.Split(':')[0];
+            string pre = g.Current.Value.Split(':')[0];
             List<string> s = new()
             {
-                g.Current.value[..^1]
+                g.Current.Value[..^1]
             };
-            while (g.Current.value.EndsWith(',') || g.Current.value.EndsWith(';'))
+            while (g.Current.Value.EndsWith(',') || g.Current.Value.EndsWith(';'))
             {
-                if (g.Current.value.EndsWith(';'))
+                if (g.Current.Value.EndsWith(';'))
                 {
                     g.ForceMoveNext();
-                    if (g.Current.value.EndsWith(',') || g.Current.value.EndsWith(';')) s.Add($"{pre}:{g.Current.value[..^1]}");
-                    else s.Add($"{pre}:{g.Current.value}"); ;
+                    if (g.Current.Value.EndsWith(',') || g.Current.Value.EndsWith(';')) s.Add($"{pre}:{g.Current.Value[..^1]}");
+                    else s.Add($"{pre}:{g.Current.Value}"); ;
                 }
                 else
                 {
                     g.ForceMoveNext();
-                    if (g.Current.value.EndsWith(',') || g.Current.value.EndsWith(';')) s.Add(g.Current.value[..^1]);
-                    else s.Add(g.Current.value);
+                    if (g.Current.Value.EndsWith(',') || g.Current.Value.EndsWith(';')) s.Add(g.Current.Value[..^1]);
+                    else s.Add(g.Current.Value);
                 }
             }
 
-            if (!g.MoveNext()) throw new Exception();
+            g.ForceMoveNext();
 
-            if (g.Current.value.StartsWith('[') && g.Current.value.EndsWith(']'))
+            if (g.Current.Value.StartsWith('[') && g.Current.Value.EndsWith(']'))
             {
-                string trigger = g.Current.value[1..^1];
+                string trigger = g.Current.Value[1..^1];
 
-                if (!g.MoveNext()) throw new Exception();
+                g.ForceMoveNext();
+                string file = g.Current.GetFile();
                 g = GetScope(g, out Block scope);
 
                 if (Parser.HasEnclosingBrackets(scope)) scope = RemoveEnclosingBrackets(scope);
@@ -1130,7 +971,7 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
                     {
                         "=", "{",
                             "limit", "=", "{",
-                                StringCompile(trigger, CompileTrigger),
+                                StringCompile(trigger, file, CompileTrigger),
                             "}",
                             compile(scope),
                         "}"
@@ -1138,15 +979,16 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
 
                 foreach (string k in s)
                 {
-                    result.Add(StringCompile(k, compile));
+                    result.Add(StringCompile(k, file, compile));
                     result.Add(n);
                 }
                 return true;
             }
-            else if (g.Current.value == "=")
+            else if (g.Current.Value == "=")
             {
-                if (!g.MoveNext()) throw new Exception();
+                g.ForceMoveNext();
 
+                string file = g.Current.GetFile();
                 g = GetScope(g, out Block scope);
 
                 string compiled = compile(scope);
@@ -1154,7 +996,7 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
                 {
                     Block n = new()
                         {
-                            StringCompile(k, Compile),
+                            StringCompile(k, file, Compile),
                             "=",
                             "{",
                             compiled,
@@ -1165,55 +1007,56 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
                 }
                 return true;
             }
-            else throw new Exception();
+            else throw ArcException.Create("Unknown Error", g);
         }
-        if (TranspiledString(g.Current, '`', out string? newValue, compile) && newValue != null)
+        if (TranspiledString(g.Current, '`', out string? newValue, compile, g.Current.GetFile()) && newValue != null)
         {
             result.Add(newValue);
             return true;
         }
-        if (g.Current.value.EndsWith('%'))
+        if (g.Current.Value.EndsWith('%'))
         {
-            result.Add((double.Parse(g.Current.value[..^1]) / 100).ToString("0.000"));
+            result.Add((double.Parse(g.Current.Value[..^1]) / 100).ToString("0.000"));
             return true;
         }
-        if (g.Current.value.StartsWith('[') && g.Current.value.EndsWith(']'))
+        if (g.Current.Value.StartsWith('[') && g.Current.Value.EndsWith(']'))
         {
-            string trigger = g.Current.value[1..^1];
+            string trigger = g.Current.Value[1..^1];
+            string file = g.Current.GetFile();
 
-            if (!g.MoveNext()) throw new Exception();
+            g.ForceMoveNext();
             g = GetScope(g, out Block scope);
 
             if (Parser.HasEnclosingBrackets(scope)) scope = RemoveEnclosingBrackets(scope);
 
-            if (result.Last?.Value.value != "=") result.Add("=");
+            if (result.Last?.Value.Value != "=") result.Add("=");
 
             result.Add(
                 "{",
                     "limit", "=", "{",
-                        StringCompile(trigger, CompileTrigger),
+                        StringCompile(trigger, file, CompileTrigger),
                     "}",
                     compile(scope),
                 "}"
             );
             return true;
         }
-        if (g.Current.value.StartsWith('(') && g.Current.value.EndsWith(')'))
+        if (g.Current.Value.StartsWith('(') && g.Current.Value.EndsWith(')'))
         {
-            string calc = g.Current.value[1..^1];
+            string calc = g.Current.Value[1..^1];
 
             result.Add(Calculator.Calculate(calc));
             return true;
         }
         if (TryGetVariable(g.Current, out IVariable? var))
         {
-            if (var == null) throw new Exception();
+            if (var == null) throw ArcException.Create(g);
             g = var.Call(g, ref result);
             return true;
         }
         return false;
     }
-    public static bool TranspiledString(string str, char ch, out string? newValue, Func<Block, string> compile)
+    public static bool TranspiledString(string str, char ch, out string? newValue, Func<Block, string> compile, string fileName)
     {
         if (TryTrimOne(str, ch, out newValue) && newValue != null)
         {
@@ -1235,7 +1078,7 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
                     if (scope > 0) nc.Append(c);
                     if (scope == 0)
                     {
-                        s.Append(StringCompile(nc.ToString(), compile));
+                        s.Append(StringCompile(nc.ToString(), fileName, compile));
                         nc = new();
                     }
                     continue;
@@ -1258,12 +1101,12 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
     public static bool IsBaseScope(string v) => v == "ROOT" || v == "PREV" || v == "THIS" || v == "FROM";
     public static bool IsLogicalScope(string v) => v == "NOT" || v == "AND" || v == "OR";
     public static bool IsDefaultScope(string v) => v == "REB" || v == "NAT" || v == "PIR";
-    public static string StringCompile(string file, Func<Block, string> compiler, bool preprocessor = false)
+    public static string StringCompile(string file, string fileName, Func<Block, string> compiler, bool preprocessor = false)
     {
         if (preprocessor)
             file = Parser.Preprocessor(file);
 
-        return compiler(Parser.ParseCode(file));
+        return compiler(Parser.ParseCode(file, fileName));
     }
     public static List<(string, NewTrigger)> NewTriggers = new();
     public static string CompileTrigger(Block code)
@@ -1462,9 +1305,9 @@ if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
                 NctAmount++;
                 g.ForceMoveNext(); g.Asssert("=");
                 g.ForceMoveNext(); string value = g.Current;
-                if (TranspiledString(value, '"', out string? nValue, CompileEffect))
+                if (TranspiledString(value, '"', out string? nValue, CompileEffect, g.Current.GetFile()))
                 {
-                    if (nValue == null) throw new Exception();
+                    if (nValue == null) throw ArcException.Create(g);
                     Program.Localisation.Add(key, nValue);
                 }
                 else throw new NotImplementedException();

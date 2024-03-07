@@ -30,7 +30,7 @@ public class BuildingLine : IArcObject
     {
         Dict<ArcCode> tiers = args.GetAttributes(new string[] { "name", "start_offset", "x", "y" });
 
-        if (args.keyValuePairs == null) throw new Exception();
+        if (args.keyValuePairs == null) throw ArcException.Create(id, args, tiers);
         if (!args.keyValuePairs.ContainsKey("unlock_tier")) args.keyValuePairs.Add("unlock_tier", new());
         if (!args.keyValuePairs.ContainsKey("x")) args.keyValuePairs.Add("x", new());
         if (!args.keyValuePairs.ContainsKey("y")) args.keyValuePairs.Add("y", new());
@@ -64,7 +64,7 @@ public class BuildingLine : IArcObject
     }
     public static Walker Call(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string id = Compiler.GetId(i.Current);
 

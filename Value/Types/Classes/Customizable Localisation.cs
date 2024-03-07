@@ -21,7 +21,7 @@ public class CustomizableLocalization : ArcList<ArcObject>
             res -= 1;
             return Values[res];
         }
-        throw new Exception();
+        throw ArcException.Create(indexer);
     }
     public override bool CanGet(string indexer)
     {

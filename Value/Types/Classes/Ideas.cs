@@ -110,10 +110,6 @@ public class Idea : IArcObject
         }
         return string.Join(' ', sb);
     }
-    public Walker Call(Walker i, ref Block result)
-    {
-        throw new NotImplementedException();
-    }
     public static Idea Constructor(Block block, string key, int num)
     {
         Walker i = new(block);
@@ -181,7 +177,7 @@ public class IdeaGroup : IArcObject
     public IVariable? Get(string indexer) => keyValuePairs.Get(indexer);
     public static Walker Call(Walker i)
     {
-        if (!i.MoveNext()) throw new Exception();
+        i.ForceMoveNext();
 
         string id = Compiler.GetId(i.Current);
         try
@@ -230,7 +226,7 @@ public class IdeaGroup : IArcObject
             sb.Append(ideaGroup.Start.Compile("start"));
             sb.Append(' ');
 
-            if (ideaGroup.Ideas.Values.Count != 7) throw new Exception($"Cannot create an idea group with more or less than 7 ideas, {ideaGroup.Id}");
+            if (ideaGroup.Ideas.Values.Count != 7) throw ArcException.Create($"Cannot create an idea group with more or less than 7 ideas, {ideaGroup.Id}", ideaGroup);
             foreach(Idea? idea in ideaGroup.Ideas.Values)
             {
                 if (idea == null) continue;
@@ -251,9 +247,5 @@ public class IdeaGroup : IArcObject
 
         Program.OverwriteFile($"{Program.TranspileTarget}/common/ideas/arc.txt", sb.ToString());
         return "Idea Groups";
-    }
-    public Walker Call(Walker i, ref Block result)
-    {
-        throw new NotImplementedException();
     }
 }

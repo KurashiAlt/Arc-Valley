@@ -6,12 +6,12 @@ public partial class Compiler
     {
         if(TryGetVariable(locator, out IVariable? var)) 
         {
-            if (var == null) throw new Exception($"Variable {locator} is null");
+            if (var == null) throw ArcException.Create($"Variable {locator} is null", locator);
             return (T)var;
         }
         else
         {
-            throw new Exception($"Could not find variable {locator}");
+            throw ArcException.Create($"Could not find variable {locator}", locator);
         }
     }
 }
