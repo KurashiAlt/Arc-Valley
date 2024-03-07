@@ -97,6 +97,16 @@ public class MissionTree : ArcObject
     ArcBool HasCountryShield { get; set; }
     ArcTrigger PotentialOnLoad { get; set; }
     ArcTrigger Potential { get; set; }
+    public MissionSeries Series(int x) => new(
+        $"{Id}_{x}",
+        new(x),
+        Generic,
+        Ai,
+        HasCountryShield,
+        PotentialOnLoad,
+        Potential,
+        new()
+    );
     public MissionTree(string id, Args args)
     {
         Id = id;
@@ -107,8 +117,16 @@ public class MissionTree : ArcObject
         Potential = args.Get(ArcTrigger.Constructor, "potential", new());
 
         Serieses = new MissionSeries?[]{
-            null, null, null, null, null,
-            null, null, null, null, null
+            Series(0),
+            Series(1),
+            Series(2),
+            Series(3),
+            Series(4),
+            Series(5),
+            Series(6),
+            Series(7),
+            Series(8),
+            Series(9)
         };
 
         AddFromArgs(args);
@@ -122,6 +140,14 @@ public class MissionTree : ArcObject
         foreach (KeyValuePair<string, Block> mis in from m in args.keyValuePairs where !v.Contains(m.Key) select m)
         {
             Args a = Args.GetArgs(mis.Value);
+
+            ArcCode Required = new();
+            foreach(string nm in a.Get(ArcCode.Constructor, "required", new()).Value)
+            {
+                if (nm.Contains(':')) Required.Value.Add(nm.Replace(':', '_'));
+                else Required.Value.Add($"{Id}_{nm}");
+            }
+
             Mission mission = new(
                 $"{Id}_{mis.Key}",
                 a.Get(ArcString.Constructor, "name"),
@@ -129,7 +155,7 @@ public class MissionTree : ArcObject
                 a.Get(ArcString.Constructor, "icon", new("mission_unknown_mission")),
                 a.Get(ArcInt.Constructor, "y", null),
                 a.Get(ArcString.Constructor, "completed_by", null),
-                new ArcCode(from b in a.Get(ArcCode.Constructor, "required", new()).Value select $"{Id}_{b.value}"),
+                Required,
                 a.Get(ArcTrigger.Constructor, "provinces_to_highlight", new()),
                 a.Get(ArcTrigger.Constructor, "trigger", new()),
                 a.Get(ArcEffect.Constructor, "effect", new())
@@ -234,6 +260,7 @@ public class MissionSeries : IArcObject
         foreach (MissionSeries? MissionSeries in MissionSerieses.Values())
         {
             if (MissionSeries == null) continue;
+            if (MissionSeries.Missions.Count == 0) continue;
             b.Add(
                 MissionSeries.Id, "=", "{", 
                     "slot", "=", MissionSeries.Slot, 

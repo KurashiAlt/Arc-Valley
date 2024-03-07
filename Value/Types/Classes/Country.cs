@@ -85,6 +85,7 @@ public class Country : IArcObject
         ArmyNames = armyNames;
         FleetNames = fleetNames;
         Tag = tag;
+        if ((from ctr in Countries where ctr.Value.Tag.Value == Tag.Value select ctr).Any()) throw new Exception($"while creating {key} caught {Tag} already exists");
         Name = name;
         Adj = adj;
         Color = color;
@@ -148,7 +149,7 @@ public class Country : IArcObject
             args.GetDefault(ArcCode.Constructor, "fleet_names", new("\"Fleet of $PROVINCE$\"")),
             args.Get(ArcString.Constructor, "tag"),
             args.Get(ArcString.Constructor, "name"),
-            args.Get(ArcString.Constructor, "adj"),
+            args.Get(ArcString.Constructor, "adj", args.Get(ArcString.Constructor, "name")),
             args.Get(ArcCode.Constructor, "color"),
             args.GetDefault(ArcString.Constructor, "government", new("monarchy")),
             args.GetDefault(ArcInt.Constructor, "government_rank", new(1)),

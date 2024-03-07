@@ -6,6 +6,21 @@ using System.Runtime.ConstrainedExecution;
 using System.Text;
 
 namespace Arc;
+public class ConditionalModifier : ArcObject
+{
+    public static ConditionalModifier Constructor(Args args) => new()
+    {
+        { "trigger", args.Get(ArcTrigger.Constructor, "trigger") },
+        { "modifier", args.Get(ArcModifier.Constructor, "modifier") }
+    };
+    public void Transpile(ref Block b)
+    {
+        b.Add("conditional_modifier", "=", "{");
+        Get<ArcTrigger>("trigger").Compile("trigger", ref b);
+        Get<ArcModifier>("modifier").Compile("modifier", ref b);
+        b.Add("}");
+    }
+}
 public class Tier : IArcObject
 {
     public bool IsObject() => true;
@@ -15,6 +30,7 @@ public class Tier : IArcObject
     public ArcModifier AreaModifier { get; set; }
     public ArcModifier CountryModifier { get; set; }
     public ArcEffect OnUpgraded { get; set; }
+    public ArcList<ConditionalModifier> ConditionalModifiers { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
     public Tier(
         ArcInt upgradeTime,
@@ -22,7 +38,8 @@ public class Tier : IArcObject
         ArcModifier provinceModifier,
         ArcModifier areaModifier,
         ArcModifier countryModifier,
-        ArcEffect onUpgraded
+        ArcEffect onUpgraded,
+        ArcList<ConditionalModifier> conditionalModifiers
     )
     {
         UpgradeTime = upgradeTime;
@@ -31,7 +48,7 @@ public class Tier : IArcObject
         AreaModifier = areaModifier;
         CountryModifier = countryModifier;
         OnUpgraded = onUpgraded;
-
+        ConditionalModifiers = conditionalModifiers;
         KeyValuePairs = new()
         {
             { "uprade_time", UpgradeTime },
@@ -52,6 +69,7 @@ public class Tier : IArcObject
                 new(),
                 new(),
                 new(),
+                new(),
                 new()
             );
         }
@@ -59,13 +77,14 @@ public class Tier : IArcObject
         Args args = Args.GetArgs(b);
         return Constructor(args, upgradeTime, costToUpgrade);
     }
-    public static Tier Constructor(Args args, int upgradeTime, int costToUpgrade) => new(
+    static Tier Constructor(Args args, int upgradeTime, int costToUpgrade) => new(
         args.Get(ArcInt.Constructor, "upgrade_time", new(upgradeTime)),
         args.Get(ArcInt.Constructor, "cost_to_upgrade", new(costToUpgrade)),
         args.Get(ArcModifier.Constructor, "province_modifier", new()),
         args.Get(ArcModifier.Constructor, "area_modifier", new()),
         args.Get(ArcModifier.Constructor, "country_modifier", new()),
-        args.Get(ArcEffect.Constructor, "on_upgraded", new())
+        args.Get(ArcEffect.Constructor, "on_upgraded", new()),
+        args.Get(ArcList<ConditionalModifier>.GetConstructor(ConditionalModifier.Constructor), "conditional_modifiers", new())
     );
     public void TranspileSingular(string key, ref Block b)
     {
@@ -82,6 +101,10 @@ public class Tier : IArcObject
         AreaModifier.Compile("area_modifier", ref b, CanBeEmpty: false);
         CountryModifier.Compile("country_modifiers", ref b, CanBeEmpty: false);
         OnUpgraded.Compile("on_upgraded", ref b, CanBeEmpty: false);
+        foreach(ConditionalModifier c in ConditionalModifiers)
+        {
+            c.Transpile(ref b);
+        }
         b.Add("}");
     }
     public bool CanGet(string indexer) => KeyValuePairs.CanGet(indexer);

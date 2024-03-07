@@ -71,6 +71,7 @@ public class Government : ArcObject
     {
         string id = Get<ArcString>("id").Value;
         Program.Localisation.Add(id, Get<ArcString>("name").Value);
+        Program.Localisation.Add($"{id}_name", Get<ArcString>("name").Value);
 
         a.Add(
             id, "=", "{",

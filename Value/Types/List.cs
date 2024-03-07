@@ -55,10 +55,10 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
             Values.Add(Constructor(key, args));
         } while (i.MoveNext());
     }
-    public ArcList(Block value, Func<Block, T> Constructor)
+    public ArcList(Block value, Func<Block, T> Constructor, bool va = true)
     {
         if (Parser.HasEnclosingBrackets(value)) Compiler.RemoveEnclosingBrackets(value);
-        if (value.Count != 0 && !Parser.HasEnclosingBrackets(value))
+        if (va && value.Count != 0 && !Parser.HasEnclosingBrackets(value))
         {
             value.Prepend("{");
             value.Add("}");
@@ -74,6 +74,30 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
         {
             i = Compiler.GetScope(i, out Block f);
             Values.Add(Constructor(f));
+        } while (i.MoveNext());
+    }
+    public ArcList(Block value, Func<Args, T> Constructor, bool va = true)
+    {
+        if (Parser.HasEnclosingBrackets(value)) Compiler.RemoveEnclosingBrackets(value);
+        if (va && value.Count != 0 && !Parser.HasEnclosingBrackets(value))
+        {
+            value.Prepend("{");
+            value.Add("}");
+        }
+
+        tConstructor = (Block b) => {
+            Args r = Args.GetArgs(b);
+            return Constructor(r); 
+        };
+        Values = new();
+
+        if (value.Count == 0) return;
+
+        Walker i = new(value);
+        do
+        {
+            i = Compiler.GetScope(i, out Block f);
+            Values.Add(tConstructor(f));
         } while (i.MoveNext());
     }
     public ArcList(Block value, Dict<T> Dictionary)
@@ -135,6 +159,10 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
         return (Block s) => new ArcList<T>(s, dict);
     }
     public static Func<Block, ArcList<T>> GetConstructor(Func<Block, T> func)
+    {
+        return (Block s) => new ArcList<T>(s, func);
+    }
+    public static Func<Block, ArcList<T>> GetConstructor(Func<Args, T> func)
     {
         return (Block s) => new ArcList<T>(s, func);
     }

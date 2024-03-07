@@ -82,9 +82,9 @@ public class Religion : IArcObject
     public ArcBool UsesKarma { get; set; }
     public ArcBool UsesPiety { get; set; }
     public ArcBool UsesAnglicanPower { get; set; }
+    public ArcBool Fervor { get; set; }                   
 /* Disabled for now since each one has so many special implementations
     public ArcBlock Papacy { get; set; }
-    public ArcBool Fervor { get; set; }                   
     public ArcBool FetishistCult { get; set; }
     public ArcBool HasPatriachs { get; set; }
     public ArcBool Authority { get; set; }
@@ -101,7 +101,7 @@ public class Religion : IArcObject
     public AspectsName? AspectsName { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
     public Religion(ArcString name, ArcString desc, ArcString id, ArcInt icon, ArcBlock color, ArcBlock heretic, ArcBlock country, ArcBlock province, ArcBlock countryAsSecondary, ArcBlock allowedConversions, ArcBlock onConvert, ArcBool hreReligion, ArcBool hreHereticReligion, ArcString date, ArcBool misguidedHeretic, ArcBool declareWarInRegency, ArcBool canHaveSecondaryReligion, ReligionGroup religionGroup, ArcBool allowFemaleDefenderOfFaith, ArcBool personalDeity, ArcList<Province>? holySites, ArcList<Blessing>? blessings, ArcBool usesChurchPower, ArcList<ChurchAspect>? aspects, ArcBool usesKarma, ArcBool usesPiety, ArcBool usesAnglicanPower
-        , AspectsName? aspectsName)
+        , AspectsName? aspectsName, ArcBool fervor)
     {
         Name = name;
         Desc = desc;
@@ -131,6 +131,7 @@ public class Religion : IArcObject
         UsesPiety = usesPiety;
         UsesAnglicanPower = usesAnglicanPower;
         AspectsName = aspectsName;
+        Fervor = fervor;
         KeyValuePairs = new()
         {
             { "name", Name },
@@ -161,6 +162,7 @@ public class Religion : IArcObject
             { "uses_piety", UsesPiety },
             { "uses_anglican_power", UsesAnglicanPower },
             { "aspects_name", AspectsName },
+            { "fervor", Fervor },
         };
     }
 
@@ -205,7 +207,8 @@ public class Religion : IArcObject
             args.Get(ArcBool.Constructor, "uses_karma", new(false)),
             args.Get(ArcBool.Constructor, "uses_piety", new(false)),
             args.Get(ArcBool.Constructor, "uses_anglican_power", new(false)),
-            args.Get((Block b) => AspectsName.Constructor(b, id), "aspects_name", null)
+            args.Get((Block b) => AspectsName.Constructor(b, id), "aspects_name", null),
+            args.Get(ArcBool.Constructor, "fervor", new ArcBool(false))
         );
 
         Religions.Add(id, religion);
@@ -232,6 +235,7 @@ public class Religion : IArcObject
         if (UsesChurchPower) sb.Append("uses_church_power = yes ");
         if (UsesKarma) sb.Append("uses_karma = yes ");
         if (UsesPiety) sb.Append("uses_piety = yes ");
+        if (Fervor) sb.Append("fervor = yes ");
         if (UsesAnglicanPower) sb.Append("uses_anglican_power = yes ");
         if (HolySites != null) sb.Append($"holy_sites = {{ {string.Join(' ', from b in HolySites.Values select b.Id)} }} ");
         if (Blessings != null) sb.Append($"blessings = {{ {string.Join(' ', from b in Blessings.Values select b.Id)} }} ");

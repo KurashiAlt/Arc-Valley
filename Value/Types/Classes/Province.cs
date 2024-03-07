@@ -77,7 +77,7 @@ public class Province : IArcObject
         i = Args.GetArgs(i, out Args args);
         Terrain terrain = Terrain.Terrains[args.GetDefault(ArcString.Constructor, "terrain", new("grasslands")).Value];
         Province prov = new(
-            args.Get(ArcString.Constructor, "name"),
+            args.Get(ArcString.Constructor, "name", new ArcString(id)),
             args.Get(ArcCode.Constructor, "color"),
             args.Get(ArcEffect.Constructor, "history"),
             args.GetDefault(ArcBool.Constructor, "sea", new(false)),

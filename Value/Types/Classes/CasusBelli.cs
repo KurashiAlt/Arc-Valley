@@ -116,7 +116,9 @@ public class CasusBelli : ArcObject
         { "months", args.Get(ArcInt.Constructor, "months", null) },
         { "prerequisites_self", args.Get(ArcTrigger.Constructor, "prerequisites_self", new()) },
         { "prerequisites", args.Get(ArcTrigger.Constructor, "prerequisites", new()) },
-        { "war_goal", args.GetFromList(WarGoal.WarGoals, "war_goal") }
+        { "war_goal", args.GetFromList(WarGoal.WarGoals, "war_goal") },
+        { "attacker_disabled_po", args.Get(ArcCode.Constructor, "attacker_disabled_po", new()) },
+        { "defender_disabled_po", args.Get(ArcCode.Constructor, "defender_disabled_po", new()) }
     };
     public override string ToString() => Get("id").ToString();
     public override Walker Call(Walker i, ref Block result) { result.Add(ToString()); return i; }
@@ -134,6 +136,8 @@ public class CasusBelli : ArcObject
         s.Add(
                 Get<ArcBlock>("prerequisites_self").Compile("prerequisites_self"),
                 Get<ArcBlock>("prerequisites").Compile("prerequisites"),
+                Get<ArcBlock>("attacker_disabled_po").Compile("attacker_disabled_po"),
+                Get<ArcBlock>("defender_disabled_po").Compile("defender_disabled_po"),
                 "war_goal", "=", Get("war_goal").ToString(),
             "}"
         );

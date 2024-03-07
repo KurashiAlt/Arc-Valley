@@ -57,6 +57,10 @@ public class ArcEffect : ArcBlock
     {
         return Compiler.CompileEffect(b);
     }
+    public override string ToString()
+    {
+        return Compile();
+    }
     internal static ArcEffect Constructor(Block block) => new(block);
 }
 public class ArcModifier : ArcBlock

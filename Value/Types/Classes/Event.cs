@@ -19,7 +19,7 @@ public class Expedition : ArcObject
         prov.History.Value.Add(
             "1.1.1", "=", "{", 
                 "add_permanent_province_modifier", "=", "{", 
-                    "name", "=", "expedition_target", 
+                    "name", "=", "expedition_target",
                     "duration", "=", "-1", 
                 "}", 
                 "set_variable", "=", "{", 
@@ -51,7 +51,7 @@ public class Expedition : ArcObject
 
         Expeditions.Add(id, this);
     }
-    public static Expedition Constructor(string id, Args args) => new(id, args);
+    public static Expedition Constructor(string id, Args args) => null;
 }
 
 public class Option : IArcObject
@@ -121,120 +121,7 @@ public class Option : IArcObject
 
 public class Event : IArcObject
 {
-    public static Dict<Event> Events = new()
-    {
-        { "expedition.1", new(
-            "expedition.1",
-            new(true),
-            new("Send an Expedition"),
-            new(""),
-            new("TOMB_eventPicture"),
-            new(false),
-            new(),
-            new(false),
-            new(false),
-            new(),
-            new(),
-            new(),
-            new(),
-            new(true),
-            new()
-            {
-                new Option(
-                    new("Send an Expedition"),
-                    new("factor", "=", "1"),
-                    new(false),
-                    null,
-                    null,
-                    new(@"
-owner = {
-    add_treasury = -50
-}
-set_province_flag = expedition_in_progress
-change_variable = {
-    which = expedition_length
-    value = -1
-}
-if = {
-    limit = {
-        check_variable = {
-            which = expedition_length
-            value = 1
-        }
-    }
-    province_event = {
-        id = expedition.2
-        days = 730 
-    }
-} 
-else = { 
-    province_event = { 
-        id = expedition.3 
-        days = 730 
-    } 
-}")
-                ),
-                new Option(
-                    new("Nevermind"),
-                    new("factor", "=", "1"),
-                    new(false),
-                    null,
-                    null,
-                    new()
-                )
-            },
-            new(),
-            false
-        ) },
-        { "expedition.2", new(
-            "expedition.2",
-            new(true),
-            new("End of Expedition"),
-            new(""),
-            new("TOMB_eventPicture"),
-            new(false),
-            new(),
-            new(false),
-            new(false),
-            new(),
-            new("clr_province_flag = expedition_in_progress"),
-            new(),
-            new(),
-            new(true),
-            new()
-            {
-                new Option(
-                    new("I see"),
-                    new("factor", "=", "1"),
-                    new(false),
-                    null,
-                    null,
-                    new()
-                )
-            },
-            new(),
-            false
-        ) },
-        { "expedition.3", new(
-            "expedition.3",
-            new(true),
-            new("A find"),
-            new(""),
-            new("TOMB_eventPicture"),
-            new(false),
-            new(),
-            new(false),
-            new(false),
-            new(),
-            new("clr_province_flag = expedition_in_progress"),
-            new("remove_province_modifier = expedition_target"),
-            new(),
-            new(true),
-            new(),
-            new(),
-            false
-        ) },
-    };
+    public static Dict<Event> Events = new();
     public ArcString Id { get; set; }
     public ArcBool ProvinceEvent { get; set; }
     public ArcString Title { get; set; }
@@ -251,6 +138,7 @@ else = {
     public ArcFactor MeanTimeToHappen { get; set; }
     public ArcBool IsTriggeredOnly { get; set; }
     public ArcList<Option> Options { get; set; }
+    bool Compiled = false;
     public Dict<IVariable> keyValuePairs { get; set; }
     public Event(
         string id,
@@ -315,7 +203,7 @@ else = {
     {
         if (!i.MoveNext()) throw new Exception();
 
-        string key = i.Current;
+        string key = Compiler.GetId(i.Current);
         i = Args.GetArgs(i, out Args args);
 
         new Event(
@@ -379,14 +267,17 @@ else = {
             i++;
         }
         b.Add("}");
+
+        Compiled = true;
     }
+    public static Block b = new();
     public static string Transpile()
     {
-        Block b = new();
-
         string currentNamespace = "";
         foreach (Event ev in from eve in Events.Values() orderby eve.Id.Value select eve)
         {
+            if (ev.Compiled) continue;
+
             if (ev.Id.Value.Contains('.'))
             {
                 string newNamespace = ev.Id.Value.Split('.')[0];

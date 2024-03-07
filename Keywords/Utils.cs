@@ -154,7 +154,7 @@ public partial class Compiler
     }
     public static bool TryGetVariable(string locator, out IVariable? var, Func<string, IVariable> Get, Func<string, bool> CanGet)
     {
-        if (locator.StartsWith("trigger_value", "event_target") || locator.Contains(' '))
+        if (locator.StartsWith("trigger_value", "event_target") || locator.Contains(' ') || locator.EnclosedBy('`'))
         {
             var = null;
             return false;

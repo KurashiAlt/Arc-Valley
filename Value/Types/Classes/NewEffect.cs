@@ -45,6 +45,10 @@ public class ArgList : IArcObject, IArcNumber
         if (arg is IArcObject @objec) return @objec.Call(w, ref result);
         throw new Exception("args isn't of type [Arc Single]");
     }
+    public override string ToString()
+    {
+        return list.First().ToString();
+    }
     public double GetNum()
     {
         Arg arg = list.First();
@@ -73,6 +77,10 @@ public class vx : Arg
         catch(Exception) { }
         Type typ = b.Get<Type>("args");
         return new vx(typ.ThisConstructor(args.block));
+    }
+    public override string ToString()
+    {
+        return va.Value.ToString();
     }
     public vx(IVariable v)
     {

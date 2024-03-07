@@ -23,6 +23,16 @@ public class Block : LinkedList<Word>
     {
 
     }
+    public Block RemoveEnclosingBlock()
+    {
+        if (First == null || Last == null) return this;
+        if (First.Value == "{" && Last.Value == "}")
+        {
+            RemoveFirst();
+            RemoveLast();
+        }
+        return this;
+    }
     public override string ToString()
     {
         return string.Join(' ', this);

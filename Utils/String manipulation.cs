@@ -19,5 +19,13 @@ public static partial class Utils
     {
         return Regex.Replace(sa, regex, replace);
     }
-
+    public static bool EnclosedBy(this string sa, string c)
+    {
+        return sa.StartsWith(c) && sa.EndsWith(c);
+    }
+    public static bool EnclosedBy(this string sa, char c)
+    {
+        if (sa.Length == 0) return false;
+        return sa[0] == c && sa[^1] == c;
+    }
 }

@@ -1,4 +1,5 @@
 ﻿using Arc;
+using Microsoft.CodeAnalysis;
 using Pastel;
 using System.Data;
 using System.Diagnostics;
@@ -18,6 +19,7 @@ internal class Program
     public static string MapFolder;
     public static string SelectorFolder;
     public static IEnumerable<string> LoadOrder;
+    public static string[] PartialMod;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     public static List<string> warnings = new();
     public static bool Format = false;
@@ -37,22 +39,88 @@ internal class Program
         MapFolder = arcDefines.Get(ArcString.Constructor, "map_folder").Value;
         SelectorFolder = arcDefines.Get(ArcString.Constructor, "selector_folder").Value;
         LoadOrder = from c in arcDefines.Get(ArcCode.Constructor, "load_order").Value select new string(c.value);
+        PartialMod = (from a in arcDefines.Get(ArcCode.Constructor, "partial_mod", new()).Value select a.value).ToArray();
 
         if (Debugger.IsAttached)
         {
             args = new string[]
             {
-                "format"
+                "format", "test", "script"
             };
         }
 
         Format = args.Contains("format");
 
-        List<(string, List<Rgba32>)> selectors = new();
-        using (ImageFrame<Rgba32> provmap = (ImageFrame<Rgba32>)Image.Load($"{directory}/{MapFolder}/provinces.bmp").Frames[0])
+        if (args.Contains("lint"))
         {
+            int lIndex = Array.IndexOf(args, "lint");
+            string lFile = args[lIndex + 1];
+            List<(string type, string id, Args args)> lst = new();
+            Walker ig = new(Parser.ParseCode(File.ReadAllText(Path.Combine(directory, lFile))));
+            do
+            {
+                ig.Asssert("new"); ig.ForceMoveNext();
+                string cls = ig.Current; ig.ForceMoveNext();
+                string id = ig.Current;
+                ig = Args.GetArgs(ig, out Args args1, hasInherit: false);
+                lst.Add((cls, id, args1));
+            } while (ig.MoveNext());
+            if (args.Contains("update"))
+            {
+                int uIndex = Array.IndexOf(args, "update");
+                string uFile = args[uIndex + 1];
+                Walker ie = new(Parser.ParseCode(File.ReadAllText(Path.Combine(directory, uFile))));
+                do
+                {
+                    string id = ie.Current;
+                    ie = Args.GetArgs(ie, out Args args1);
+                    foreach ((string type, string id, Args args) item in from a in lst where a.Item2.ToUpper() == id.ToUpper() select a)
+                    {
+                        if (args1.keyValuePairs != null)
+                        {
+                            foreach(string iid in args1.keyValuePairs.Keys)
+                            {
+                                item.args.keyValuePairs[iid] = args1.keyValuePairs[iid];
+                            }
+                        }
+                        else throw new Exception();
+                    }
+                } while (ie.MoveNext());
+            }
+            Block b = new();
+            foreach((string type, string id, Args args) item in lst)
+            {
+                b.Add($"\" *new {item.type} {item.id}* \"", "=", "{");
+                foreach (KeyValuePair<string, Block> v in item.args.keyValuePairs)
+                {
+                    if(v.Key == "position" || v.Key == "rotation" || v.Key == "height" || v.Key == "color")
+                    {
+                        b.Add(v.Key, "=", $"\" *{v.Value}* \"");
+                    }
+                    else b.Add(v.Key, "=", v.Value.ToString());
+                }
+                b.Add("}");
+            }
+            File.WriteAllText($"{lFile}", Parser.FormatCode(b.ToString()).Replace("\" *", "").Replace("* \"", ""));
+
+            return 0;
+        }
+
+        foreach (string location in LoadOrder)
+        {
+            TimeSpan start = timer.Elapsed;
+            LoadTarget(location);
+            TimeSpan end = timer.Elapsed;
+            Console.WriteLine($"{$"Finished Loading {location}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
+        }
+
+        if (args.Contains("selector"))
+        {
+            TimeSpan start = timer.Elapsed;
+            using ImageFrame<Rgba32> provmap = (ImageFrame<Rgba32>)Image.Load($"{directory}/{MapFolder}/provinces.bmp").Frames[0];
             foreach (string file in GetFiles($"{SelectorFolder}"))
             {
+                if (!file.EndsWith(".png")) continue;
                 List<Rgba32> colors = new();
 
                 using ImageFrame<Rgba32> img = (ImageFrame<Rgba32>)Image.Load(file).Frames[0];
@@ -71,139 +139,155 @@ internal class Program
                     }
                 }
 
-                selectors.Add((name, colors));
-            }
-        }
+                ArcList<Province> list = new();
+                List<string> keys = new();
+                foreach (KeyValuePair<string, Province> v in from prov in Province.Provinces
+                                                                where colors.Contains(
+                                            new Rgba32(
+                                                byte.Parse(prov.Value.Color.Value.ElementAt(0)),
+                                                byte.Parse(prov.Value.Color.Value.ElementAt(1)),
+                                                byte.Parse(prov.Value.Color.Value.ElementAt(2))
+                                            )
+                                        )
+                                                                select prov)
+                {
+                    list.Add(v.Value);
+                    keys.Add(v.Key);
+                }
 
-        foreach (string location in LoadOrder)
-        {
-            TimeSpan start = timer.Elapsed;
-            LoadTarget(location);
-            TimeSpan end = timer.Elapsed;
-            Console.WriteLine($"{$"Finished Loading {location}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
-        }
-
-        foreach((string, List<Rgba32>) selector in selectors)
-        {
-            ArcList<Province> list = new ArcList<Province>();
-
-            foreach(Province v in from prov in Province.Provinces where selector.Item2.Contains(
-                new Rgba32(
-                    byte.Parse(prov.Value.Color.Value.ElementAt(0)), 
-                    byte.Parse(prov.Value.Color.Value.ElementAt(1)), 
-                    byte.Parse(prov.Value.Color.Value.ElementAt(2))
-                )
-            ) select prov.Value)
+                File.WriteAllText($"{file}.gen", string.Join(' ', from p in keys select p));
+                _ = new ProvinceGroup(name, new())
             {
-                list.Add(v);
-            }
-
-            new ProvinceGroup(selector.Item1, new())
-            {
-                { "id", new ArcString(selector.Item1) },
+                { "id", new ArcString(name) },
                 { "provinces", list }
             };
+            }
+            TimeSpan end = timer.Elapsed;
+            Console.WriteLine($"{$"Finished Loading {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
+        }
+        else
+        {
+            TimeSpan start = timer.Elapsed;
+
+            foreach (string file in GetFiles($"{SelectorFolder}"))
+            {
+                if (!file.EndsWith(".gen")) continue;
+
+                string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
+
+                ArcList<Province> list = new();
+                foreach (Word w in Parser.ParseCode(File.ReadAllText(file)))
+                {
+                    list.Add(Province.Provinces[w]);
+                }
+
+                _ = new ProvinceGroup(name, new())
+            {
+                { "id", new ArcString(name) },
+                { "provinces", list }
+            };
+            }
+            TimeSpan end = timer.Elapsed;
+            Console.WriteLine($"{$"Finished Loading Cached {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
         }
 
-        (string, Func<string>)[] Transpilers =
+        (string, string, Func<string>)[] Transpilers =
         {
-            ("script", Incident.Transpile),
-            ("script", TranspileOnActions),
-            ("script", ReligionGroup.Transpile),
-            ("script", PersonalDeity.Transpile),
-            ("script", Decision.Transpile),
-            ("script", Event.Transpile),
-            ("script", Adjacency.Transpile),
-            ("script", Area.Transpile),
-            ("script", Bookmark.Transpile),
-            ("script", Region.Transpile),
-            ("script", Superregion.Transpile),
-            ("script", Province.Transpile),
-            ("script", TradeGood.Transpile),
-            ("script", Terrain.Transpile),
-            ("script", Blessing.Transpile),
-            ("script", Building.Transpile),
-            ("script", Country.Transpile),
-            ("script", ChurchAspect.Transpile),
-            ("script", AdvisorType.Transpile),
-            ("script", TradeNode.Transpile),
-            ("script", IdeaGroup.Transpile),
-            ("script", Policy.Transpile),
-            ("script", Relation.Transpile),
-            ("script", CultureGroup.Transpile),
-            ("script", MissionSeries.Transpile),
-            ("script", EstateAgenda.Transpile),
-            ("script", EstatePrivilege.Transpile),
-            ("script", Estate.Transpile),
-            ("script", GovernmentReform.Transpile),
-            ("script", GovernmentMechanic.Transpile),
-            ("script", Unit.Transpile),
-            ("script", GreatProject.Transpile),
-            ("script", MercenaryCompany.Transpile),
-            ("script", Advisor.Transpile),
-            ("script", Age.Transpile),
-            ("script", DiplomaticAction.Transpile),
-            ("script", SpecialUnitTranspile),
-            ("script", Government.Transpile),
-            ("script", GovernmentNames.Transpile),
-            ("script", HolyOrder.Transpile),
-            ("script", ProvinceTriggeredModifier.Transpile),
-            ("script", CasusBelli.Transpile),
-            ("script", WarGoal.Transpile),
-            ("script", ProvinceGroup.Transpile),
-            ("script", AiPersonalities),
-            ("script", CenterOfTrade),
-            ("script", RulerPersonality.Transpile),
-            ("script", OpinionModifier.Transpile),
-            ("script", StaticModifier.Transpile),
-            ("script", EventModifier.Transpile),
-            ("script", SubjectType.Transpile),
-            ("script", TranspileLocalisations),
-            ("gfx", Gfx),
-            ("map", Map),
-            ("unsorted", Unsorted),
-        };
+        ("script", "", Incident.Transpile),
+        ("script", "", ReligionGroup.Transpile),
+        ("script", "", PersonalDeity.Transpile),
+        ("script", "", Decision.Transpile),
+        ("script", "", Event.Transpile),
+        ("script", "", Adjacency.Transpile),
+        ("script", "", Area.Transpile),
+        ("script", "", Bookmark.Transpile),
+        ("script", "", Region.Transpile),
+        ("script", "", Superregion.Transpile),
+        ("script", "", Province.Transpile),
+        ("script", "", TradeGood.Transpile),
+        ("script", "", Terrain.Transpile),
+        ("script", "", Blessing.Transpile),
+        ("script", "", Building.Transpile),
+        ("script", "", Country.Transpile),
+        ("script", "", ChurchAspect.Transpile),
+        ("script", "", AdvisorType.Transpile),
+        ("script", "", TradeNode.Transpile),
+        ("script", "", IdeaGroup.Transpile),
+        ("script", "", Policy.Transpile),
+        ("script", "", Relation.Transpile),
+        ("script", "", CultureGroup.Transpile),
+        ("script", "", MissionSeries.Transpile),
+        ("script", "", EstateAgenda.Transpile),
+        ("script", "", EstatePrivilege.Transpile),
+        ("script", "", Estate.Transpile),
+        ("script", "", GovernmentReform.Transpile),
+        ("script", "", GovernmentMechanic.Transpile),
+        ("script", "", Unit.Transpile),
+        ("script", "", GreatProject.Transpile),
+        ("script", "", MercenaryCompany.Transpile),
+        ("script", "", Advisor.Transpile),
+        ("script", "", Age.Transpile),
+        ("script", "", DiplomaticAction.Transpile),
+        ("script", "", SpecialUnitTranspile),
+        ("script", "", Government.Transpile),
+        ("script", "", GovernmentNames.Transpile),
+        ("script", "", HolyOrder.Transpile),
+        ("script", "", ProvinceTriggeredModifier.Transpile),
+        ("script", "", CasusBelli.Transpile),
+        ("script", "", WarGoal.Transpile),
+        ("script", "", ProvinceGroup.Transpile),
+        ("script", "", AiPersonalities),
+        ("script", "", CenterOfTrade),
+        ("script", "", RulerPersonality.Transpile),
+        ("script", "", OpinionModifier.Transpile),
+        ("script", "", StaticModifier.Transpile),
+        ("script", "", EventModifier.Transpile),
+        ("script", "", SubjectType.Transpile),
+        ("script", "", CustomButton.Transpile),
+        ("script", "", CustomIcon.Transpile),
+        ("script", "", CustomTextBox.Transpile),
+        ("script", "", InterfaceNode.Transpile),
+        ("script", "", CustomizableLocalization.Transpile),
+        ("script", " Second", Event.Transpile),
+        ("script", "", TranspileOnActions),
+        ("script", "", TranspileDefines),
+        ("script", "", TranspileLocalisations),
+        ("gfx", "", Gfx),
+        ("map", "", Map),
+        ("unsorted", "", Unsorted),
+    };
 
-        foreach ((string, Func<string>) transpiler in Transpilers)
+        foreach ((string, string, Func<string>) transpiler in Transpilers)
         {
             if (!(args.Contains(transpiler.Item1) || args.Contains("all"))) continue;
 
             TimeSpan start = timer.Elapsed;
-            string type = transpiler.Item2();
+            string type = transpiler.Item3();
             start = timer.Elapsed - start;
-            Console.WriteLine($"{$"Finished Transpiling {type}".PadRight(50).Pastel(ConsoleColor.Cyan)}{$"{start.TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
+            Console.WriteLine($"{$"Finished Transpiling{transpiler.Item2} {type}".PadRight(50).Pastel(ConsoleColor.Cyan)}{$"{start.TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
+        }
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i] != "-u") continue;
+            if (args.Length < i + 1) continue;
+            string file = args[i + 1];
+            Unsorted(file);
         }
 
         if (args.Contains("test"))
         {
-            foreach (string n in args) {
-                if(int.TryParse(n, out int t)) Console.Write($"{Province.Provinces.ElementAt(t - 1).Key} ");
-            }
+            //foreach (string n in args)
+            //{
+            //    if (int.TryParse(n, out int t)) Console.Write($"{Province.Provinces.ElementAt(t - 1).Key} ");
+            //}
         }
 
         OverwriteFile($"warnings.txt", string.Join('\n', warnings));
 
         Console.WriteLine($"Transpilation took: {(double)timer.ElapsedMilliseconds / 1000:0.000} seconds".Pastel(ConsoleColor.Red));
 
-        if (!IsRunningInConsoleOrPowerShell())
-        {
-            Console.WriteLine("Press any key to exit");
-            Console.ReadKey();
-        }
-
         return 0;
-    }
-    static bool IsRunningInConsoleOrPowerShell()
-    {
-        string title = Console.Title;
-
-        // Check if the console or PowerShell window title contains certain keywords
-        if (title.Contains("cmd.exe") || title.Contains("Command Prompt") || title.Contains("powershell.exe"))
-        {
-            return true;
-        }
-
-        return false;
     }
     static string CenterOfTrade()
     {
@@ -241,11 +325,28 @@ internal class Program
             IEnumerable<string> files = GetFiles(fold);
             foreach (string file in files)
             {
-                string cfile = Path.GetRelativePath(directory, file).Replace('\\', '/');
-                string tfile = $"{TranspileTarget}\\map\\{Path.GetRelativePath($"{directory}/{MapFolder}", file)}".Replace('\\', '/');
-                if (File.Exists(tfile)) File.Delete(tfile);
-                File.Copy(cfile, tfile);
+                if (file.EndsWith("colormap.dds"))
+                {
+                    string cfile = Path.GetRelativePath(directory, file).Replace('\\', '/');
+                    frw(cfile, $"{TranspileTarget}\\map\\terrain\\colormap_autumn.dds".Replace('\\', '/'));
+                    frw(cfile, $"{TranspileTarget}\\map\\terrain\\colormap_spring.dds".Replace('\\', '/'));
+                    frw(cfile, $"{TranspileTarget}\\map\\terrain\\colormap_summer.dds".Replace('\\', '/'));
+                    frw(cfile, $"{TranspileTarget}\\map\\terrain\\colormap_winter.dds".Replace('\\', '/'));
+                }
+                else
+                {
+                    frw(
+                        Path.GetRelativePath(directory, file).Replace('\\', '/'), 
+                        $"{TranspileTarget}\\map\\{Path.GetRelativePath($"{directory}/{MapFolder}", file)}".Replace('\\', '/')
+                    );
+                }
             }
+        }
+
+        void frw(string cfile, string tfile)
+        {
+            if (File.Exists(tfile)) File.Delete(tfile);
+            File.Copy(cfile, tfile);
         }
 
         return "Map";
@@ -253,6 +354,15 @@ internal class Program
     static string Gfx()
     {
         Block b = new("spriteTypes", "=", "{");
+
+        CreateTillFolder($"{TranspileTarget}/gfx/special");
+        foreach (string c in GetFiles($"{GfxFolder}/special"))
+        {
+            string s = c.Split('\\').Last();
+
+            if (File.Exists($"{TranspileTarget}/gfx/special/{s}")) File.Delete($"{TranspileTarget}/gfx/special/{s}");
+            File.Copy(c, $"{TranspileTarget}/gfx/special/{s}");
+        }
 
         CreateTillFolder($"{TranspileTarget}/gfx/loose");
         foreach (string c in GetFiles($"{GfxFolder}/loose"))
@@ -417,6 +527,17 @@ internal class Program
             File.Copy(oldPath, newPath);
         }
 
+        CreateTillFolder($"{TranspileTarget}/gfx/flags");
+        foreach (string c in GetFiles($"{GfxFolder}/flags"))
+        {
+            string s = c.Split('\\').Last();
+            string oldPath = $"{GfxFolder}/flags/{s}";
+            string newPath = $"{TranspileTarget}/gfx/flags/{Country.Countries[s.Split('.')[0]].Tag}.tga";
+
+            File.Delete(newPath);
+            File.Copy(oldPath, newPath);
+        }
+
         b.Add("}");
 
         OverwriteFile($"{TranspileTarget}/interface/arc5.gfx", string.Join(' ', b));
@@ -424,6 +545,10 @@ internal class Program
         return "GFX folder";
     }
     static string Unsorted()
+    {
+        return Unsorted("");
+    }
+    static string Unsorted(string fileEnd)
     {
         RFold(UnsortedFolder);
         void RFold(string fold)
@@ -439,26 +564,37 @@ internal class Program
             IEnumerable<string> files = GetFiles(fold);
             foreach (string file in files)
             {
-                string cfile = Path.GetRelativePath(directory, file).Replace('\\', '/');
-                string tfile = $"{TranspileTarget}\\{Path.GetRelativePath($"{directory}/{UnsortedFolder}", file)}".Replace('\\', '/');
-                File.Delete(tfile);
-                File.Copy(cfile, tfile);
+                if(file.EndsWith(fileEnd)) UnsortedSingleFile(file);
             }
         }
 
         return "Unsorted Files";
     }
+    static void UnsortedSingleFile(string file)
+    {
+        string cfile = Path.GetRelativePath(directory, file).Replace('\\', '/');
+        string tfile = $"{TranspileTarget}\\{Path.GetRelativePath($"{directory}/{UnsortedFolder}", file)}".Replace('\\', '/');
+        File.Delete(tfile);
+        File.Copy(cfile, tfile);
+    }
     public static IEnumerable<string> GetFolders(string path)
     {
         string location = Path.Combine(directory, path);
 
-        return from s in Directory.GetDirectories(location) select Path.GetRelativePath(directory, s);
+        return from s in GetDirectories(location) select Path.GetRelativePath(directory, s);
+    }
+    public static string[] GetDirectories(string path)
+    {
+        if (!path.StartsWith(directory)) path = Path.Combine(directory, path);
+
+        return Directory.GetDirectories(path).OrderBy(d => d).ToArray();
     }
     public static string[] GetFiles(string path)
     {
-        string location = Path.Combine(directory, path);
+        if (!Path.Exists(Path.Combine(directory, path))) return new string[] { };
+        if(!path.StartsWith(directory)) path = Path.Combine(directory, path);
 
-        return Directory.GetFiles(location);
+        return Directory.GetFiles(path).OrderBy(d => d).ToArray();
     }
     public static string SpecialUnitTranspile()
     {
@@ -596,6 +732,12 @@ internal class Program
     }
     public static void OverwriteFile(string path, string text, bool AllowFormatting = true, bool BOM = false)
     {
+        bool v = PartialMod.Length == 0;
+        foreach (string PartialModFile in PartialMod)
+        {
+            if (path.EndsWith(PartialModFile)) v = true;
+        }
+        if (!v) return;
         if (BOM)
         {
             byte[] data = Encoding.UTF8.GetBytes(text);
@@ -627,6 +769,16 @@ internal class Program
         {
             File.WriteAllText(path, text);
         }
+    }
+    private static string TranspileDefines()
+    {
+        StringBuilder sb = new();
+        foreach (var v in Compiler.global.Get<ArcObject>("defines"))
+        {
+            sb.AppendLine($"{v.Key} = {v.Value}");
+        }
+        OverwriteFile($"{TranspileTarget}/common/defines/arc.lua", sb.ToString(), false);
+        return "Defines";
     }
     private static string TranspileLocalisations()
     {
@@ -695,8 +847,8 @@ internal class Program
 
             LoadTarget(current);
 
-            foreach (string folder in Directory.GetDirectories(current))
-            {
+            foreach (string folder in GetDirectories(current))
+            {   
                 string next = Path.GetRelativePath(directory, folder) + "/*";
 
                 LoadTarget(next);
@@ -704,7 +856,7 @@ internal class Program
         }
         else if (fileLocation.EndsWith("/"))
         {
-            string[] files = Directory.GetFiles(fileLocation);
+            string[] files = GetFiles(fileLocation);
             foreach (string file in files)
             {
                 try

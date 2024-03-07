@@ -10,17 +10,17 @@ public class Decision : IArcObject
 {
     public static readonly Dict<Decision> Decisions = new();
     public bool IsObject() => true;
-    ArcString Id { get; set; }
-    ArcString Name { get; set; }
-    ArcString Desc { get; set; }
-    ArcBool Major { get; set; }
-    ArcCode? Color { get; set; }
-    ArcTrigger ProvincesToHighlight { get; set; }
-    ArcTrigger Potential { get; set; }
-    ArcTrigger Allow { get; set; }
-    ArcEffect Effect { get; set; }
-    ArcCode AiWillDo { get; set; }
-    ArcInt AiImportance { get; set; }
+    public ArcString Id { get; set; }
+    public ArcString Name { get; set; }
+    public ArcString Desc { get; set; }
+    public ArcBool Major { get; set; }
+    public ArcCode? Color { get; set; }
+    public ArcTrigger ProvincesToHighlight { get; set; }
+    public ArcTrigger Potential { get; set; }
+    public ArcTrigger Allow { get; set; }
+    public ArcEffect Effect { get; set; }
+    public ArcCode AiWillDo { get; set; }
+    public ArcInt AiImportance { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
     public Decision(
         string key,

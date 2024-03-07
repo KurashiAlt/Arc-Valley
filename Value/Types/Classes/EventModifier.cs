@@ -28,7 +28,7 @@ public class StaticModifier : ArcModifier
 
         foreach (var mod in StaticModifiers)
         {
-            mod.Value.Compile(mod.Key, ref b);
+            mod.Value.Compile(mod.Key, ref b, false);
         }
 
         Program.OverwriteFile($"{Program.TranspileTarget}/common/static_modifiers/arc.txt", string.Join(' ', b));

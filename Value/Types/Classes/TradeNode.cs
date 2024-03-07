@@ -152,8 +152,5 @@ public class TradeNode : IArcObject
         Program.OverwriteFile($"{Program.TranspileTarget}/common/tradenodes/arc.txt", sb.ToString());
         return "Trade Nodes";
     }
-    public Walker Call(Walker i, ref Block result)
-    {
-        throw new NotImplementedException();
-    }
+    public Walker Call(Walker i, ref Block result) => Get("location").Call(i, ref result);
 }

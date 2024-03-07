@@ -10,6 +10,7 @@ public class Adjacency : ArcObject
         Adjacencies.Add(id, this);
     }
     public static new Walker Call(Walker i) => Call(i, Constructor);
+    public override string ToString() => Get("id").ToString();
     public static Adjacency Constructor(string id, Args args) => new(id)
     {
         { "id", new ArcString(id) },

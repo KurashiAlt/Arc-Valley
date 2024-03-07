@@ -42,24 +42,29 @@ public static partial class Parser
         {
             if (!insideDoubleQuote && !insideSpecialQuote && circleIndent == 0 && squareIndent == 0)
             {
-                if(str[ndx] == '{')
+                if(str[ndx] == '{' || str[ndx] == '}')
                 {
+                    string a = s.ToString();
+                    if (!string.IsNullOrWhiteSpace(a)) retval.AddLast(a);
+                    s.Clear();
                     s.Append(str[ndx]);
-                    retval.AddLast(s.ToString().Trim());
+                    a = s.ToString();
+                    if (!string.IsNullOrWhiteSpace(a)) retval.AddLast(a);
                     s.Clear();
                     ndx++;
                     continue;
                 }
-                else if(str[ndx] == '}')
+                else if (str[ndx] == '=')
                 {
                     string a = s.ToString();
+                    if (a == "+" || a == "-" || a == ":") goto end;
                     if (!string.IsNullOrWhiteSpace(a)) retval.AddLast(a);
                     s.Clear();
                 }
                 else if (char.IsWhiteSpace(str[ndx]))
                 {
-                    string a = s.ToString();
-                    if (!string.IsNullOrWhiteSpace(a.Trim())) retval.AddLast(a.Trim());
+                    string a = s.ToString().Trim();
+                    if (!string.IsNullOrWhiteSpace(a)) retval.AddLast(a);
                     s.Clear();
                     ndx++;
                     continue;
@@ -71,6 +76,7 @@ public static partial class Parser
             if (str[ndx] == '[') squareIndent++;
             if (str[ndx] == ')') circleIndent--;
             if (str[ndx] == ']') squareIndent--;
+            end:
             s.Append(str[ndx]);
             ndx++;
         }

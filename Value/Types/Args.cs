@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.IO;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 
 namespace Arc;
 
@@ -73,6 +74,15 @@ public class Args
         if (keyValuePairs == null) throw new Exception("Arguments for call were not of type [ArcObject]");
         if (!keyValuePairs.ContainsKey(key)) return default;
 
+        if (Compiler.TryGetVariable(string.Join(' ', keyValuePairs[key]), out var value))
+        {
+            if (value is T @val) return @val;
+            else if (value is ArgList aList)
+            {
+                if (ArgList.list.First.Value is vx v && v.va.Value is T @val2) return @val2;
+            }
+        }
+
         string s = string.Join(' ', keyValuePairs[key]);
         if (!List.CanGet(s)) throw new Exception($"Could not get {s} from {List}");
         T? Item = (T?)List.Get(s);
@@ -114,7 +124,7 @@ public class Args
         va.Add("}");
         return GetArgs(va);
     }
-    public static Walker GetArgs(Walker i, out Args args, int StartOffset = 0, Args? globalInherit = null)
+    public static Walker GetArgs(Walker i, out Args args, int StartOffset = 0, Args? globalInherit = null, bool hasInherit = true)
     {
         /*EXAMPLE
         western_sea_of_thule = {
@@ -173,7 +183,7 @@ public class Args
                         {
                             q.ForceMoveNext();
 
-                            if (Key == "inherit")
+                            if (Key == "inherit" && hasInherit)
                             {
                                 Args inherit = Inheritables[q.Current];
                                 if (inherit.keyValuePairs == null)
@@ -193,6 +203,38 @@ public class Args
                             }
                         }
                         break;
+                    case "=*":
+                        {
+                            q.ForceMoveNext();
+
+                            if (Key == "inherit" && hasInherit)
+                            {
+                                Args inherit = Inheritables[q.Current];
+                                if (inherit.keyValuePairs == null)
+                                    throw new Exception();
+                                foreach (KeyValuePair<string, Block> kvp in inherit.keyValuePairs)
+                                {
+                                    args.keyValuePairs.Add(kvp.Key, kvp.Value);
+                                }
+                            }
+                            else
+                            {
+                                q = Compiler.GetScope(q, out Block Value);
+                                Regex regex = new Regex("\\*([^*]+)\\*");
+                                Block nBlock = new();
+                                foreach(Word w in Value)
+                                {
+                                    nBlock.Add(regex.Replace(w.value, (Match m) => {
+                                        return Compiler.GetVariable<IVariable>(m.Groups[1].Value).ToString();
+                                    }));
+                                }
+                                if (args.keyValuePairs.ContainsKey(Key))
+                                    args.keyValuePairs[Key] = nBlock;
+                                else
+                                    args.keyValuePairs.Add(Key, nBlock);
+                            }
+                        }
+                        break;
                     case "+=":
                         {
                             q.ForceMoveNext();
@@ -203,7 +245,7 @@ public class Args
                             {
                                 Block original = args.keyValuePairs[Key];
                                 if (Parser.HasEnclosingBrackets(Value)) Value = Compiler.RemoveEnclosingBrackets(Value);
-                                if (Parser.HasEnclosingBrackets(original)) Value = Compiler.RemoveEnclosingBrackets(original);
+                                if (Parser.HasEnclosingBrackets(original)) original = Compiler.RemoveEnclosingBrackets(original);
 
                                 args.keyValuePairs[Key] = new Block("{") + original + Value + new Block("}");
                             } 

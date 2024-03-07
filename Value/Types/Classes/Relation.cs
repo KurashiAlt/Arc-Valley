@@ -41,13 +41,11 @@ public class Relation : ArcBlock
             if (emperorVar == null) throw new Exception("No Emperor Defined");
             if (emperorVar is not ArcString) throw new Exception("Emperor of wrong type");
             string emperorKey = ((ArcString)emperorVar).Value;
-            if (!Country.Countries.CanGet(emperorKey)) throw new Exception($"Emperor {emperorKey} not found as a defined country");
-            Country emperor = Country.Countries[emperorKey];
-            b.Add("2500.1.1", "=", "{", "emperor", "=", emperor.Tag, "}");
-        }
-        else
-        {
-            throw new Exception("Emperor does not exist");
+            if (Country.Countries.CanGet(emperorKey))
+            {
+                Country emperor = Country.Countries[emperorKey];
+                b.Add("2500.1.1", "=", "{", "emperor", "=", emperor.Tag, "}");
+            }
         }
 
         Program.OverwriteFile($"{Program.TranspileTarget}/history/diplomacy/arc.txt", string.Join(' ', b));

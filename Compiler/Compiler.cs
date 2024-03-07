@@ -320,6 +320,12 @@ public static partial class Compiler
         { "province_groups", ProvinceGroup.ProvinceGroups },
         { "subject_types", SubjectType.SubjectTypes },
         { "static_modifiers", StaticModifier.StaticModifiers },
+        { "customizable_localizations", CustomizableLocalization.CustomizableLocalizations },
+        { "custom_buttons", CustomButton.CustomButtons },
+        { "custom_text_boxes", CustomTextBox.CustomTextBoxs },
+        { "custom_icons", CustomIcon.CustomIcons },
+        { "interface_files", InterfaceNode.Files },
+        { "defines", new ArcObject() },
         { "default_reform", new ArcCode() },
         { "terrain_declarations", new ArcBlock() },
         { "tree", new ArcBlock() },
@@ -449,8 +455,215 @@ public static partial class Compiler
             "scholarly_research" => ScholarlyResearch(g),
             "subject_type" => SubjectType.Call(g),
             "static_modifier" => StaticModifier.Call(g),
+            "define" => CallDefine(g),
+            "named_effect" => NamedBlock(g),
+            "named_int" => NamedInt(g),
+            "custom_button" => CustomButton.Call(g),
+            "custom_icon" => CustomIcon.Call(g),
+            "custom_text_box" => CustomTextBox.Call(g),
+            "interface_file" => InterfaceNode.Call(g),
+            "customizable_localization" => CustomizableLocalization.Call(g),
+            "_1" => ModType(g),
             _ => throw new Exception($"Unknown Object Type {g.Current} in object declaration")
         };
+    }
+    static int intId = 0;
+    static Decision? logModTypeModifiers = null;
+    static Walker ModType(Walker i)
+    {
+        i.ForceMoveNext();
+
+        string id = GetId(i.Current);
+
+        i = Args.GetArgs(i, out Args args);
+
+        if (logModTypeModifiers == null)
+        {
+            logModTypeModifiers = new Decision(
+                $"modtype_decision_log",
+                new($"Log Kurashi's Modifiers"),
+                new(""),
+                new(false),
+                new("100", "100", "100"),
+                new(),
+                new("ai", "=", "no"),
+                new(),
+                new(),
+                new(),
+                new(400)
+            );
+        }
+
+        new Decision(
+            $"modtype_decision_{id}",
+            new($"Kurashi's Modifiers: {id.Replace('_', ' ')}"),
+            new(""),
+            new(false),
+            new("50", "50", "50"),
+            new(),
+            new("ai", "=", "no"),
+            new(),
+            new("country_event", "=", "{", "id", "=", $"modtype.{intId}", "days", "=", "0", "}"),
+            new(),
+            new(400)
+        );
+
+        Event v = new Event(
+            $"modtype.{intId}",
+            new(false),
+            new($"{id.Replace('_', ' ')} Modifiers"),
+            new(""),
+            new("template_eventPicture"),
+            new(false),
+            new(),
+            new(false),
+            new(false),
+            new(),
+            new(),
+            new(),
+            new(),
+            new(true),
+            new() { new Option(
+                new("Exit"),
+                new(),
+                new(false),
+                null,
+                new(),
+                new()
+            ) },
+            null
+        );
+
+        intId++;
+
+        foreach (var c in args.keyValuePairs ?? throw new Exception())
+        {
+            string key = c.Key;
+            ArcList<ArcString> lst = new ArcList<ArcString>(c.Value, ArcString.Constructor, false);
+
+            v.Options.Add(new Option(
+                new(gmn(key)),
+                new(),
+                new(false),
+                null,
+                null,
+                new("country_event", "=", "{", "id", "=", $"modtype.{intId}", "days", "=", "0", "}")
+            ));
+
+            Event va = new Event(
+                $"modtype.{intId}",
+                new(false),
+                new(gmn(key)),
+                new(""),
+                new("template_eventPicture"),
+                new(false),
+                new(),
+                new(false),
+                new(false),
+                new(),
+                new(),
+                new("country_event", "=", "{", "id", "=", $"{v.Id}", "days", "=", "0", "}"),
+                new(),
+                new(true),
+                new() { new Option(
+                    new("Back"),
+                    new(),
+                    new(false),
+                    null,
+                    new(),
+                    new("country_event", "=", "{", "id", "=", $"{v.Id}", "days", "=", "0", "}")
+                ) },
+                null
+            );
+
+            foreach (var ca in lst)
+            {
+                if (ca == null) continue;
+                va.Options.Add(new Option(
+                    new($"{gmn(c.Key)} = {ca}"),
+                    new(),
+                    new(false),
+                    null,
+                    null,
+                    new(Parser.ParseCode($@"
+new event_modifier modtype_mod_{c.Key}_{fx(ca)} = {{
+    name = ""{gmn(c.Key)} {ca}""
+    modifier = {{
+        {c.Key} = {ca}
+    }}
+}}
+if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
+    remove_country_modifier = modtype_mod_{c.Key}_{fx(ca)}
+}}
+else {{
+    add_country_modifier = {{
+        name = modtype_mod_{c.Key}_{fx(ca)}
+        duration = -1
+    }}
+}}
+"))
+                ));
+
+                logModTypeModifiers.Effect.Value.Add(Parser.ParseCode(@$"
+if [has_country_modifier = modtype_mod_{c.Key}_{fx(ca)}] {{
+    log = ""add_country_modifier = {{""
+    log = ""    name = modtype_mod_{c.Key}_{fx(ca)}""
+    log = ""    duration = -1""
+    log = ""}}""
+}}
+"));
+            }
+
+            intId++;
+        }
+
+        string fx(object ke)
+        {
+            return ke.ToString().Replace(".", "_").Replace("-", "");
+        }
+
+        string gmn(string ke)
+        {
+            if (!ModifierLocs.CanGet(ke)) return ke;
+            return ModifierLocs[ke].Get("text").ToString();
+        }
+        return i;
+    }
+    static Walker NamedInt(Walker i)
+    {
+        i.ForceMoveNext();
+
+        string id = GetId(i.Current);
+
+        i = Args.GetArgs(i, out Args args);
+
+        global.Add(id, new ArcInt(args.block));
+
+        return i;
+    }
+    static Walker NamedBlock(Walker i)
+    {
+        i.ForceMoveNext();
+
+        string id = GetId(i.Current);
+
+        i = Args.GetArgs(i, out Args args);
+
+        global.Add(id, new ArcEffect(args.block));
+
+        return i;
+    }
+    static Walker CallDefine(Walker i)
+    {
+        i.ForceMoveNext();
+
+        string id = GetId(i.Current);
+
+        i = Args.GetArgs(i, out Args args);
+
+        global.Get<ArcObject>("defines").Add(id, new ArcString(args.block));
+
+        return i;
     }
     static Walker ScholarlyResearch(Walker i)
     {
@@ -531,6 +744,11 @@ public static partial class Compiler
         Walker g = new(code);
         do
         {
+            if (g.Current == "breakpoint")
+            {
+                Debugger.Break();
+                continue;
+            }
             if (g.Current == "new")
             {
                 if (!g.MoveNext()) throw new Exception();
@@ -593,6 +811,26 @@ public static partial class Compiler
                     return false;
                 }
             }
+            else if (g.Current == "str:equals")
+            {
+                g = Args.GetArgs(g, out Args args);
+                string str = args.Get(ArcString.Constructor, "string").Value;
+                string value = args.Get(ArcString.Constructor, "value").Value;
+                if (str != value)
+                {
+                    return false;
+                }
+            }
+            else if (g.Current == "int:equals")
+            {
+                g = Args.GetArgs(g, out Args args);
+                int nt = args.Get(ArcInt.Constructor, "int").Value;
+                int value = args.Get(ArcInt.Constructor, "value").Value;
+                if (nt != value)
+                {
+                    return false;
+                }
+            }
         } while (g.MoveNext());
 
         return true;
@@ -645,12 +883,12 @@ public static partial class Compiler
         if (g.Current == "modifier_to_string")
         {
             g = Args.GetArgs(g, out Args args);
-            if(args.block != null && TryGetVariable(string.Join(' ', args.block), out IVariable? vr))
+            if (args.block != null && TryGetVariable(string.Join(' ', args.block), out IVariable? vr))
             {
                 if (vr == null) throw new Exception();
                 if (vr is not ArcModifier) throw new Exception($"{string.Join(' ', args.block)} is not ArcModifier in modifier_to_string function");
                 Block c = new("{");
-                foreach(Word w in ((ArcModifier)vr).Value) 
+                foreach (Word w in ((ArcModifier)vr).Value)
                 {
                     c.Add(w);
                 }
@@ -660,7 +898,7 @@ public static partial class Compiler
             }
             if (args.keyValuePairs == null) throw new Exception();
             string str = "";
-            foreach(KeyValuePair<string, Block> b in args.keyValuePairs)
+            foreach (KeyValuePair<string, Block> b in args.keyValuePairs)
             {
                 ArcObject modInfo = ModifierLocs[b.Key];
                 string text = modInfo.Get<ArcString>("text").Value;
@@ -678,19 +916,42 @@ public static partial class Compiler
                 {
                     bool nValue = new ArcBool(value).Value;
 
-                    str += $"{text}: §{(isGood==nValue?'G':'R')}{value}§!";
+                    str += $"{text}: §{(isGood == nValue ? 'G' : 'R')}{value}§!";
                 }
                 else
                 {
                     double nValue = new ArcFloat(value).Value * multiplier;
 
-                    str += $"{text}: §{(isGood==nValue>=0?'G':'R')}{nValue.ToString($"F{precision}")}{(percent?"%":"")}§!";
+                    str += $"{text}: §{(isGood == nValue >= 0 ? 'G' : 'R')}{nValue.ToString($"F{precision}")}{(percent ? "%" : "")}§!";
                 }
 
                 str += '\n';
             }
             result.Add(str);
             return true;
+        }
+        if (g.Current == "id_to_name")
+        {
+            g = Args.GetArgs(g, out Args args);
+            IVariable i0 = GetVariable<IVariable>(args.block.ToString());
+            string? i1 = i0.ToString();
+            string i2 = i1.Replace('_', ' ');
+            Block i3 = Parser.ParseCode(i2);
+            IEnumerable<string> i4 = from iz in i3 select ToUpperFirstLetter(iz);
+            result.Add(string.Join(' ', i4));
+            return true;
+
+            string ToUpperFirstLetter(string source)
+            {
+                if (string.IsNullOrEmpty(source))
+                    return string.Empty;
+                // convert to char array of the string
+                char[] letters = source.ToCharArray();
+                // upper case the first char
+                letters[0] = char.ToUpper(letters[0]);
+                // return the array made of the new char array
+                return new string(letters);
+            }
         }
         if (g.Current == "breakpoint")
         {
@@ -758,9 +1019,9 @@ public static partial class Compiler
         {
             g.ForceMoveNext(); string varKey = g.Current;
             g.ForceMoveNext(); g.Asssert("as");
-            g.ForceMoveNext(); int start = int.Parse(g.Current);
+            g.ForceMoveNext(); int start = new ArcInt(g.Current).Value;
             g.ForceMoveNext(); g.Asssert("to");
-            g.ForceMoveNext(); int end = int.Parse(g.Current);
+            g.ForceMoveNext(); int end = new ArcInt(g.Current).Value;
             g.ForceMoveNext(); GetScope(g, out Block scope);
             if (Parser.HasEnclosingBrackets(scope)) RemoveEnclosingBrackets(scope);
 
@@ -780,29 +1041,69 @@ public static partial class Compiler
             return true;
         }
         if (g.Current == "if") 
-        { 
+        {
+            if (g.MoveNext())
+            {
+                if (g.Current != "=") g.MoveBack();
+            }
             result.Add("if", "=");
             return true;
         }
         if (g.Current == "else_if") 
-        { 
+        {
+            if (g.MoveNext())
+            {
+                if (g.Current != "=") g.MoveBack();
+            }
             result.Add("else_if", "=");
             return true;
         }
         if (g.Current == "else") 
-        { 
+        {
+            if (g.MoveNext())
+            {
+                if (g.Current != "=") g.MoveBack();
+            }
             result.Add("else", "=");
             return true;
         }
-        if (g.Current.value.EndsWith(','))
+        if (g.Current == "new_tooltip")
         {
-            List<string> s = new();
-            do
+            string key = $"nct_{NctAmount}";
+            result.Add("tooltip", "=", $"nct_{NctAmount}");
+            NctAmount++;
+            g.ForceMoveNext(); g.Asssert("=");
+            g.ForceMoveNext(); string value = g.Current;
+            if (TranspiledString(value, '"', out string? nValue, CompileEffect))
             {
-                s.Add(g.Current.value[..^1]);
-                if (!g.MoveNext()) throw new Exception();
-            } while (g.Current.value.EndsWith(','));
-            s.Add(g.Current.value);
+                if (nValue == null) throw new Exception();
+                Program.Localisation.Add(key, nValue);
+            }
+            else throw new NotImplementedException();
+            return true;
+        }
+        if (g.Current.value.EndsWith(',') || g.Current.value.EndsWith(';'))
+        {
+            string pre = g.Current.value.Split(':')[0];
+            List<string> s = new()
+            {
+                g.Current.value[..^1]
+            };
+            while (g.Current.value.EndsWith(',') || g.Current.value.EndsWith(';'))
+            {
+                if (g.Current.value.EndsWith(';'))
+                {
+                    g.ForceMoveNext();
+                    if (g.Current.value.EndsWith(',') || g.Current.value.EndsWith(';')) s.Add($"{pre}:{g.Current.value[..^1]}");
+                    else s.Add($"{pre}:{g.Current.value}"); ;
+                }
+                else
+                {
+                    g.ForceMoveNext();
+                    if (g.Current.value.EndsWith(',') || g.Current.value.EndsWith(';')) s.Add(g.Current.value[..^1]);
+                    else s.Add(g.Current.value);
+                }
+            }
 
             if (!g.MoveNext()) throw new Exception();
 
@@ -993,9 +1294,63 @@ public static partial class Compiler
                 
             if(NewFunctions<NewEffect, ArcEffect>(g, ref result, NewEffects, CompileEffect)) continue;
 
+            if (g.Current == "float_random")
+            {
+                g = Args.GetArgs(g, out Args args);
+
+                double Chance = args.Get(ArcFloat.Constructor, "chance").Value;
+                string Effect = args.Get(ArcEffect.Constructor, "effect").Compile();
+
+                if (Chance >= 1)
+                {
+                    result.Add(
+                        "random_list", "=", "{",
+                            (int)Chance, "=", "{",
+                                Effect,
+                            "}",
+                            100-(int)Chance, "=", "{",
+                                "random", "=", "{",
+                                    "chance", "=", "1",
+                                    "random_list", "=", "{",
+                                        (int)(Chance % 1 * 100), "=", "{",
+                                            Effect,
+                                        "}",
+                                        100-(int)(Chance % 1 * 100), "=", "{", "}",
+                                    "}",
+                                "}",
+                            "}",
+                        "}"
+                    );
+                }
+                else
+                {
+                    result.Add(
+                        "random", "=", "{",
+                            "chance", "=", "1",
+                            "random_list", "=", "{",
+                                (int)(Chance % 1 * 100), "=", "{",
+                                    Effect,
+                                "}",
+                                100-(int)(Chance % 1 * 100), "=", "{", "}",
+                            "}",
+                        "}"
+                    );
+                }
+
+                continue;
+            }
+
             if (g.Current == "quick_province_modifier")
             {
                 g = Args.GetArgs(g, out Args args);
+
+                ArcString id = args.Get(ArcString.Constructor, "id", new(""));
+                if (id.Value == "")
+                {
+                    id.Value = $"qem_{QuickEventModifiers}";
+                    QuickEventModifiers++;
+                }
+
                 ArcString name = args.Get(ArcString.Constructor, "name");
                 ArcBool permanent = args.Get(ArcBool.Constructor, "permanent", new(true));
                 ArcInt? years = args.Get(ArcInt.Constructor, "years", null);
@@ -1006,27 +1361,34 @@ public static partial class Compiler
                 ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
                 ArcModifier modifier = args.Get(ArcModifier.Constructor, "modifier");
 
-                new EventModifier($"qem_{QuickEventModifiers}", name, modifier);
+                new EventModifier(id.ToString(), name, modifier);
 
                 if (permanent.Value) result.Add("add_permanent_province_modifier", "=", "{");
                 else result.Add("add_province_modifier", "=", "{");
-                result.Add("name", "=", $"qem_{QuickEventModifiers}");
+                result.Add("name", "=", $"{id}");
                 result.Add("duration", "=", duration.Value);
                 if (desc.Value.Count() != 0)
                 {
-                    result.Add("desc", "=", $"qem_{QuickEventModifiers}_desc ");
-                    Program.Localisation.Add($"qem_{QuickEventModifiers}_desc", desc.Value);
+                    result.Add("desc", "=", $"{id}_desc ");
+                    Program.Localisation.Add($"{id}_desc", desc.Value);
                 }
                 if (hidden.Value) result.Add("hidden", "=", "yes");
                 result.Add("}");
 
-                QuickEventModifiers++;
                 continue;
             }
                  
             if (g.Current == "quick_country_modifier")
             {
                 g = Args.GetArgs(g, out Args args);
+
+                ArcString id = args.Get(ArcString.Constructor, "id", new(""));
+                if (id.Value == "")
+                {
+                    id.Value = $"qem_{QuickEventModifiers}";
+                    QuickEventModifiers++;
+                }
+
                 ArcString name = args.Get(ArcString.Constructor, "name");
                 ArcInt? years = args.Get(ArcInt.Constructor, "years", null);
                 ArcInt duration;
@@ -1036,15 +1398,15 @@ public static partial class Compiler
                 ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
                 ArcModifier modifier = args.Get(ArcModifier.Constructor, "modifier");
 
-                new EventModifier($"qem_{QuickEventModifiers}", name, modifier);
+                new EventModifier($"{id}", name, modifier);
 
                 result.Add("add_country_modifier", "=", "{");
-                result.Add("name", "=", $"qem_{QuickEventModifiers}");
+                result.Add("name", "=", $"{id}");
                 result.Add("duration", "=", duration.Value);
                 if (desc.Value.Count() != 0)
                 {
-                    result.Add("desc", "=", $"qem_{QuickEventModifiers}_desc ");
-                    Program.Localisation.Add($"qem_{QuickEventModifiers}_desc", desc.Value);
+                    result.Add("desc", "=", $"{id}_desc ");
+                    Program.Localisation.Add($"{id}_desc", desc.Value);
                 }
                 if (hidden.Value) result.Add("hidden", "=", "yes");
                 result.Add("}");
@@ -1098,7 +1460,7 @@ public static partial class Compiler
                 else throw new NotImplementedException();
                 continue;
             }
-
+            
             Program.Warn($"Unknown Effect: {g.Current}");
             result.Add(g.Current);
         } while (g.MoveNext());
