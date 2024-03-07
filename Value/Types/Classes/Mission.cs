@@ -25,7 +25,7 @@ public class Mission : IArcObject
         Name = name;
         Desc = desc;
         Icon = icon;
-        position.Value += 1;
+        if (position != null) position.Value += 1;
         Position = position;
         CompletedBy = completedBy;
         Required = required;

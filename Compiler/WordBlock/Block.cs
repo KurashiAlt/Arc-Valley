@@ -4,6 +4,7 @@ namespace Arc;
 
 public class Block : LinkedList<Word>
 {
+    public Word toWord() => new(ToString(), (First ?? throw new Exception()).Value);
     public Block(params string[] s)
     {
         foreach(string s2 in s)

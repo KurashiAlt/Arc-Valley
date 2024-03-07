@@ -1,7 +1,7 @@
 ﻿using Arc;
 public class ArcException : Exception
 {
-    public static ArcException Create(params object[] args)
+    public static string CreateMessage(params object[] args)
     {
         List<string> exp = new();
         foreach (object arg in args)
@@ -13,7 +13,11 @@ public class ArcException : Exception
                 exp.Add(arg.ToString());
             }
         }
-        return new ArcException(string.Join('\n', exp));
+        return string.Join('\n', exp);
+    }
+    public static ArcException Create(params object[] args)
+    {
+        return new ArcException(CreateMessage(args));
     }
     private ArcException(string s) : base(s) { }
 }

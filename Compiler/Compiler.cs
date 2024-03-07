@@ -760,7 +760,7 @@ public static partial class Compiler
                 int precision = modInfo.Get<ArcInt>("precision").Value;
                 double multiplier = modInfo.Get<ArcFloat>("multiplier").Value;
 
-                string value = string.Join(' ', b.Value);
+                Word value = b.Value.toWord();
 
                 if (isBool)
                 {
@@ -1045,7 +1045,9 @@ public static partial class Compiler
         {
             string calc = g.Current.Value[1..^1];
 
-            result.Add(Calculator.Calculate(calc));
+            result.Add(
+                Calculator.Calculate(new Word(calc, g))
+            );
             return true;
         }
         if (TryGetVariable(g.Current, out IVariable? var))

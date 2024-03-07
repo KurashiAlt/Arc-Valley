@@ -6,21 +6,21 @@ public class ArcFloat : IArcNumber, IValue
     {
         Value = value;
     }
-    public ArcFloat(string value)
+    public ArcFloat(Word value)
     {
-        if (value.EndsWith('%')) value = (double.Parse(value[..^1]) / 100).ToString("0.000");
+        if (value.EndsWith('%')) value = new Word((double.Parse(value.Value[..^1]) / 100).ToString("0.000"), value);
         Value = Calculator.Calculate(value);
     }
     public ArcFloat(Block b)
     {
-        string value = string.Join(' ', b);
-        if (value.EndsWith('%')) value = (double.Parse(value[..^1]) / 100).ToString("0.000");
+        Word value = b.toWord();
+        if (value.EndsWith('%')) value = new Word((double.Parse(value.Value[..^1]) / 100).ToString("0.000"), value);
         Value = Calculator.Calculate(value);
     }
     public void Set(Block b)
     {
-        string value = string.Join(' ', b);
-        if (value.EndsWith('%')) value = (double.Parse(value[..^1]) / 100).ToString("0.000");
+        Word value = b.toWord();
+        if (value.EndsWith('%')) value = new Word((double.Parse(value.Value[..^1]) / 100).ToString("0.000"), value);
         Value = Calculator.Calculate(value);
     }
     public static ArcFloat Constructor(Block b) => new ArcFloat(b);

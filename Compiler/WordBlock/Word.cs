@@ -5,9 +5,33 @@ public class Word
     public int Line;
     public int File;
     public static List<string> Files = new();
+    public bool EndsWith(char text) => Value.EndsWith(text);
+    public bool EndsWith(string text) => Value.EndsWith(text);
+    public Word ReplaceSelf(char oldValue, char newValue)
+    {
+        Value = Value.Replace(oldValue, newValue);
+        return this;
+    }
+    public Word ReplaceSelf(string oldValue, string newValue)
+    {
+        Value = Value.Replace(oldValue, newValue);
+        return this;
+    }
     public string GetFile()
     {
         return Files[File];
+    }
+    public Word(string value, Walker w)
+    {
+        Value = value;
+        Line = w.Current.Line;
+        File = w.Current.File;
+    }
+    public Word(string value, Word w)
+    {
+        Value = value;
+        Line = w.Line;
+        File = w.File;
     }
     public Word(
         string value,

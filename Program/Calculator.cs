@@ -31,23 +31,33 @@ public static partial class Calculator
 
         return steps;
     }
-    public static double Calculate(string s)
+    public static double Calculate(Word s)
     {
-        s = GetParentheses().Replace(s, delegate (Match m)
+        try
         {
-            return Calculate(m.Groups[1].Value).ToString();
-        });
+            s.Value = GetParentheses().Replace(s, delegate (Match m)
+            {
+                return Calculate(
+                    new Word(m.Groups[1].Value, s)
+                ).ToString();
+            });
 
-        s = s.Replace(',', '.');
-        List<string> steps = GetSteps(s);
+            s.ReplaceSelf(',', '.');
+            List<string> steps = GetSteps(s);
 
-        Operations(ref steps, "^");
-        Operations(ref steps, "/", "*");
-        Operations(ref steps, "+", "-");
+            Operations(ref steps, "^");
+            Operations(ref steps, "/", "*");
+            Operations(ref steps, "+", "-");
 
-        if (steps.Count != 1) throw ArcException.Create(string.Join(' ', steps), s);
+            if (steps.Count != 1) throw ArcException.Create(string.Join(' ', steps), s);
 
-        return GetNum(steps[0]);
+            return GetNum(steps[0]);
+        }
+        catch (Exception)
+        {
+            Console.WriteLine(ArcException.CreateMessage(s));
+            throw;
+        }
     }
     static void Operations(ref List<string> steps, params string[] operators)
     {
@@ -88,7 +98,12 @@ public static partial class Calculator
             }
         }
         
-        return double.Parse(s);
+        if (double.TryParse(s, out var num))
+        {
+            return num;
+        }
+
+        throw ArcException.Create(s);
     }
 
     [GeneratedRegex("\\((.+)\\)")]

@@ -7,17 +7,17 @@ public class ArcInt : IArcNumber, IValue
     {
         Value = value;
     }
-    public ArcInt(string value)
+    public ArcInt(Word value)
     {
         Value = (int)Calculator.Calculate(value);
     }
     public ArcInt(Block b)
     {
-        Value = (int)Calculator.Calculate(string.Join(' ', b));
+        Value = (int)Calculator.Calculate(b.toWord());
     }
     public void Set(Block value)
     {
-        Value = (int)Calculator.Calculate(string.Join(' ', value));
+        Value = (int)Calculator.Calculate(value.toWord());
     }
     public static ArcInt Constructor(Block b) => new ArcInt(b);
     public double GetNum() => Value;
