@@ -1,6 +1,4 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-
-namespace Arc;
+﻿namespace Arc;
 public partial class Compiler
 {
     public static Walker GetScope(Walker i, out Block scope)

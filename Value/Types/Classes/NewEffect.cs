@@ -1,14 +1,5 @@
 ﻿using Arc;
 
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
-using System.Collections.Generic;
-using System.Data.SqlTypes;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 public class ArgList : IArcObject, IArcNumber
 {
     public static LinkedList<Arg> list = new LinkedList<Arg>();

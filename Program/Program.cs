@@ -1,5 +1,4 @@
 ﻿using Arc;
-using Microsoft.CodeAnalysis;
 using Pastel;
 using System.Data;
 using System.Diagnostics;
@@ -95,13 +94,13 @@ internal class Program
         if (args.Contains("selector"))
         {
             TimeSpan start = timer.Elapsed;
-            using ImageFrame<Rgba32> provmap = (ImageFrame<Rgba32>)Image.Load($"{directory}/{MapFolder}/provinces.bmp").Frames[0];
+            using System.Drawing.Bitmap provmap = new($"{directory}/{MapFolder}/provinces.bmp");
             foreach (string file in GetFiles($"{SelectorFolder}"))
             {
                 if (!file.EndsWith(".png")) continue;
-                List<Rgba32> colors = new();
+                List<System.Drawing.Color> colors = new();
 
-                using ImageFrame<Rgba32> img = (ImageFrame<Rgba32>)Image.Load(file).Frames[0];
+                System.Drawing.Bitmap img = new(file);
 
                 string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
 
@@ -109,9 +108,9 @@ internal class Program
                 {
                     for (int y = 0; y < img.Height; y++)
                     {
-                        if (img[x, y].A == 0) continue;
+                        if (img.GetPixel(x, y).A == 0) continue;
 
-                        Rgba32 color = provmap[x, y];
+                        System.Drawing.Color color = provmap.GetPixel(x, y);
 
                         if (!colors.Contains(color)) colors.Add(color);
                     }
@@ -119,16 +118,13 @@ internal class Program
 
                 ArcList<Province> list = new();
                 List<string> keys = new();
-                foreach (KeyValuePair<string, Province> v in from prov in Province.Provinces
-                                                                where colors.Contains(
-                                            new Rgba32(
-                                                byte.Parse(prov.Value.Color.Value.ElementAt(0)),
-                                                byte.Parse(prov.Value.Color.Value.ElementAt(1)),
-                                                byte.Parse(prov.Value.Color.Value.ElementAt(2))
-                                            )
-                                        )
-                                                                select prov)
-                {
+                foreach (KeyValuePair<string, Province> v in 
+                    from prov in Province.Provinces where 
+                        colors.Contains(System.Drawing.Color.FromArgb(
+                            byte.Parse(prov.Value.Color.Value.ElementAt(0)), 
+                            byte.Parse(prov.Value.Color.Value.ElementAt(1)), 
+                            byte.Parse(prov.Value.Color.Value.ElementAt(2))
+                        )) select prov) {
                     list.Add(v.Value);
                     keys.Add(v.Key);
                 }

@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.IO;
+﻿using System.IO;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 

@@ -1,6 +1,4 @@
-﻿
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
+﻿using System;
 using System.Security.Principal;
 using System.Text;
 
