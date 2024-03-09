@@ -53,13 +53,13 @@ public class TradeGood : IArcObject
 
         TradeGood TradeGood = new(
             args.Get(ArcString.Constructor, "name"),
-            args.Get(ArcString.Constructor, "desc"),
+            args.Get(ArcString.Constructor, "desc", new("")),
             args.Get(ArcCode.Constructor, "color"),
-            args.Get(ArcModifier.Constructor, "modifier"),
-            args.Get(ArcModifier.Constructor, "province"),
+            args.Get(ArcModifier.Constructor, "modifier", new()),
+            args.Get(ArcModifier.Constructor, "province", new()),
             args.Get(ArcFloat.Constructor, "base_price"),
-            args.Get(ArcBool.Constructor, "is_gold"),
-            args.Get(ArcCode.Constructor, "chance"),
+            args.Get(ArcBool.Constructor, "is_gold", new(false)),
+            args.Get(ArcCode.Constructor, "chance", new()),
             new(id)
         );
 
@@ -71,12 +71,24 @@ public class TradeGood : IArcObject
     public Walker Call(Walker i, ref Block result) { result.Add(Id.Value); return i; }
     public static string Transpile()
     {
-        StringBuilder sb = new("unknown = { color = { 0.5 0.5 0.5 } } ");
-        StringBuilder sa = new("unknown = { base_price = 0 } ");
+        Block sb = new("");
+        Block sa = new("");
         foreach (TradeGood tradeGood in TradeGoods.Values())
         {
-            sb.Append($"{tradeGood.Id} = {{ color = {{ {tradeGood.Color} }} modifier = {{ {tradeGood.Modifier.Compile()} }} province = {{ {tradeGood.Province.Compile()} }} chance = {{ {tradeGood.Chance} }} }} ");
-            sa.Append($"{tradeGood.Id} = {{ base_price = {tradeGood.BasePrice} goldtype = {tradeGood.IsGold} }} ");
+            sb.Add(
+                tradeGood.Id, "=", "{",
+                    tradeGood.Color.Compile("color"),
+                    tradeGood.Modifier.Compile("modifier"),
+                    tradeGood.Province.Compile("province"),
+                    tradeGood.Chance.Compile("chance"),
+                "}"
+            );
+            sa.Add(
+                tradeGood.Id, "=", "{", 
+                    "base_price", "=", tradeGood.BasePrice,
+                    "goldtype", "=", tradeGood.IsGold, 
+                "}"
+            );
             Program.Localisation.Add(tradeGood.Id.Value, tradeGood.Name.Value);
             Program.Localisation.Add($"{tradeGood.Id}DESC", tradeGood.Description.Value);
         }

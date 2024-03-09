@@ -118,7 +118,15 @@ public class Decision : IArcObject
         Block s = new("country_decisions", "=", "{");
         foreach (Decision Decision in Decisions.Values())
         {
-            Decision.Transpile(ref s);
+            try
+            {
+                Decision.Transpile(ref s);
+            }
+            catch
+            {
+                Console.WriteLine(ArcException.CreateMessage(Decision));
+                throw;
+            }
         }
         s.Add("}");
         Program.OverwriteFile($"{Program.TranspileTarget}/decisions/arc.txt", string.Join(' ', s));

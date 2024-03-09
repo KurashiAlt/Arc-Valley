@@ -15,12 +15,24 @@ public class ArcObject : Dict<IVariable?>, Arg
         return i;
     }
     public virtual void Initialize(Args args) => throw ArcException.Create(this, args);
-    public override Walker Call(Walker i, ref Block result) { result.Add(Get<ArcString>("id").Value); return i; }
+    public override Walker Call(Walker i, ref Block result)
+    {
+        try
+        {
+            result.Add(Get<ArcString>("id").Value); 
+        }
+        catch (Exception)
+        {
+            Console.WriteLine(ArcException.CreateMessage(i, result, this));
+            throw;
+        }
+        return i; 
+    }
     public static Arg FromArgs<T>(Args args, T b) where T : ArcObject
     {
         ArcObject a = new ArcObject();
 
-        foreach (KeyValuePair<string, Type> kvp in b.Get<Dict<Type>>("args"))
+        foreach (KeyValuePair<string, ArcType> kvp in b.Get<Dict<ArcType>>("args"))
         {
             if (kvp.Value.Nullable && !args.keyValuePairs.ContainsKey(kvp.Key)) continue;
 

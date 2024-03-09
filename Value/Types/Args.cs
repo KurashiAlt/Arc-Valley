@@ -30,7 +30,7 @@ public class Args
     {
         if (keyValuePairs == null) throw ArcException.Create($"Non object type arguments; Trying to get: {key}", key, this);
         if (!keyValuePairs.ContainsKey(key)) throw ArcException.Create($"Arguments do not include {key}", key, this);
-        if (Compiler.TryGetVariable(string.Join(' ', keyValuePairs[key]), out var value))
+        if (Compiler.TryGetVariable(keyValuePairs[key].ToString(), out var value))
         {
             if(value is T @val) return @val;
             else if (value is ArgList aList)

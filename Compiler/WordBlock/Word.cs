@@ -5,6 +5,8 @@ public class Word
     public int Line;
     public int File;
     public static List<string> Files = new();
+    public bool StartsWith(char text) => Value.StartsWith(text);
+    public bool StartsWith(string text) => Value.StartsWith(text);
     public bool EndsWith(char text) => Value.EndsWith(text);
     public bool EndsWith(string text) => Value.EndsWith(text);
     public Word ReplaceSelf(char oldValue, char newValue)

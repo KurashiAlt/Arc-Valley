@@ -1053,7 +1053,15 @@ public static partial class Compiler
         if (TryGetVariable(g.Current, out IVariable? var))
         {
             if (var == null) throw ArcException.Create(g);
-            g = var.Call(g, ref result);
+            try
+            {
+                g = var.Call(g, ref result);
+            }
+            catch
+            {
+                Console.WriteLine(ArcException.CreateMessage(g, result));
+                throw new Exception();
+            }
             return true;
         }
         return false;
@@ -1326,7 +1334,7 @@ public static partial class Compiler
     }
     public static bool NewFunctions<T, T2>(Walker g, ref Block result, List<(string, T)> newList, Func<Block, string> compile) where T : ArcObject where T2 : ArcBlock
     {
-        string key = g.Current;
+        Word key = g.Current;
         IEnumerable<(string, T)> ThisFunctions = from c in newList where c.Item1 == key select c;
         if (ThisFunctions.Any())
         {
@@ -1341,32 +1349,12 @@ public static partial class Compiler
                 {
                     T b = effect.Item2;
                     Arg a;
-                    if (b.Get<vvC>("args") is Dict<Type>) a = ArcObject.FromArgs(args, b);
+                    if (b.Get<vvC>("args") is Dict<ArcType>) a = ArcObject.FromArgs(args, b);
                     else a = vx.FromArgs(args, b);
 
                     ArgList.list.AddFirst(a);
 
-                    if(b.CanGet("transpile")) b.Get<T2>("transpile").Compile(ref result);
-                    else
-                    {
-                        if(ArgList.list.First() is ArcObject @object)
-                        {
-                            result.Add(key, "=", "{");
-                            foreach(KeyValuePair<string, IVariable> t in @object)
-                            {
-                                if(t.Value is ArcBlock)
-                                {
-                                    result.Add(t.Key, "=", "{", compile(new($"args:{t.Key}")), "}");
-                                }
-                                else result.Add(t.Key, "=", compile(new($"args:{t.Key}")));
-                            }
-                            result.Add("}");
-                        }
-                        else
-                        {
-                            result.Add(key, "=", compile(new("args")));
-                        }
-                    }
+                    b.Get<T2>("transpile").Compile(ref result);
 
                     ArgList.list.RemoveFirst();
                     return true;
