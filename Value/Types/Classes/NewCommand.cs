@@ -78,21 +78,7 @@ public class vx : Arg
         va = new(v);
     }
 }
-public interface vvC : IVariable
-{
-    public static vvC Constructor(Block b)
-    {
-        if (b.Count == 1)
-        {
-            return ArcType.Constructor(b);
-        }
-        else
-        {
-            return Dict<ArcType>.Constructor(ArcType.Constructor)(b);
-        }
-    }
-}
-public class ArcType : IValue, vvC
+public class ArcType : IValue
 {
     public static Dictionary<string, ArcType> Types = new Dictionary<string, ArcType>()
     {

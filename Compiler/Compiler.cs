@@ -1349,7 +1349,7 @@ public static partial class Compiler
                 {
                     NewCommand b = effect.Item2;
                     Arg a;
-                    if (b.Get<vvC>("args") is Dict<ArcType>) a = ArcObject.FromArgs(args, b);
+                    if (b.Get("args") is Dict<ArcType>) a = ArcObject.FromArgs(args, b);
                     else a = vx.FromArgs(args, b);
 
                     ArgList.list.AddFirst(a);
