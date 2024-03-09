@@ -5,6 +5,7 @@ public class ArgList : IArcObject, IArcNumber
     public static LinkedList<IVariable> list = new();
     public bool CanGet(string indexer)
     {
+        if (list.Count == 0) return false;
         IVariable arg = list.First();
         if (arg is IArcObject @object) return @object.CanGet(indexer);
         if (arg is IVariable bc)
@@ -51,10 +52,10 @@ public class ArcType : IValue
 {
     public static Dictionary<string, ArcType> Types = new Dictionary<string, ArcType>()
     {
-        { "effect", new(ArcEffect.Constructor) },
-        { "modifier", new(ArcModifier.Constructor) },
-        { "trigger", new(ArcTrigger.Constructor) },
-        { "block", new(ArcCode.Constructor) },
+        { "effect", new(ArcEffect.NamelessConstructor) },
+        { "modifier", new(ArcModifier.NamelessConstructor) },
+        { "trigger", new(ArcTrigger.NamelessConstructor) },
+        { "block", new(ArcCode.NamelessConstructor) },
         { "bool", new(ArcBool.Constructor) },
         { "string", new(ArcString.Constructor) },
         { "float", new(ArcFloat.Constructor) },
@@ -65,17 +66,17 @@ public class ArcType : IValue
             return c;
         })},
         { "base_scope", new((Block b) => {
-            Word tag = b.toWord();
+            Word tag = b.ToWord();
             if (Compiler.IsBaseScope(tag) || tag.StartsWith("event_target")) return ArcString.Constructor(b);
             throw ArcException.Create(b, $"{tag} is not a base_scope");
         }) },
         { "country_scope", new((Block b) => {
-            Word tag = b.toWord();
+            Word tag = b.ToWord();
             if (Compiler.IsDefaultScope(tag) || Compiler.IsBaseScope(tag) || tag.StartsWith("event_target") || tag == "emperor") return ArcString.Constructor(b);
             return Country.Countries.Get(tag) ?? throw ArcException.Create(b);
         })},
         { "province_scope", new((Block b) => {
-            Word tag = b.toWord();
+            Word tag = b.ToWord();
             if (Compiler.IsDefaultScope(tag) || Compiler.IsBaseScope(tag) || tag.StartsWith("event_target") || tag == "emperor") return ArcString.Constructor(b);
             return Province.Provinces.Get(tag) ?? throw ArcException.Create(b);
         })},
@@ -160,7 +161,7 @@ public class ArcType : IValue
     public ArcType(Func<string, IVariable?> get, bool nullable = false)
     {
         Nullable = nullable;
-        ThisConstructor = (Block b) => get(string.Join(' ', b));
+        ThisConstructor = (Block b) => get(b.ToWord());
     }
     public ArcType(Func<Block, IVariable> constructor, bool nullable = false)
     {
@@ -264,8 +265,9 @@ public class NewCommand : ArcObject
             case CompileType.Modifier:
                 transpile = new ArcModifier();
                 break;
-            default: throw ArcException.Create(id, args, commandType, list);
+            default: throw ArcException.Create(id, args, commandType, list, type);
         }
+        transpile.ShouldBeCompiled = false;
 
         if (block != null)
         {

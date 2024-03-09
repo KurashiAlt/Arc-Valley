@@ -2,7 +2,7 @@
 
 public partial class Compiler
 {
-    public static T GetVariable<T>(string locator)
+    public static T GetVariable<T>(Word locator)
     {
         if(TryGetVariable(locator, out IVariable? var)) 
         {

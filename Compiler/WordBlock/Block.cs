@@ -1,10 +1,15 @@
-﻿using System.Text;
+﻿using System.ComponentModel.Design;
+using System.Text;
 
 namespace Arc;
 
 public class Block : LinkedList<Word>
 {
-    public Word toWord() => new(ToString(), (First ?? throw new Exception()).Value);
+    public Word ToWord()
+    {
+        if (First != null) return new(ToString(), (First).Value);
+        return new Word(ToString());
+    }
     public Block(params string[] s)
     {
         foreach(string s2 in s)

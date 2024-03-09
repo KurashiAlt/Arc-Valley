@@ -90,7 +90,7 @@ public static partial class Calculator
     }
     static double GetNum(string s)
     {
-        if(Compiler.TryGetVariable(s, out IVariable? var))
+        if(Compiler.TryGetVariable(new Word(s, 0, "unknown"), out IVariable? var))
         {
             if(var is IArcNumber)
             {

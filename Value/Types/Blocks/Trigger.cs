@@ -1,0 +1,40 @@
+﻿namespace Arc;
+public class ArcTrigger : ArcBlock
+{
+    public ArcTrigger()
+    {
+        Value = new();
+        Id = CompileList.Count;
+        CompileList.Add(this);
+    }
+    public ArcTrigger(Block value, bool t = false)
+    {
+        if (!t)
+            if (Parser.HasEnclosingBrackets(value))
+                value = Compiler.RemoveEnclosingBrackets(value);
+        Value = value;
+        Id = CompileList.Count;
+        CompileList.Add(this);
+    }
+    public ArcTrigger(params string[] s)
+    {
+        Value = new()
+        {
+            s
+        };
+        Id = CompileList.Count;
+        CompileList.Add(this);
+    }
+    public override string Compile()
+    {
+        if (!ShouldBeCompiled) return Compiler.CompileTrigger(Value);
+        Compiled ??= Compiler.CompileTrigger(Value);
+        return Compiled;
+    }
+    public override string Compile(Block b)
+    {
+        return Compiler.CompileTrigger(b);
+    }
+    internal static ArcTrigger Constructor(Block block) => new(block);
+    internal static ArcTrigger NamelessConstructor(Block block) => new(block) { ShouldBeCompiled = false };
+}

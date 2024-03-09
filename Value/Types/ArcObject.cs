@@ -37,7 +37,7 @@ public class ArcObject : Dict<IVariable?>
             if (kvp.Value.Nullable && !args.keyValuePairs.ContainsKey(kvp.Key)) continue;
 
             ArcString d = args.Get(ArcString.Constructor, kvp.Key);
-            if (Compiler.TryGetVariable(d.Value, out IVariable? var))
+            if (Compiler.TryGetVariable(new Word(d.Value), out IVariable? var))
             {
                 a.Add(kvp.Key, var);
             }

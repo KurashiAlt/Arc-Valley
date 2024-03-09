@@ -36,7 +36,7 @@ public class Relation : ArcBlock
             string.Join(' ', from rel in Relations.Values select rel.Compile())
         };
 
-        if(Compiler.TryGetVariable("hre_defines:emperor", out IVariable? emperorVar))
+        if(Compiler.TryGetVariable(new Word("hre_defines:emperor"), out IVariable? emperorVar))
         {
             if (emperorVar == null) throw new Exception("No Emperor Defined");
             if (emperorVar is not ArcString) throw new Exception("Emperor of wrong type");

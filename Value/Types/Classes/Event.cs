@@ -132,7 +132,7 @@ public class Event : IArcObject
     public ArcTrigger Trigger { get; set; }
     public ArcEffect Immediate { get; set; }
     public ArcEffect After { get; set; }
-    public ArcFactor MeanTimeToHappen { get; set; }
+    public ArcTrigger MeanTimeToHappen { get; set; }
     public ArcBool IsTriggeredOnly { get; set; }
     public ArcList<Option> Options { get; set; }
     bool Compiled = false;
@@ -150,7 +150,7 @@ public class Event : IArcObject
         ArcTrigger trigger,
         ArcEffect immediate,
         ArcEffect after,
-        ArcFactor meanTimeToHappen,
+        ArcTrigger meanTimeToHappen,
         ArcBool isTriggeredOnly,
         ArcList<Option> options,
         Dict<ArcTrigger>? pictures,
@@ -216,7 +216,7 @@ public class Event : IArcObject
             args.Get(ArcTrigger.Constructor, "trigger", new()),
             args.Get(ArcEffect.Constructor, "immediate", new()),
             args.Get(ArcEffect.Constructor, "after", new()),
-            args.Get(ArcFactor.Constructor, "mean_time_to_happen", new()),
+            args.Get(ArcTrigger.Constructor, "mean_time_to_happen", new()),
             args.Get(ArcBool.Constructor, "is_triggered_only", new(true)),
             args.Get(ArcList<Option>.GetConstructor(Option.Constructor), "options"),
             args.Get(Dict<ArcTrigger>.Constructor(ArcTrigger.Constructor), "pictures", null)

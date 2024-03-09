@@ -4,6 +4,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 internal class Program
 {
     public static Stopwatch timer = Stopwatch.StartNew();
@@ -165,6 +166,32 @@ internal class Program
             Console.WriteLine($"{$"Finished Loading Cached {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
         }
 
+        TimeSpan tstart = timer.Elapsed;
+        var vList = (from c in ArcBlock.CompileList where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
+
+        int ti = 0;
+        while (vList.Any())
+        {
+            foreach (ArcBlock v in vList)
+            {
+                try
+                {
+                    v.Compile();
+                }
+                catch (Exception e)
+                {
+                    v.Compiled = "ERROR";
+                    Console.WriteLine(e.Message);
+                }
+                ti++;
+                if (ti % 1000 == 0) Console.WriteLine($"Has finished compiling {ti} blocks".Pastel(ConsoleColor.Magenta));
+            }
+
+            vList = (from c in ArcBlock.CompileList where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
+        }
+        TimeSpan tend = timer.Elapsed;
+        Console.WriteLine($"{$"Finished Compiling Code".PadRight(50).Pastel(ConsoleColor.Magenta)}{$"{(tend - tstart).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Magenta)}");
+
         (string, string, Func<string>)[] Transpilers =
         {
         ("script", "", Incident.Transpile),
@@ -222,7 +249,6 @@ internal class Program
         ("script", "", CustomTextBox.Transpile),
         ("script", "", InterfaceNode.Transpile),
         ("script", "", CustomizableLocalization.Transpile),
-        ("script", " Second", Event.Transpile),
         ("script", "", TranspileOnActions),
         ("script", "", TranspileDefines),
         ("script", "", TranspileLocalisations),
@@ -266,7 +292,7 @@ internal class Program
     static string CenterOfTrade()
     {
         Block COTFile = new();
-        foreach (KeyValuePair<string, ArcCode> cot in Compiler.GetVariable<Dict<ArcCode>>("centers_of_trade"))
+        foreach (KeyValuePair<string, ArcCode> cot in Compiler.GetVariable<Dict<ArcCode>>(new Word("centers_of_trade")))
         {
             cot.Value.Compile(cot.Key, ref COTFile);
         }
@@ -276,7 +302,7 @@ internal class Program
     static string AiPersonalities()
     {
         Block AiPersonalityFile = new();
-        foreach (KeyValuePair<string, ArcTrigger> personality in Compiler.GetVariable<Dict<ArcTrigger>>("ai_personalities"))
+        foreach (KeyValuePair<string, ArcTrigger> personality in Compiler.GetVariable<Dict<ArcTrigger>>(new Word("ai_personalities")))
         {
             personality.Value.Compile(personality.Key, ref AiPersonalityFile);
         }
@@ -651,6 +677,8 @@ internal class Program
     }
     public static void OverwriteFile(string path, string text, bool AllowFormatting = true, bool BOM = false)
     {
+        text = ReplaceBlocks(text);
+
         bool v = PartialMod.Length == 0;
         foreach (string PartialModFile in PartialMod)
         {
@@ -687,6 +715,20 @@ internal class Program
         else
         {
             File.WriteAllText(path, text);
+        }
+
+        string ReplaceBlocks(string text)
+        {
+            Regex blockSpot = new Regex("__ARC\\.BLOCK__ = (\\d+)");
+            while (text.Contains("__ARC.BLOCK__"))
+            {
+                text = blockSpot.Replace(text, new MatchEvaluator((Match m) =>
+                {
+                    int id = int.Parse(m.Groups[1].Value);
+                    return ArcBlock.CompileList[id].Compiled;
+                }));
+            }
+            return text;
         }
     }
     private static string TranspileDefines()
@@ -745,9 +787,7 @@ internal class Program
 
         ArcEffect OnBiYearlyPulse = OnActions["on_bi_yearly_pulse"];
 
-        OnBiYearlyPulse.Value.Add("random_events", "=", "{");
-        OnBiYearlyPulse.Value.Add(BiYearlyEvents);
-        OnBiYearlyPulse.Value.Add("}");
+        OnBiYearlyPulse.Compiled += $"random_events = {{ {BiYearlyEvents} }}";
 
         foreach (KeyValuePair<string, ArcEffect> OnAction in OnActions)
         {

@@ -13,13 +13,13 @@ public class ArcFloat : IArcNumber, IValue
     }
     public ArcFloat(Block b)
     {
-        Word value = b.toWord();
+        Word value = b.ToWord();
         if (value.EndsWith('%')) value = new Word((double.Parse(value.Value[..^1]) / 100).ToString("0.000"), value);
         Value = Calculator.Calculate(value);
     }
     public void Set(Block b)
     {
-        Word value = b.toWord();
+        Word value = b.ToWord();
         if (value.EndsWith('%')) value = new Word((double.Parse(value.Value[..^1]) / 100).ToString("0.000"), value);
         Value = Calculator.Calculate(value);
     }

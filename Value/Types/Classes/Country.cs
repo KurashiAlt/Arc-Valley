@@ -201,9 +201,7 @@ public class Country : IArcObject
 
         if (StartingReform != null) countryHistory.Add("add_government_reform", "=", StartingReform.Get().Id);
 
-        Compiler.global.Add("$tag", this);
-        countryHistory.Add(History.Compile());
-        Compiler.global.Delete("$tag");
+        countryHistory.Add(History.Compile().Replace("$tag", Tag.Value));
 
         Program.OverwriteFile($"{Program.TranspileTarget}/history/countries/{Tag}.txt", string.Join(' ', countryHistory));
 

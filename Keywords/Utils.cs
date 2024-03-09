@@ -38,11 +38,11 @@ public partial class Compiler
         scope.RemoveLast();
         return scope;
     }
-    public static bool TryGetVariable(string locator, out IVariable? var)
+    public static bool TryGetVariable(Word locator, out IVariable? var)
     {
-        return TryGetVariable(locator, out var, new Func<string, IVariable>((string indexer) => global[indexer]), global.CanGet);
+        return TryGetVariable(locator, out var, new Func<string, IVariable>(global.Get), global.CanGet);
     }
-    public static bool TryGetVariable(string locator, out IVariable? var, Func<string, IVariable> Get, Func<string, bool> CanGet)
+    public static bool TryGetVariable(string locator, out IVariable? var, Func<string, IVariable?> Get, Func<string, bool> CanGet)
     {
         if (locator.StartsWith("trigger_value", "event_target") || locator.Contains(' ') || locator.EnclosedBy('`'))
         {
@@ -61,6 +61,7 @@ public partial class Compiler
                 if (KeyLocator.Length > f + 1)
                 {
                     IVariable v = Get(currentKey);
+                    if (v == null) throw ArcException.Create(locator, Get, CanGet);
                     if (v is IArcObject)
                     {
                         IArcObject n = (IArcObject)v;

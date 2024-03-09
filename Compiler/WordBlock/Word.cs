@@ -4,7 +4,10 @@ public class Word
     public string Value;
     public int Line;
     public int File;
-    public static List<string> Files = new();
+    public static List<string> Files = new()
+    {
+        "unknown"
+    };
     public bool StartsWith(char text) => Value.StartsWith(text);
     public bool StartsWith(string text) => Value.StartsWith(text);
     public bool EndsWith(char text) => Value.EndsWith(text);
@@ -22,6 +25,12 @@ public class Word
     public string GetFile()
     {
         return Files[File];
+    }
+    public Word(string value)
+    {
+        Value = value;
+        Line = 0;
+        File = 0;
     }
     public Word(string value, Walker w)
     {

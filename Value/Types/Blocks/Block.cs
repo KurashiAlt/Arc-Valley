@@ -1,24 +1,14 @@
 ﻿namespace Arc;
 public class ArcBlock : IValue
 {
+    public static List<ArcBlock> CompileList = new();
+    public string? Compiled;
+    public bool ShouldBeCompiled = true;
+    public int Id;
     public Block Value { get; set; }
     public ArcBlock()
     {
         Value = new();
-    }
-    public ArcBlock(params string[] s)
-    {
-        Value = new()
-        {
-            s
-        };
-    }
-    public ArcBlock(Block value, bool t = false)
-    {
-        if (!t)
-            if (Parser.HasEnclosingBrackets(value))
-                value = Compiler.RemoveEnclosingBrackets(value);
-        Value = value;
     }
     public ArcBlock RemoveEnclosingBrackets()
     {
@@ -33,7 +23,6 @@ public class ArcBlock : IValue
         Value = value;
     }
     public bool IsEmpty() => Value.Count == 0;
-    public bool IsBlock() => true;
     public Walker Call(Walker i, ref Block result)
     {
         if (i.MoveNext())
@@ -49,6 +38,8 @@ public class ArcBlock : IValue
                         if (Parser.HasEnclosingBrackets(newbv)) newbv = Compiler.RemoveEnclosingBrackets(newbv);
 
                         Value.Add(Compile(newbv));
+
+                        Compiled = null;
                     }
                     break;
                 case "+=":
@@ -63,6 +54,8 @@ public class ArcBlock : IValue
                         {
                             Value.Add(s);
                         }
+
+                        Compiled = null;
                     }
                     break;
                 case ":=":
@@ -74,18 +67,25 @@ public class ArcBlock : IValue
                         if (Parser.HasEnclosingBrackets(newbv)) newbv = Compiler.RemoveEnclosingBrackets(newbv);
 
                         Value = newbv;
+
+                        Compiled = null;
                     }
                     break;
 
                 default:
                     {
                         i.MoveBack();
-                        result.Add(Compile());
+                        if (ShouldBeCompiled) result.Add($"__ARC.BLOCK__ = {Id}");
+                        else result.Add(Compile());
                     }
                     break;
             }
         }
-        else result.Add(Compile());
+        else
+        {
+            if (ShouldBeCompiled) result.Add($"__ARC.BLOCK__ = {Id}");
+            else result.Add(Compile());
+        }
         return i;
     }
     public virtual string Compile(Block b)
@@ -98,9 +98,9 @@ public class ArcBlock : IValue
     }
     public string Compile(string wrapper)
     {
-        string s = Compile();
-        if (s == "") return "";
-        return $"{wrapper} = {{ {s} }}";
+        Block b = new();
+        Compile(wrapper, ref b);
+        return b.ToString();
     }
     public void Compile(ref Block b)
     {

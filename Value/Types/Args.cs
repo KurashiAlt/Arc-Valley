@@ -36,7 +36,7 @@ public class Args
     {
         if (keyValuePairs == null) throw ArcException.Create($"Non object type arguments; Trying to get: {key}", key, this);
         if (!keyValuePairs.ContainsKey(key)) throw ArcException.Create($"Arguments do not include {key}", key, this);
-        if (Compiler.TryGetVariable(keyValuePairs[key].ToString(), out var value))
+        if (Compiler.TryGetVariable(keyValuePairs[key].ToWord(), out var value))
         {
             if(value is T @val) return @val;
             else if (value is ArgList aList)
@@ -79,7 +79,7 @@ public class Args
         if (keyValuePairs == null) throw ArcException.Create("Arguments for call were not of type [ArcObject]", List, key, this);
         if (!keyValuePairs.ContainsKey(key)) return default;
 
-        if (Compiler.TryGetVariable(string.Join(' ', keyValuePairs[key]), out var value))
+        if (Compiler.TryGetVariable(keyValuePairs[key].ToWord(), out var value))
         {
             if (value is T @val) return @val;
             else if (value is ArgList aList)
@@ -228,7 +228,7 @@ public class Args
                                 foreach(Word w in Value)
                                 {
                                     nBlock.Add(regex.Replace(w.Value, (Match m) => {
-                                        return Compiler.GetVariable<IVariable>(m.Groups[1].Value).ToString();
+                                        return Compiler.GetVariable<IVariable>(new Word(m.Groups[1].Value)).ToString();
                                     }));
                                 }
                                 if (args.keyValuePairs.ContainsKey(Key))

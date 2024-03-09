@@ -13,11 +13,11 @@ public class ArcInt : IArcNumber, IValue
     }
     public ArcInt(Block b)
     {
-        Value = (int)Calculator.Calculate(b.toWord());
+        Value = (int)Calculator.Calculate(b.ToWord());
     }
     public void Set(Block value)
     {
-        Value = (int)Calculator.Calculate(value.toWord());
+        Value = (int)Calculator.Calculate(value.ToWord());
     }
     public static ArcInt Constructor(Block b) => new ArcInt(b);
     public double GetNum() => Value;

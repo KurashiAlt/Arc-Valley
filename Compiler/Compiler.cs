@@ -27,7 +27,7 @@ public static partial class Compiler
             { "world_trade_center", new("level", "=", "3", "cost", "=", "1000", "development", "=", "25", "type", "=", "inland", "province_modifiers", "=", "{", "province_trade_power_value", "=", "25", "local_institution_spread", "=", "0.3", "}", "state_modifiers", "=", "{", "local_development_cost", "=", "-0.1", "local_manpower_modifier", "=", "0.33", "allowed_num_of_buildings", "=", "1", "}") },
 
         } },
-        { "bi_yearly_events", new ArcBlock() },
+        { "bi_yearly_events", new ArcBlock() { ShouldBeCompiled = false } },
         { "on_actions", new Dict<ArcEffect>() {
             { "on_startup", new() },
             { "on_religion_change", new() },
@@ -637,13 +637,13 @@ public static partial class Compiler
             {
                 g = Args.GetArgs(g, out Args args);
                 if (args.block == null) throw ArcException.Create("Unknown Error: Null Reference", g);
-                string key = string.Join(' ', args.block);
+                Word key = args.block.ToWord();
                 if (!TryGetVariable(key, out _)) return false;
             }
             else if (g.Current == "force:str:contains")
             {
                 g = Args.GetArgs(g, out Args args);
-                string str = GetVariable<IVariable>(args.Get("variable").ToString()).ToString();
+                string str = GetVariable<IVariable>(args.Get("variable").ToWord()).ToString();
                 string value = args.Get(ArcString.Constructor, "value").Value;
                 if (!str.Contains(value))
                 {
@@ -733,7 +733,7 @@ public static partial class Compiler
         if (g.Current == "modifier_to_string")
         {
             g = Args.GetArgs(g, out Args args);
-            if (args.block != null && TryGetVariable(string.Join(' ', args.block), out IVariable? vr))
+            if (args.block != null && TryGetVariable(args.block.ToWord(), out IVariable? vr))
             {
                 if (vr == null) throw ArcException.Create("Unknown Error: Null Reference", g);
                 if (vr is not ArcModifier) throw ArcException.Create($"{string.Join(' ', args.block)} is not ArcModifier in modifier_to_string function", g);
@@ -760,7 +760,7 @@ public static partial class Compiler
                 int precision = modInfo.Get<ArcInt>("precision").Value;
                 double multiplier = modInfo.Get<ArcFloat>("multiplier").Value;
 
-                Word value = b.Value.toWord();
+                Word value = b.Value.ToWord();
 
                 if (isBool)
                 {
@@ -783,7 +783,7 @@ public static partial class Compiler
         if (g.Current == "id_to_name")
         {
             g = Args.GetArgs(g, out Args args);
-            IVariable i0 = GetVariable<IVariable>(args.block.ToString());
+            IVariable i0 = GetVariable<IVariable>(args.block.ToWord());
             string? i1 = i0.ToString();
             string i2 = i1.Replace('_', ' ');
             Block i3 = Parser.ParseCode(i2, g.Current.GetFile());
@@ -810,9 +810,9 @@ public static partial class Compiler
         }
         if (g.Current == "foreach")
         {
-            g.ForceMoveNext(); string varKey = g.Current;
+            g.ForceMoveNext(); Word varKey = g.Current;
             g.ForceMoveNext(); g.Asssert("in");
-            g.ForceMoveNext(); string dictKey = g.Current;
+            g.ForceMoveNext(); Word dictKey = g.Current;
             g.ForceMoveNext();
             string? whenBlock = null;
             if (g.Current.Value.StartsWith("[") && g.Current.Value.EndsWith("]"))
@@ -867,7 +867,7 @@ public static partial class Compiler
         }
         if (g.Current == "for")
         {
-            g.ForceMoveNext(); string varKey = g.Current;
+            g.ForceMoveNext(); Word varKey = g.Current;
             g.ForceMoveNext(); g.Asssert("as");
             g.ForceMoveNext(); int start = new ArcInt(g.Current).Value;
             g.ForceMoveNext(); g.Asssert("to");
@@ -1060,7 +1060,7 @@ public static partial class Compiler
             catch
             {
                 Console.WriteLine(ArcException.CreateMessage(g, result));
-                throw new Exception();
+                throw;
             }
             return true;
         }
@@ -1154,8 +1154,10 @@ public static partial class Compiler
         do
         {
             if (AllCompile(ref g, ref result, CompileEffect)) continue;
-                
-            if(NewFunctions(g, ref result, NewEffects, CompileEffect)) continue;
+
+            if (g.Current == "args:monument") Console.WriteLine();
+
+            if (NewFunctions(g, ref result, NewEffects, CompileEffect)) continue;
 
             if (g.Current == "float_random")
             {
@@ -1376,12 +1378,12 @@ public static partial class Compiler
         }
         return false;
 
-        static IVariable FromArgs<T>(Args args, T b) where T : ArcObject
+        IVariable FromArgs<T>(Args args, T b) where T : ArcObject
         {
             if (args.block == null) throw new Exception();
             try
             {
-                if (TryGetVariable(string.Join(' ', args.block), out IVariable? var))
+                if (TryGetVariable(args.block.ToWord(), out IVariable? var))
                 {
                     if (var == null) throw new Exception();
                     return var;
@@ -1389,7 +1391,14 @@ public static partial class Compiler
             }
             catch (Exception) { }
             ArcType typ = b.Get<ArcType>("args");
-            return typ.ThisConstructor(args.block);
+            try
+            {
+                return typ.ThisConstructor(args.block);
+            }
+            catch
+            {
+                throw ArcException.Create(args, b, g, newList, compile);
+            }
         }
     }
     public static List<(string, NewCommand)> NewModifiers = new();
@@ -1425,32 +1434,6 @@ public static partial class Compiler
         do
         {
             if (AllCompile(ref g, ref result, Compile)) continue;
-                
-            result.Add(g.Current);
-        } while (g.MoveNext());
-
-        if (Parser.HasEnclosingBrackets(result)) result = RemoveEnclosingBrackets(result);
-
-        return string.Join(' ', result);
-    }
-    public static string FactorCompile(Block code)
-    {
-        if (code.Count == 0)
-            return "";
-
-        Block result = new();
-
-        Walker g = new(code);
-        do
-        {
-            if (AllCompile(ref g, ref result, FactorCompile)) continue;
-            if (g.Current == "modifier")
-            {
-                g.ForceMoveNext(); g.Asssert("=");
-                g.ForceMoveNext(); g = GetScope(g, out Block scope);
-                result.Add("modifier", "=", "{", CompileTrigger(scope), "}");
-                continue;
-            }
                 
             result.Add(g.Current);
         } while (g.MoveNext());
