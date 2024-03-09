@@ -282,19 +282,42 @@ public class ArcType : IValue, vvC
         return c;
     }
 }
-public class NewEffect : ArcObject
+public enum CompileType
 {
-    public NewEffect(string id, Args args)
+    Effect,
+    Trigger,
+    Modifier
+}
+public class NewCommand : ArcObject
+{
+    public CompileType CommandType;
+    public NewCommand(string id, Args args, CompileType commandType, ref List<(string, NewCommand)> list)
     {
         ArcType type = args.Get(ArcType.Constructor, "args");
         Add("args", type);
 
-        ArcEffect? transpile = args.Get(ArcEffect.Constructor, "transpile", null);
-
-        if (transpile == null)
+        Block? block = args.GetNullable("transpile");
+        ArcBlock transpile;
+        switch (commandType)
         {
+            case CompileType.Effect:
+                transpile = new ArcEffect();
+                break;
+            case CompileType.Trigger:
+                transpile = new ArcTrigger();
+                break;
+            case CompileType.Modifier:
+                transpile = new ArcModifier();
+                break;
+            default: throw ArcException.Create(id, args, commandType, list);
+        }
+
+        if (block != null)
+        {
+            transpile.Value = block;
+        }
+        else {
             Word FirstWord = args.block.First.Value;
-            transpile = new();
             Block cArgs = args.Get("args");
             if (cArgs.Count == 1)
             {
@@ -335,122 +358,13 @@ public class NewEffect : ArcObject
         }
 
         Add("transpile", transpile);
-        Compiler.NewEffects.Add((id, this));
+        list.Add((id, this));
+        CommandType = commandType;
     }
-    public static new Walker Call(Walker i) => Call(i, Constructor);
-    public static NewEffect Constructor(string id, Args args) => new(id, args);
-}
-public class NewTrigger : ArcObject
-{
-    public NewTrigger(string id, Args args)
-    {
-        Add("args", args.Get(ArcType.Constructor, "args"));
-
-        ArcTrigger? transpile = args.Get(ArcTrigger.Constructor, "transpile", null);
-
-        if (transpile == null)
-        {
-            Word FirstWord = args.block.First.Value;
-            transpile = new();
-            Block cArgs = args.Get("args");
-            if (cArgs.Count == 1)
-            {
-                transpile.Value.Add(new Word($"`{id}`", FirstWord));
-                transpile.Value.Add(new Word("=", FirstWord));
-                transpile.Value.Add(new Word("args", FirstWord));
-            }
-            else
-            {
-                transpile.Value.Add(new Word($"`{id}`", FirstWord));
-                transpile.Value.Add(new Word("=", FirstWord));
-                transpile.Value.Add(new Word("{", FirstWord));
-                Args nArgs = Args.GetArgs(args.Get("args"));
-                foreach (KeyValuePair<string, Block> v in nArgs.keyValuePairs ?? throw ArcException.Create(id, args, FirstWord, cArgs))
-                {
-                    transpile.Value.Add(new Word("when", FirstWord));
-                    transpile.Value.Add(new Word($"[exists = args:{v.Key}]", FirstWord));
-
-                    switch (v.Value.ToString())
-                    {
-                        case "effect":
-                        case "trigger":
-                        case "modifier":
-                            transpile.Value.Add(new Word("{", FirstWord));
-                            transpile.Value.Add(new Word($"`{v.Key} =`", FirstWord));
-                            transpile.Value.Add(new Word("{", FirstWord));
-                            transpile.Value.Add(new Word($"args:{v.Key}", FirstWord));
-                            transpile.Value.Add(new Word("}", FirstWord));
-                            transpile.Value.Add(new Word("}", FirstWord));
-                            break;
-                        default:
-                            transpile.Value.Add(new Word($"`{v.Key} = {{args:{v.Key}}}`", FirstWord));
-                            break;
-                    }
-                }
-                transpile.Value.Add(new Word("}", FirstWord));
-            }
-        }
-
-        Add("transpile", transpile);
-        Compiler.NewTriggers.Add((id, this));
-    }
-    public static new Walker Call(Walker i) => Call(i, Constructor);
-    public static NewTrigger Constructor(string id, Args args) => new(id, args);
-}
-public class NewModifier : ArcObject
-{
-    public NewModifier(string id, Args args)
-    {
-        Add("args", args.Get(ArcType.Constructor, "args"));
-
-        ArcModifier? transpile = args.Get(ArcModifier.Constructor, "transpile", null);
-
-        if (transpile == null)
-        {
-            Word FirstWord = args.block.First.Value;
-            transpile = new();
-            Block cArgs = args.Get("args");
-            if (cArgs.Count == 1)
-            {
-                transpile.Value.Add(new Word($"`{id}`", FirstWord));
-                transpile.Value.Add(new Word("=", FirstWord));
-                transpile.Value.Add(new Word("args", FirstWord));
-            }
-            else
-            {
-                transpile.Value.Add(new Word($"`{id}`", FirstWord));
-                transpile.Value.Add(new Word("=", FirstWord));
-                transpile.Value.Add(new Word("{", FirstWord));
-                Args nArgs = Args.GetArgs(args.Get("args"));
-                foreach (KeyValuePair<string, Block> v in nArgs.keyValuePairs ?? throw ArcException.Create(id, args, FirstWord, cArgs))
-                {
-                    transpile.Value.Add(new Word("when", FirstWord));
-                    transpile.Value.Add(new Word($"[exists = args:{v.Key}]", FirstWord));
-
-                    switch (v.Value.ToString())
-                    {
-                        case "effect":
-                        case "trigger":
-                        case "modifier":
-                            transpile.Value.Add(new Word("{", FirstWord));
-                            transpile.Value.Add(new Word($"`{v.Key} =`", FirstWord));
-                            transpile.Value.Add(new Word("{", FirstWord));
-                            transpile.Value.Add(new Word($"args:{v.Key}", FirstWord));
-                            transpile.Value.Add(new Word("}", FirstWord));
-                            transpile.Value.Add(new Word("}", FirstWord));
-                            break;
-                        default:
-                            transpile.Value.Add(new Word($"`{v.Key} = {{args:{v.Key}}}`", FirstWord));
-                            break;
-                    }
-                }
-                transpile.Value.Add(new Word("}", FirstWord));
-            }
-        }
-
-        Add("transpile", transpile);
-        Compiler.NewModifiers.Add((id, this));
-    }
-    public static new Walker Call(Walker i) => Call(i, Constructor);
-    public static NewTrigger Constructor(string id, Args args) => new(id, args);
+    public static Walker CallEffect(Walker i) => Call(i, ConstructorEffect);
+    public static Walker CallTrigger(Walker i) => Call(i, ConstructorTrigger);
+    public static Walker CallModifier(Walker i) => Call(i, ConstructorModifier);
+    public static NewCommand ConstructorEffect(string id, Args args) => new(id, args, CompileType.Effect, ref Compiler.NewEffects);
+    public static NewCommand ConstructorTrigger(string id, Args args) => new(id, args, CompileType.Trigger, ref Compiler.NewTriggers);
+    public static NewCommand ConstructorModifier(string id, Args args) => new(id, args, CompileType.Modifier, ref Compiler.NewModifiers);
 }

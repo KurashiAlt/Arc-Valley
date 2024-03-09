@@ -440,9 +440,9 @@ public static partial class Compiler
             "building_line" => BuildingLine.Call(g),
             "government_mechanic" => GovernmentMechanic.Call(g),
             "diplomatic_action" => DiplomaticAction.Call(g),
-            "effect" => NewEffect.Call(g),
-            "trigger" => NewTrigger.Call(g),
-            "modifier" => NewModifier.Call(g),
+            "effect" => NewCommand.CallEffect(g),
+            "trigger" => NewCommand.CallTrigger(g),
+            "modifier" => NewCommand.CallModifier(g),
             "mission_tree" => MissionTree.Call(g),
             "holy_order" => HolyOrder.Call(g),
             "province_triggered_modifier" => ProvinceTriggeredModifier.Call(g),
@@ -607,7 +607,7 @@ public static partial class Compiler
                 if (var == null) throw ArcException.Create("Unknown Error: Null Reference", g);
                 g = var.Call(g, ref f);
             }
-            else if (NewFunctions<NewEffect, ArcEffect>(g, ref result, NewEffects, CompileEffect)) continue;
+            else if (NewFunctions(g, ref result, NewEffects, CompileEffect)) continue;
             else throw ArcException.Create($"Invalid command in Object Declaration: {g.Current}", g, result, code);
         } while (g.MoveNext());
     }
@@ -1118,7 +1118,7 @@ public static partial class Compiler
 
         return compiler(Parser.ParseCode(file, fileName));
     }
-    public static List<(string, NewTrigger)> NewTriggers = new();
+    public static List<(string, NewCommand)> NewTriggers = new();
     public static string CompileTrigger(Block code)
     {
         if (code.Count == 0)
@@ -1131,7 +1131,7 @@ public static partial class Compiler
         {
             if (AllCompile(ref g, ref result, CompileTrigger)) continue;
 
-            if (NewFunctions<NewTrigger, ArcTrigger>(g, ref result, NewTriggers, CompileTrigger)) continue;
+            if (NewFunctions(g, ref result, NewTriggers, CompileTrigger)) continue;
 
             Program.Warn($"Unknown Trigger: {g.Current}");
             result.Add(g.Current);
@@ -1141,7 +1141,7 @@ public static partial class Compiler
 
         return string.Join(' ', result);
     }
-    public static List<(string, NewEffect)> NewEffects = new();
+    public static List<(string, NewCommand)> NewEffects = new();
     public static int NctAmount = 0;
     public static string CompileEffect(Block code)
     {
@@ -1155,7 +1155,7 @@ public static partial class Compiler
         {
             if (AllCompile(ref g, ref result, CompileEffect)) continue;
                 
-            if(NewFunctions<NewEffect, ArcEffect>(g, ref result, NewEffects, CompileEffect)) continue;
+            if(NewFunctions(g, ref result, NewEffects, CompileEffect)) continue;
 
             if (g.Current == "float_random")
             {
@@ -1332,29 +1332,29 @@ public static partial class Compiler
 
         return string.Join(' ', result);
     }
-    public static bool NewFunctions<T, T2>(Walker g, ref Block result, List<(string, T)> newList, Func<Block, string> compile) where T : ArcObject where T2 : ArcBlock
+    public static bool NewFunctions(Walker g, ref Block result, List<(string, NewCommand)> newList, Func<Block, string> compile)
     {
         Word key = g.Current;
-        IEnumerable<(string, T)> ThisFunctions = from c in newList where c.Item1 == key select c;
+        IEnumerable<(string, NewCommand)> ThisFunctions = from c in newList where c.Item1 == key select c;
         if (ThisFunctions.Any())
         {
-            (string, T) LastClickedEffect = ThisFunctions.Last();
+            (string, NewCommand) LastClickedEffect = ThisFunctions.Last();
 
             List<string> Errors = new();
 
             g = Args.GetArgs(g, out Args args);
-            foreach ((string, T) effect in ThisFunctions)
+            foreach ((string, NewCommand) effect in ThisFunctions)
             {
                 try
                 {
-                    T b = effect.Item2;
+                    NewCommand b = effect.Item2;
                     Arg a;
                     if (b.Get<vvC>("args") is Dict<ArcType>) a = ArcObject.FromArgs(args, b);
                     else a = vx.FromArgs(args, b);
 
                     ArgList.list.AddFirst(a);
 
-                    b.Get<T2>("transpile").Compile(ref result);
+                    b.Get<ArcBlock>("transpile").Compile(ref result);
 
                     ArgList.list.RemoveFirst();
                     return true;
@@ -1376,7 +1376,7 @@ public static partial class Compiler
         }
         return false;
     }
-    public static List<(string, NewModifier)> NewModifiers = new();
+    public static List<(string, NewCommand)> NewModifiers = new();
     public static string CompileModifier(Block code)
     {
         if (code.Count == 0)
@@ -1389,7 +1389,7 @@ public static partial class Compiler
         {
             if (AllCompile(ref g, ref result, CompileModifier)) continue;
 
-            if (NewFunctions<NewModifier, ArcModifier>(g, ref result, NewModifiers, CompileModifier)) continue;
+            if (NewFunctions(g, ref result, NewModifiers, CompileModifier)) continue;
 
             result.Add(g.Current);
         } while (g.MoveNext());

@@ -26,6 +26,12 @@ public class Args
         if (!keyValuePairs.ContainsKey(key)) return defaultValue;
         return keyValuePairs[key];
     }
+    public Block? GetNullable(string key)
+    {
+        if (keyValuePairs == null) throw ArcException.Create($"Non object type arguments; Trying to get: {key}", key, this);
+        if (!keyValuePairs.ContainsKey(key)) return null;
+        return keyValuePairs[key];
+    }
     public T Get<T>(Func<Block,T> Constructor, string key) where T : IVariable
     {
         if (keyValuePairs == null) throw ArcException.Create($"Non object type arguments; Trying to get: {key}", key, this);
