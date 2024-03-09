@@ -1,6 +1,6 @@
 ﻿using Arc;
 
-public class ArcObject : Dict<IVariable?>, Arg
+public class ArcObject : Dict<IVariable?>
 {
     protected static Walker Call<T>(Walker i, Func<string, Args, T> func)
     {
@@ -28,7 +28,7 @@ public class ArcObject : Dict<IVariable?>, Arg
         }
         return i; 
     }
-    public static Arg FromArgs<T>(Args args, T b) where T : ArcObject
+    public static IVariable FromArgs<T>(Args args, T b) where T : ArcObject
     {
         ArcObject a = new ArcObject();
 

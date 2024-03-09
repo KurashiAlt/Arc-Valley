@@ -836,14 +836,14 @@ public static partial class Compiler
 
             if (dictValue is ArgList)
             {
-                Arg arg = ArgList.list.First();
+                IVariable arg = ArgList.list.First();
                 if (arg is ArcObject arcObject)
                 {
                     dictValue = arcObject;
                 }
-                else if (arg is vx Vc)
+                else if (arg is IVariable Vc)
                 {
-                    dictValue = Vc.va.Value;
+                    dictValue = Vc;
                 }
                 else throw new Exception();
             }
@@ -1348,9 +1348,9 @@ public static partial class Compiler
                 try
                 {
                     NewCommand b = effect.Item2;
-                    Arg a;
+                    IVariable a;
                     if (b.Get("args") is Dict<ArcType>) a = ArcObject.FromArgs(args, b);
-                    else a = vx.FromArgs(args, b);
+                    else a = FromArgs(args, b);
 
                     ArgList.list.AddFirst(a);
 
@@ -1375,6 +1375,22 @@ public static partial class Compiler
             return true;
         }
         return false;
+
+        static IVariable FromArgs<T>(Args args, T b) where T : ArcObject
+        {
+            if (args.block == null) throw new Exception();
+            try
+            {
+                if (TryGetVariable(string.Join(' ', args.block), out IVariable? var))
+                {
+                    if (var == null) throw new Exception();
+                    return var;
+                }
+            }
+            catch (Exception) { }
+            ArcType typ = b.Get<ArcType>("args");
+            return typ.ThisConstructor(args.block);
+        }
     }
     public static List<(string, NewCommand)> NewModifiers = new();
     public static string CompileModifier(Block code)

@@ -2,14 +2,14 @@
 
 public class ArgList : IArcObject, IArcNumber
 {
-    public static LinkedList<Arg> list = new LinkedList<Arg>();
+    public static LinkedList<IVariable> list = new();
     public bool CanGet(string indexer)
     {
-        Arg arg = list.First();
+        IVariable arg = list.First();
         if (arg is IArcObject @object) return @object.CanGet(indexer);
-        if (arg is vx bc)
+        if (arg is IVariable bc)
         {
-            if(bc.va.Value is IArcObject @object2)
+            if(bc is IArcObject @object2)
             {
                 return @object2.CanGet(indexer);
             }
@@ -18,11 +18,11 @@ public class ArgList : IArcObject, IArcNumber
     }
     public IVariable? Get(string indexer)
     {
-        Arg arg = list.First();
+        IVariable arg = list.First();
         if (arg is IArcObject @object) return @object.Get(indexer);
-        if (arg is vx bc)
+        if (arg is IVariable bc)
         {
-            if (bc.va.Value is IArcObject @object2)
+            if (bc is IArcObject @object2)
             {
                 return @object2.Get(indexer);
             }
@@ -31,8 +31,8 @@ public class ArgList : IArcObject, IArcNumber
     }
     public Walker Call(Walker w, ref Block result)
     {
-        Arg arg = list.First();
-        if (arg is vx @object) return @object.va.Value.Call(w, ref result);
+        IVariable arg = list.First();
+        if (arg is IVariable @object) return @object.Call(w, ref result);
         if (arg is IArcObject @objec) return @objec.Call(w, ref result);
         throw ArcException.Create(w, result, arg, "args isn't of type [Arc Single]");
     }
@@ -42,40 +42,9 @@ public class ArgList : IArcObject, IArcNumber
     }
     public double GetNum()
     {
-        Arg arg = list.First();
-        if (arg is vx @object) return ((IArcNumber)@object.va.Value).GetNum();
+        IVariable arg = list.First();
+        if (arg is IVariable @object) return ((IArcNumber)@object).GetNum();
         throw ArcException.Create(arg, "args isn't of type [IArcNumber]");
-    }
-}
-public interface Arg 
-{
-
-}
-public class vx : Arg
-{
-    public DictPointer<IVariable> va { get; set; }
-    public static Arg FromArgs<T>(Args args, T b) where T : ArcObject
-    {
-        if (args.block == null) throw new Exception();
-        try
-        {
-            if(Compiler.TryGetVariable(string.Join(' ', args.block), out IVariable? var))
-            {
-                if (var == null) throw new Exception();
-                return new vx(var);
-            }
-        }
-        catch(Exception) { }
-        ArcType typ = b.Get<ArcType>("args");
-        return new vx(typ.ThisConstructor(args.block));
-    }
-    public override string ToString()
-    {
-        return va.Value.ToString();
-    }
-    public vx(IVariable v)
-    {
-        va = new(v);
     }
 }
 public class ArcType : IValue

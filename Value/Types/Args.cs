@@ -41,7 +41,7 @@ public class Args
             if(value is T @val) return @val;
             else if (value is ArgList aList)
             {
-                if (ArgList.list.First.Value is vx v && v.va.Value is T @val2) return @val2;
+                if (ArgList.list.First.Value is IVariable v && v is T @val2) return @val2;
             }
         }
         return Constructor(keyValuePairs[key]);
@@ -84,7 +84,7 @@ public class Args
             if (value is T @val) return @val;
             else if (value is ArgList aList)
             {
-                if (ArgList.list.First.Value is vx v && v.va.Value is T @val2) return @val2;
+                if (ArgList.list.First.Value is IVariable v && v is T @val2) return @val2;
             }
         }
 
