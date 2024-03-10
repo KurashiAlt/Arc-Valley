@@ -51,146 +51,115 @@ internal class Program
 
         Format = args.Contains("format");
 
-        if (args.Contains("lint"))
+        if (args.Contains("script") || args.Contains("all"))
         {
-            int lIndex = Array.IndexOf(args, "lint");
-            string lFile = args[lIndex + 1];
-            List<(string type, string id, Args args)> lst = new();
-            Walker ig = new(Parser.ParseFile(Path.Combine(directory, lFile)));
-            do
+            foreach (string location in LoadOrder)
             {
-                ig.Asssert("new"); ig.ForceMoveNext();
-                string cls = ig.Current; ig.ForceMoveNext();
-                string id = ig.Current;
-                ig = Args.GetArgs(ig, out Args args1, hasInherit: false);
-                lst.Add((cls, id, args1));
-            } while (ig.MoveNext());
-            Block b = new();
-            foreach((string type, string id, Args args) item in lst)
+                TimeSpan start = timer.Elapsed;
+                LoadTarget(location);
+                TimeSpan end = timer.Elapsed;
+                Console.WriteLine($"{$"Finished Loading {location}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
+            }
+
+            if (args.Contains("selector"))
             {
-                b.Add($"\" *new {item.type} {item.id}* \"", "=", "{");
-                foreach (KeyValuePair<string, Block> v in item.args.keyValuePairs)
+                TimeSpan start = timer.Elapsed;
+                using System.Drawing.Bitmap provmap = new($"{directory}/{MapFolder}/provinces.bmp");
+                foreach (string file in GetFiles($"{SelectorFolder}"))
                 {
-                    if(v.Key == "position" || v.Key == "rotation" || v.Key == "height" || v.Key == "color")
+                    if (!file.EndsWith(".png")) continue;
+                    List<System.Drawing.Color> colors = new();
+
+                    System.Drawing.Bitmap img = new(file);
+
+                    string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
+
+                    for (int x = 0; x < img.Width; x++)
                     {
-                        b.Add(v.Key, "=", $"\" *{v.Value}* \"");
+                        for (int y = 0; y < img.Height; y++)
+                        {
+                            if (img.GetPixel(x, y).A == 0) continue;
+
+                            System.Drawing.Color color = provmap.GetPixel(x, y);
+
+                            if (!colors.Contains(color)) colors.Add(color);
+                        }
                     }
-                    else b.Add(v.Key, "=", v.Value.ToString());
-                }
-                b.Add("}");
-            }
-            File.WriteAllText($"{lFile}", Parser.FormatCode(b.ToString()).Replace("\" *", "").Replace("* \"", ""));
 
-            return 0;
-        }
+                    ArcList<Province> list = new();
+                    List<string> keys = new();
+                    foreach (KeyValuePair<string, Province> v in 
+                        from prov in Province.Provinces where 
+                            colors.Contains(System.Drawing.Color.FromArgb(
+                                byte.Parse(prov.Value.Color.Value.ElementAt(0)), 
+                                byte.Parse(prov.Value.Color.Value.ElementAt(1)), 
+                                byte.Parse(prov.Value.Color.Value.ElementAt(2))
+                            )) select prov) {
+                        list.Add(v.Value);
+                        keys.Add(v.Key);
+                    }
 
-        foreach (string location in LoadOrder)
-        {
-            TimeSpan start = timer.Elapsed;
-            LoadTarget(location);
-            TimeSpan end = timer.Elapsed;
-            Console.WriteLine($"{$"Finished Loading {location}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
-        }
-
-        if (args.Contains("selector"))
-        {
-            TimeSpan start = timer.Elapsed;
-            using System.Drawing.Bitmap provmap = new($"{directory}/{MapFolder}/provinces.bmp");
-            foreach (string file in GetFiles($"{SelectorFolder}"))
-            {
-                if (!file.EndsWith(".png")) continue;
-                List<System.Drawing.Color> colors = new();
-
-                System.Drawing.Bitmap img = new(file);
-
-                string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
-
-                for (int x = 0; x < img.Width; x++)
+                    File.WriteAllText($"{file}.gen", string.Join(' ', from p in keys select p));
+                    _ = new ProvinceGroup(name, new())
                 {
-                    for (int y = 0; y < img.Height; y++)
+                    { "id", new ArcString(name) },
+                    { "provinces", list }
+                };
+                }
+                TimeSpan end = timer.Elapsed;
+                Console.WriteLine($"{$"Finished Loading {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
+            }
+            else
+            {
+                TimeSpan start = timer.Elapsed;
+
+                foreach (string file in GetFiles($"{SelectorFolder}"))
+                {
+                    if (!file.EndsWith(".gen")) continue;
+
+                    string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
+
+                    ArcList<Province> list = new();
+                    foreach (Word w in Parser.ParseFile(file))
                     {
-                        if (img.GetPixel(x, y).A == 0) continue;
-
-                        System.Drawing.Color color = provmap.GetPixel(x, y);
-
-                        if (!colors.Contains(color)) colors.Add(color);
+                        list.Add(Province.Provinces[w]);
                     }
-                }
 
-                ArcList<Province> list = new();
-                List<string> keys = new();
-                foreach (KeyValuePair<string, Province> v in 
-                    from prov in Province.Provinces where 
-                        colors.Contains(System.Drawing.Color.FromArgb(
-                            byte.Parse(prov.Value.Color.Value.ElementAt(0)), 
-                            byte.Parse(prov.Value.Color.Value.ElementAt(1)), 
-                            byte.Parse(prov.Value.Color.Value.ElementAt(2))
-                        )) select prov) {
-                    list.Add(v.Value);
-                    keys.Add(v.Key);
-                }
-
-                File.WriteAllText($"{file}.gen", string.Join(' ', from p in keys select p));
-                _ = new ProvinceGroup(name, new())
-            {
-                { "id", new ArcString(name) },
-                { "provinces", list }
-            };
-            }
-            TimeSpan end = timer.Elapsed;
-            Console.WriteLine($"{$"Finished Loading {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
-        }
-        else
-        {
-            TimeSpan start = timer.Elapsed;
-
-            foreach (string file in GetFiles($"{SelectorFolder}"))
-            {
-                if (!file.EndsWith(".gen")) continue;
-
-                string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
-
-                ArcList<Province> list = new();
-                foreach (Word w in Parser.ParseFile(file))
+                    _ = new ProvinceGroup(name, new())
                 {
-                    list.Add(Province.Provinces[w]);
+                    { "id", new ArcString(name) },
+                    { "provinces", list }
+                };
                 }
-
-                _ = new ProvinceGroup(name, new())
-            {
-                { "id", new ArcString(name) },
-                { "provinces", list }
-            };
-            }
-            TimeSpan end = timer.Elapsed;
-            Console.WriteLine($"{$"Finished Loading Cached {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
-        }
-
-        TimeSpan tstart = timer.Elapsed;
-        var vList = (from c in ArcBlock.CompileList where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
-
-        int ti = 0;
-        while (vList.Any())
-        {
-            foreach (ArcBlock v in vList)
-            {
-                try
-                {
-                    v.Compile();
-                }
-                catch (Exception e)
-                {
-                    v.Compiled = "ERROR";
-                    Console.WriteLine(e.Message);
-                }
-                ti++;
-                if (ti % 1000 == 0) Console.WriteLine($"Has finished compiling {ti} blocks".Pastel(ConsoleColor.Magenta));
+                TimeSpan end = timer.Elapsed;
+                Console.WriteLine($"{$"Finished Loading Cached {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
             }
 
-            vList = (from c in ArcBlock.CompileList where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
+            TimeSpan tstart = timer.Elapsed;
+            var vList = (from c in ArcBlock.CompileList where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
+            int ti = 0;
+            while (vList.Any())
+            {
+                foreach (ArcBlock v in vList)
+                {
+                    try
+                    {
+                        v.Compile();
+                    }
+                    catch (Exception e)
+                    {
+                        v.Compiled = "ERROR";
+                        Console.WriteLine(e.Message);
+                    }
+                    ti++;
+                    if (ti % 1000 == 0) Console.WriteLine($"Has finished compiling {ti} blocks".Pastel(ConsoleColor.Magenta));
+                }
+
+                vList = (from c in ArcBlock.CompileList where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
+            }
+            TimeSpan tend = timer.Elapsed;
+            Console.WriteLine($"{$"Finished Compiling Code".PadRight(50).Pastel(ConsoleColor.Magenta)}{$"{(tend - tstart).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Magenta)}");
         }
-        TimeSpan tend = timer.Elapsed;
-        Console.WriteLine($"{$"Finished Compiling Code".PadRight(50).Pastel(ConsoleColor.Magenta)}{$"{(tend - tstart).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Magenta)}");
 
         (string, string, Func<string>)[] Transpilers =
         {
@@ -274,15 +243,7 @@ internal class Program
             string file = args[i + 1];
             Unsorted(file);
         }
-
-        if (args.Contains("test"))
-        {
-            //foreach (string n in args)
-            //{
-            //    if (int.TryParse(n, out int t)) Console.Write($"{Province.Provinces.ElementAt(t - 1).Key} ");
-            //}
-        }
-
+        
         OverwriteFile($"warnings.txt", string.Join('\n', warnings));
 
         Console.WriteLine($"Transpilation took: {(double)timer.ElapsedMilliseconds / 1000:0.000} seconds".Pastel(ConsoleColor.Red));
