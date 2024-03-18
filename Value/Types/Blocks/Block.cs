@@ -96,10 +96,10 @@ public class ArcBlock : IValue
     {
         return string.Join(' ', Value);
     }
-    public string Compile(string wrapper)
+    public string Compile(string wrapper, bool CanBeEmpty = true, bool CanBeSingular = false)
     {
         Block b = new();
-        Compile(wrapper, ref b);
+        Compile(wrapper, ref b, CanBeEmpty, CanBeSingular);
         return b.ToString();
     }
     public void Compile(ref Block b)

@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using System.Diagnostics;
+using System.Collections.Concurrent;
 
 namespace Arc;
 public static partial class Compiler
@@ -1001,6 +1002,97 @@ public static partial class Compiler
             else Console.WriteLine($"{g.Current.GetFile()} line {g.Current.File}: {value}"); ;
             return true;
         }
+        if (g.Current.StartsWith('&'))
+        {
+            string left = g.Current.Value[1..];
+            if (!VariableExists(left)) Console.WriteLine(ArcException.CreateMessage($"Variable Definition not found for {left}", g));
+
+            g.ForceMoveNext();
+            Word Operator = g.Current;
+            g.ForceMoveNext();
+            g = GetScope(g, out Block right);
+
+            switch (Operator)
+            {
+                case ":=": VariableOperator("set_variable", ref result); break;
+                case "+=": VariableOperator("change_variable", ref result); break;
+                case "-=": VariableOperator("subtract_variable", ref result); break;
+                case "*=": VariableOperator("multiply_variable", ref result); break;
+                case "/=": VariableOperator("divide_variable", ref result); break;
+                case "&=": VariableOperator("export_to_variable", ref result, BothAreValue: true); break;
+                case ">=": VariableOperator("check_variable", ref result); break;
+                case ">" : VariableOperator("check_variable", ref result, CheckNotEqual: true); break;
+                case "<=": VariableOperator("check_variable", ref result, CheckOrEqual: true, Invert: true) ; break;
+                case "<" : VariableOperator("check_variable", ref result, Invert: true); break;
+                case "==": VariableOperator("is_variable_equal", ref result); break;
+                case "!=": VariableOperator("is_variable_equal", ref result, Invert: true); break;
+                default: throw ArcException.Create($"While performing a quick variable operation '&' syntax, operator {Operator} was not recognized", left, Operator, right, result);
+            }
+
+            return true;
+            void VariableOperator(string command, ref Block result, bool Invert = false, bool CheckOrEqual = false, bool CheckNotEqual = false, bool BothAreValue = false)
+            {
+                if (CheckOrEqual) result.Add("OR", "=", "{");
+                if (Invert) result.Add("NOT", "=", "{");
+                try
+                {
+                    result.Add(
+                        command, "=", "{",
+                            "which", "=", left,
+                            "value", "=", new ArcFloat(right),
+                        "}"
+                    );
+                    if (CheckNotEqual) result.Add(
+                        "NOT", "=", "{",
+                            "is_variable_equal", "=", "{",
+                                "which", "=", left,
+                                "value", "=", new ArcFloat(right),
+                            "}",
+                        "}"
+                    );
+                    if (Invert) result.Add("}");
+                    if (CheckOrEqual) result.Add(
+                        "is_variable_equal", "=", "{",
+                            "which", "=", left,
+                            "value", "=", new ArcFloat(right),
+                        "}"
+                    );
+                }
+                catch
+                {
+                    result.Add(
+                        command, "=", "{",
+                            "which", "=", left,
+                            BothAreValue?"value":"which", "=", right,
+                        "}"
+                    );
+                    if (CheckNotEqual) result.Add(
+                        "NOT", "=", "{",
+                            "is_variable_equal", "=", "{",
+                                "which", "=", left,
+                                "which", "=", right,
+                            "}",
+                        "}"
+                    );
+                    if (Invert) result.Add("}");
+                    if (CheckOrEqual) result.Add(
+                        "is_variable_equal", "=", "{",
+                            "which", "=", left,
+                            "which", "=", right,
+                        "}"
+                    );
+                    if (!VariableExists(left)) Console.WriteLine(ArcException.CreateMessage($"Variable Definition not found for {left}", left, Operator, right, command, result));
+                }
+                if (CheckOrEqual) result.Add("}");
+            }
+            bool VariableExists(string id)
+            {
+                if (global.CanGet("variables"))
+                    if (global.Get<IArcObject>("variables").CanGet(left))
+                        return true;
+                return false;
+            }
+        }
         if (g.Current.Value.EndsWith(',') || g.Current.Value.EndsWith(';'))
         {
             string pre = g.Current.Value.Split(':')[0];
@@ -1434,16 +1526,7 @@ public static partial class Compiler
             {
                 try
                 {
-                    NewCommand b = effect.Item2;
-                    IVariable a;
-                    if (b.Get("args") is Dict<ArcType>) a = ArcObject.FromArgs(args, b);
-                    else a = FromArgs(args, b);
-
-                    ArgList.list.AddFirst(a);
-
-                    b.Get<ArcBlock>("transpile").Compile(ref result);
-
-                    ArgList.list.RemoveFirst();
+                    effect.Item2.Call(args, ref result);
                     return true;
                 }
                 catch (Exception e)
@@ -1462,29 +1545,6 @@ public static partial class Compiler
             return true;
         }
         return false;
-
-        IVariable FromArgs<T>(Args args, T b) where T : ArcObject
-        {
-            if (args.block == null) throw new Exception();
-            try
-            {
-                if (TryGetVariable(args.block.ToWord(), out IVariable? var))
-                {
-                    if (var == null) throw new Exception();
-                    return var;
-                }
-            }
-            catch (Exception) { }
-            ArcType typ = b.Get<ArcType>("args");
-            try
-            {
-                return typ.ThisConstructor(args.block);
-            }
-            catch
-            {
-                throw ArcException.Create(args, b, g, newList, compile);
-            }
-        }
     }
     public static List<(string, NewCommand)> NewModifiers = new();
     public static string CompileModifier(Block code)

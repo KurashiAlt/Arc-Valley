@@ -3,14 +3,26 @@
 public class ArcObject : Dict<IVariable?>
 {
     public Dictionary<string, NewCommand>? functions;
-    public new IVariable? Get(string indexer)
+    public override IVariable? Get(string indexer)
     {
         if (indexer == "first") return Kvps.Values.First().Value;
         if (indexer == "last") return Kvps.Values.Last().Value;
-        if (functions != null && functions.TryGetValue(indexer, out NewCommand? value)) return value;
+        if (functions != null && functions.TryGetValue(indexer, out NewCommand? value)) return new CommandCall(value, this);
         return Kvps[indexer].Value;
     }
-
+    public override T Get<T>(string indexer)
+    {
+        IVariable? v = Get(indexer);
+        if (v is T t) return t;
+        else throw ArcException.Create($"{indexer} is of wrong type", v);
+    }
+    public override bool CanGet(string indexer)
+    {
+        if (indexer == "first") return true;
+        if (indexer == "last") return true;
+        if (functions != null && functions.ContainsKey(indexer)) return true;
+        return Kvps.ContainsKey(indexer);
+    }
     protected static Walker Call<T>(Walker i, Func<string, Args, T> func)
     {
         i.ForceMoveNext();

@@ -1,4 +1,5 @@
 ﻿using Arc;
+using System.Numerics;
 
 public class ArgList : IArcObject, IArcNumber
 {
@@ -246,31 +247,84 @@ public enum CompileType
 {
     Effect,
     Trigger,
-    Modifier
+    Modifier,
+    Block
+}
+public class CommandCall : IVariable
+{
+    public NewCommand Command;
+    public ArcObject This;
+    public CommandCall(NewCommand command, ArcObject @this)
+    {
+        Command = command;
+        This = @this;
+    }
+    public Walker Call(Walker i, ref Block result)
+    {
+        i = Args.GetArgs(i, out Args args);
+        Compiler.global.Add("this", This);
+        Command.Call(args, ref result);
+        Compiler.global.Delete("this");
+        return i;
+    }
 }
 public class NewCommand : ArcObject
 {
+    static IVariable QFromArgs<T>(Args args, T b) where T : ArcObject
+    {
+        if (args.block == null) throw new Exception();
+        try
+        {
+            if (Compiler.TryGetVariable(args.block.ToWord(), out IVariable? var))
+            {
+                if (var == null) throw new Exception();
+                return var;
+            }
+        }
+        catch (Exception) { }
+        ArcType typ = b.Get<ArcType>("args");
+        try
+        {
+            return typ.ThisConstructor(args.block);
+        }
+        catch
+        {
+            throw ArcException.Create(args, b);
+        }
+    }
+    public void Call(Args args, ref Block result)
+    {
+        IVariable a;
+        if (Get("args") is Dict<ArcType>) a = FromArgs(args, this);
+        else a = QFromArgs(args, this);
+
+        ArgList.list.AddFirst(a);
+
+        Get<ArcBlock>("transpile").Compile(ref result);
+
+        ArgList.list.RemoveFirst();
+    }
+    public override Walker Call(Walker i, ref Block result)
+    {
+        i = Args.GetArgs(i, out Args args);
+        Call(args, ref result);
+        return i;
+    }
     public CompileType CommandType;
-    public NewCommand(string id, Args args, CompileType commandType, ref List<(string, NewCommand)> list)
+    public NewCommand(string id, Args args, CompileType commandType)
     {
         ArcType type = args.Get(ArcType.Constructor, "args");
         Add("args", type);
 
         Block? block = args.GetNullable("transpile");
-        ArcBlock transpile;
-        switch (commandType)
+        ArcBlock transpile = commandType switch
         {
-            case CompileType.Effect:
-                transpile = new ArcEffect();
-                break;
-            case CompileType.Trigger:
-                transpile = new ArcTrigger();
-                break;
-            case CompileType.Modifier:
-                transpile = new ArcModifier();
-                break;
-            default: throw ArcException.Create(id, args, commandType, list, type);
-        }
+            CompileType.Effect => new ArcEffect(),
+            CompileType.Trigger => new ArcTrigger(),
+            CompileType.Modifier => new ArcModifier(),
+            CompileType.Block => new ArcCode(),
+            _ => throw ArcException.Create(id, args, commandType, type),
+        };
         transpile.ShouldBeCompiled = false;
 
         if (block != null)
@@ -319,13 +373,19 @@ public class NewCommand : ArcObject
         }
 
         Add("transpile", transpile);
-        list.Add((id, this));
         CommandType = commandType;
     }
     public static Walker CallEffect(Walker i) => Call(i, ConstructorEffect);
     public static Walker CallTrigger(Walker i) => Call(i, ConstructorTrigger);
     public static Walker CallModifier(Walker i) => Call(i, ConstructorModifier);
-    public static NewCommand ConstructorEffect(string id, Args args) => new(id, args, CompileType.Effect, ref Compiler.NewEffects);
-    public static NewCommand ConstructorTrigger(string id, Args args) => new(id, args, CompileType.Trigger, ref Compiler.NewTriggers);
-    public static NewCommand ConstructorModifier(string id, Args args) => new(id, args, CompileType.Modifier, ref Compiler.NewModifiers);
+    public static NewCommand Constructor(string id, Args args, CompileType commandType, ref List<(string, NewCommand)> list)
+    {
+        NewCommand command;
+        command = new(id, args, commandType);
+        list.Add((id, command));
+        return command;
+    }
+    public static NewCommand ConstructorEffect(string id, Args args) => Constructor(id, args, CompileType.Effect, ref Compiler.NewEffects);
+    public static NewCommand ConstructorTrigger(string id, Args args) => Constructor(id, args, CompileType.Trigger, ref Compiler.NewTriggers);
+    public static NewCommand ConstructorModifier(string id, Args args) => Constructor(id, args, CompileType.Modifier, ref Compiler.NewModifiers);
 }

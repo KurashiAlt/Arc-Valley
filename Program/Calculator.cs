@@ -33,31 +33,23 @@ public static partial class Calculator
     }
     public static double Calculate(Word s)
     {
-        try
+        s.Value = GetParentheses().Replace(s, delegate (Match m)
         {
-            s.Value = GetParentheses().Replace(s, delegate (Match m)
-            {
-                return Calculate(
-                    new Word(m.Groups[1].Value, s)
-                ).ToString();
-            });
+            return Calculate(
+                new Word(m.Groups[1].Value, s)
+            ).ToString();
+        });
 
-            s.ReplaceSelf(',', '.');
-            List<string> steps = GetSteps(s);
+        s.ReplaceSelf(',', '.');
+        List<string> steps = GetSteps(s);
 
-            Operations(ref steps, "^");
-            Operations(ref steps, "/", "*");
-            Operations(ref steps, "+", "-");
+        Operations(ref steps, "^");
+        Operations(ref steps, "/", "*");
+        Operations(ref steps, "+", "-");
 
-            if (steps.Count != 1) throw ArcException.Create(string.Join(' ', steps), s);
+        if (steps.Count != 1) throw ArcException.Create(string.Join(' ', steps), s);
 
-            return GetNum(steps[0]);
-        }
-        catch (Exception)
-        {
-            Console.WriteLine(ArcException.CreateMessage(s));
-            throw;
-        }
+        return GetNum(steps[0]);
     }
     static void Operations(ref List<string> steps, params string[] operators)
     {

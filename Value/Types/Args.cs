@@ -120,7 +120,7 @@ public class Args
 
         return i;
     }
-    public Dict<ArcCode> GetAttributes(string[] ImplementedAttributes) => GetAttributes(this, ImplementedAttributes);
+    public Dict<ArcCode> GetAttributes(params string[] ImplementedAttributes) => GetAttributes(this, ImplementedAttributes);
     public static Dict<ArcCode> GetAttributes(Args args, string[] ImplementedAttributes)
     {
         Dict<ArcCode> dict = new();

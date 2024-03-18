@@ -199,6 +199,7 @@ internal class Program
         ("script", "", Advisor.Transpile),
         ("script", "", Age.Transpile),
         ("script", "", DiplomaticAction.Transpile),
+        ("script", "", NavalDoctrines),
         ("script", "", SpecialUnitTranspile),
         ("script", "", Government.Transpile),
         ("script", "", GovernmentNames.Transpile),
@@ -251,6 +252,27 @@ internal class Program
 
         return 0;
     }
+    static string NavalDoctrines()
+    {
+        Block b = new();
+        foreach (ArcObject obj in Compiler.GetVariable<Dict<IVariable>>(new Word("naval_doctrines")).Values())
+        {
+            string id = obj.Get<ArcString>("id").ToString();
+            b.Add(
+                id, "=", "{",
+                    obj.Get<ArcBlock>("can_select").Compile("can_select", CanBeEmpty: false),
+                    obj.Get<ArcBlock>("country_modifier").Compile("country_modifier", CanBeEmpty: false),
+                    obj.Get<ArcBlock>("effect").Compile("effect", CanBeEmpty: false),
+                    obj.Get<ArcBlock>("removed_effect").Compile("removed_effect", CanBeEmpty: false),
+                    "cost", "=", obj.Get<ArcFloat>("cost"),
+                    "button_gfx", "=", obj.Get<ArcInt>("button_gfx"),
+                "}"
+            );
+        }
+        OverwriteFile($"{TranspileTarget}/common/naval_doctrines/arc.txt", b.ToString());
+        return "Naval Doctrines";
+    }
+
     static string CenterOfTrade()
     {
         Block COTFile = new();

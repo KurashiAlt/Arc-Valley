@@ -1,9 +1,4 @@
 ﻿using Arc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 public class ArcNull : IVariable
 {
 
@@ -16,6 +11,8 @@ public class ArcClass : ArcObject
     public ArcCode OnCreate;
     public ArcClass(string id, Args args)
     {
+        if (args.keyValuePairs == null) throw ArcException.Create(id, args);
+
         Dict<IVariable> List;
         if (args.keyValuePairs.ContainsKey("list"))
         {
@@ -23,11 +20,26 @@ public class ArcClass : ArcObject
             Compiler.global.Add(args.Get("list").ToString(), List);
         }
         else List = Compiler.global;
+
+        ArcType.Types.Add(id, new(List.Get));
+        Classes.Add(id, this);
+
         string idConst = args.Get("id", new("`{this:id}`")).ToString();
         Args? Default;
         Block? DefaultBlock = args.GetNullable("default");
         if (DefaultBlock != null) Default = Args.GetArgs(DefaultBlock);
         else Default = null;
+
+        Dictionary<string, NewCommand> functions = new();
+        foreach (KeyValuePair<string, Block> pair in args.keyValuePairs)
+        {
+            if (pair.Key == "list") continue;
+            if (pair.Key == "id") continue;
+            if (pair.Key == "args") continue;
+            if (pair.Key == "default") continue;
+            if (pair.Key == "on_create") continue;
+            functions.Add(pair.Key, new NewCommand(pair.Key, Args.GetArgs(pair.Value), CompileType.Block));
+        }
 
         OnCreate = args.Get(ArcCode.NamelessConstructor, "on_create", new() { ShouldBeCompiled = false });
         Define = (string s) =>
@@ -46,6 +58,7 @@ public class ArcClass : ArcObject
             if (v is ArcObject ob)
             {
                 ob.Add("id", new ArcString(idConst));
+                ob.functions = functions;
             }
             List[obj] = v;
 
@@ -54,9 +67,6 @@ public class ArcClass : ArcObject
             Compiler.global.Delete("this");
             return v;
         };
-        ArcType.Types.Add(id, new (List.Get));
-
-        Classes.Add(id, this);
     }
     public static ArcClass Constructor(string id, Args args) => new(id, args)
     {
