@@ -72,7 +72,7 @@ public class ArcString : IValue
 
                         if (Parser.HasEnclosingBrackets(newbv)) newbv = Compiler.RemoveEnclosingBrackets(newbv);
 
-                        Value += string.Join(' ', newbv);
+                        Value += new ArcString(newbv).Value;
                     }
                     break;
                 case ":=":

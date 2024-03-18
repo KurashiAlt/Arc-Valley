@@ -95,7 +95,11 @@ public class Dict<Type> : IArcObject, ArcEnumerable, IEnumerable<KeyValuePair<st
         else throw ArcException.Create($"{indexer} is of wrong type", v);
     }
     public bool CanGet(string indexer) => Kvps.ContainsKey(indexer);
-    public Type this[string indexer] => Kvps[indexer].Value;
+    public Type this[string indexer]
+    {
+        get { return Kvps[indexer].Value; }
+        set { Kvps[indexer].Value = value; }
+    }
     public int Count => Kvps.Count;
     public void Add(string indexer, Type Value)
     {

@@ -3,7 +3,22 @@ using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
 namespace Arc;
-
+public class ArgsObject : IArcObject
+{
+    public Args args;
+    public ArgsObject(Args args)
+    { 
+        this.args = args; 
+    }
+    public bool CanGet(string indexer) => args.keyValuePairs.ContainsKey(indexer);
+    public IVariable? Get(string indexer)
+    {
+        Block b = args.keyValuePairs[indexer];
+        if (b.ToWord() == "yes") return new ArcBool(true);
+        if (b.ToWord() == "no") return new ArcBool(false);
+        return new ArcString(b);
+    }
+}
 public class Args
 {
     public static readonly Dictionary<string, Args> Inheritables = new Dictionary<string, Args>();
@@ -118,6 +133,10 @@ public class Args
     }
     public static Args GetArgs(Block b, Args? inherit = null)
     {
+        if (b.First == null)
+        {
+            return GetArgs(new Block("{", "}"));
+        }
         Walker i = new(b);
         i = GetArgs(i, out Args args, 2, globalInherit: inherit);
         return args;
@@ -128,6 +147,20 @@ public class Args
         va.Prepend("{");
         va.Add("}");
         return GetArgs(va);
+    }
+    public void Inherit(Args args)
+    {
+        if (keyValuePairs == null) throw ArcException.Create(args);
+        foreach (Word w in args.block.Reverse())
+        {
+            block.AddFirst(w);
+        }
+
+        foreach (KeyValuePair<string, Block> v in args.keyValuePairs ?? throw ArcException.Create(args))
+        {
+            if (keyValuePairs.ContainsKey(v.Key)) continue;
+            keyValuePairs.Add(v.Key, v.Value);
+        }
     }
     public static Walker GetArgs(Walker i, out Args args, int StartOffset = 0, Args? globalInherit = null, bool hasInherit = true)
     {

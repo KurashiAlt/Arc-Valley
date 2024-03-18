@@ -30,6 +30,7 @@ public class ArgList : IArcObject, IArcNumber
         }
         throw ArcException.Create(indexer, arg, "args isn't of type [Arc Object]");
     }
+    public IVariable Get() => list.First();
     public Walker Call(Walker w, ref Block result)
     {
         IVariable arg = list.First();
@@ -56,6 +57,10 @@ public class ArcType : IValue
         { "modifier", new(ArcModifier.NamelessConstructor) },
         { "trigger", new(ArcTrigger.NamelessConstructor) },
         { "block", new(ArcCode.NamelessConstructor) },
+        { "named_effect", new(ArcEffect.Constructor) },
+        { "named_modifier", new(ArcModifier.Constructor) },
+        { "named_trigger", new(ArcTrigger.Constructor) },
+        { "named_block", new(ArcCode.Constructor) },
         { "bool", new(ArcBool.Constructor) },
         { "string", new(ArcString.Constructor) },
         { "float", new(ArcFloat.Constructor) },
@@ -99,7 +104,6 @@ public class ArcType : IValue
         { "tradenode", new(TradeNode.TradeNodes.Get) },
         { "idea_group", new(IdeaGroup.IdeaGroups.Get) },
         { "static_modifier", new(StaticModifier.StaticModifiers.Get) },
-        { "event_modifier", new(EventModifier.EventModifiers.Get) },
         { "opinion_modifier", new(OpinionModifier.OpinionModifiers.Get) },
         { "relation", new(Relation.Relations.Get) },
         { "culture_group", new(CultureGroup.CultureGroups.Get) },

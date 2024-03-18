@@ -81,27 +81,6 @@ public class Idea : IArcObject
                 }
             }
 
-            IEnumerable<string> b = from building 
-                in Building.Buildings where
-                building.Value.GetNullable<ArcInt>("unlock_tier") != null && 
-                building.Value.GetNullable<ArcInt>("unlock_tier").Value == 1 && 
-                building.Value.GetNullable<ArcList<IdeaGroup>>("idea_group_unlocks") != null && 
-                building.Value.GetNullable<ArcList<IdeaGroup>>("idea_group_unlocks").Values.Contains(ideaGroup) 
-                orderby building.Value.Get<ArcString>("name").Value 
-                select building.Key[..1].ToUpper() + building.Key[1..^2];
-            if (b.Any())
-            {
-                if (!addedSpacing) desc.Append("\\n");
-                if(b.Count() == 1)
-                {
-                    desc.Append($"\\nUnlocks the next tier of §O{b.First()}§! Buildings");
-                }
-                else
-                {
-                    desc.Append($"\\nUnlocks the next tier of §O{string.Join(", ", from c in b where c != b.Last() select c)}, and {b.Last()}§! Buildings");
-                }
-            }
-
             Program.Localisation.Add($"{Id}_desc", desc.ToString());
         }
         else

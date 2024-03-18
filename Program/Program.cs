@@ -150,6 +150,7 @@ internal class Program
                     {
                         v.Compiled = "ERROR";
                         Console.WriteLine(e.Message);
+                        Console.WriteLine(e.StackTrace);
                     }
                     ti++;
                     if (ti % 1000 == 0) Console.WriteLine($"Has finished compiling {ti} blocks".Pastel(ConsoleColor.Magenta));
@@ -211,11 +212,11 @@ internal class Program
         ("script", "", RulerPersonality.Transpile),
         ("script", "", OpinionModifier.Transpile),
         ("script", "", StaticModifier.Transpile),
-        ("script", "", EventModifier.Transpile),
+        ("script", "", TranspilerClass.TranspileEventModifiers),
         ("script", "", SubjectType.Transpile),
         ("script", "", CustomButton.Transpile),
         ("script", "", CustomIcon.Transpile),
-        ("script", "", CustomTextBox.Transpile),
+        ("script", "", TranspilerClass.TranspileCustomTextBoxes),
         ("script", "", InterfaceNode.Transpile),
         ("script", "", CustomizableLocalization.Transpile),
         ("script", "", TranspileOnActions),

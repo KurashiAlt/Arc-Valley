@@ -29,9 +29,10 @@ public class BuildingLine : IArcObject
     public static BuildingLine Constructor(string id, Args args)
     {
         Dict<ArcCode> tiers = args.GetAttributes(new string[] { "name", "start_offset", "x", "y" });
+        ArcString name = args.Get(ArcString.Constructor, "name");
 
         if (args.keyValuePairs == null) throw ArcException.Create(id, args, tiers);
-        if (!args.keyValuePairs.ContainsKey("unlock_tier")) args.keyValuePairs.Add("unlock_tier", new());
+        if (!args.keyValuePairs.ContainsKey("build_trigger")) args.keyValuePairs.Add("build_trigger", new());
         if (!args.keyValuePairs.ContainsKey("x")) args.keyValuePairs.Add("x", new());
         if (!args.keyValuePairs.ContainsKey("y")) args.keyValuePairs.Add("y", new());
 
@@ -39,14 +40,32 @@ public class BuildingLine : IArcObject
         int x = args.Get(ArcInt.Constructor, "x").Value;
         int y = args.Get(ArcInt.Constructor, "y").Value;
 
+        ArcObject tThis = new()
+        {
+            { "id", new ArcString($"{id}_line") },
+            { "name", new ArcString($"Unlocked {name} buildings") },
+            { "is_percentage", new ArcBool(false) },
+            { "trigger", new ArcTrigger("always", "=", "yes") }
+        };
+        Compiler.global.Add("this", tThis);
+        Compiler.GetVariable<Dict<IVariable>>(new Word("modifier_definitions")).Add($"{id}_line", tThis);
+        ArcClass.Classes["modifier_definition"].OnCreate.Compile();
+        Compiler.global.Delete("this");
+
+        Block buildTrigger = args.keyValuePairs["build_trigger"];
         ArcList<Building> buildings = new();
         foreach (KeyValuePair<string, ArcCode> tier in tiers)
         {
             if (int.TryParse(tier.Key, out int i))
             {
-                args.keyValuePairs["unlock_tier"] = new($"{i-startOffset}");
                 args.keyValuePairs["x"] = new($"{x + (i-1) * 60}");
                 args.keyValuePairs["y"] = new($"{y}");
+                Block copyBuildTrigger = new(buildTrigger);
+                foreach (Word w in copyBuildTrigger)
+                {
+                    if (w.Value == "$tier$") w.Value = i.ToString();
+                }
+                args.keyValuePairs["build_trigger"] = copyBuildTrigger;
             }
             else continue;
             
@@ -58,7 +77,7 @@ public class BuildingLine : IArcObject
 
         return new(
             id,
-            args.Get(ArcString.Constructor, "name"),
+            name,
             buildings
         );
     }
@@ -114,9 +133,6 @@ public class Building : ArcObject
             { "on_built", args.Get(ArcEffect.Constructor, "on_built", new()) },
             { "on_destroyed", args.Get(ArcEffect.Constructor, "on_destroyed", new()) },
             { "on_obsolete", args.Get(ArcEffect.Constructor, "on_obsolete", new()) },
-            { "idea_group_unlocks", args.Get(ArcList<IdeaGroup>.GetConstructor(IdeaGroup.IdeaGroups), "idea_group_unlocks", null) },
-            { "reform_unlocks", args.Get(ArcList<GovernmentReform>.GetConstructor(GovernmentReform.GovernmentReforms), "reform_unlocks", null) },
-            { "unlock_tier", args.Get(ArcInt.Constructor, "unlock_tier", null) },
             { "x", args.Get(ArcInt.Constructor, "x", null) },
             { "y", args.Get(ArcInt.Constructor, "y", null) }
         };
@@ -163,44 +179,7 @@ public class Building : ArcObject
         b.Add("influencing_fort", Get<ArcBool>("influencing_fort"));
         Manufactory.Compile("manufactory", ref b);
 
-        Block c = new Block
-        {
-            "build_trigger", "=", "{"
-        };
-        ArcInt? UnlockTier = GetNullable<ArcInt>("unlock_tier");
-        ArcList<IdeaGroup>? IdeaGroupUnlocks = GetNullable<ArcList<IdeaGroup>?>("idea_group_unlocks");
-        ArcList<GovernmentReform>? ReformUnlocks = GetNullable<ArcList<GovernmentReform>?>("reform_unlocks");
-        if (UnlockTier != null && UnlockTier.Value > 0)
-        {
-            c.Add(
-                "FROM", "=", "{",
-                    "calc_true_if", "=", "{",
-                        "amount", "=", UnlockTier
-            );
-            if (IdeaGroupUnlocks != null)
-            {
-                foreach (IdeaGroup? ideaGroup in IdeaGroupUnlocks.Values)
-                {
-                    if (ideaGroup == null) continue;
-                    c.Add("full_idea_group", "=", ideaGroup.Id);
-                }
-            }
-            if (ReformUnlocks != null)
-            {
-                foreach (GovernmentReform? reform in ReformUnlocks.Values)
-                {
-                    if (reform == null) continue;
-                    c.Add("has_reform", "=", reform.Id);
-                }
-            }
-            c.Add(
-                    "}",
-                "}"
-            );
-        }
-        Get<ArcTrigger>("build_trigger").Compile(ref c);
-        c.Add("}");
-        if (c.Count > 4) b.Add(c);
+        Get<ArcTrigger>("build_trigger").Compile("build_trigger", ref b);
 
         Get<ArcModifier>("modifier").Compile("modifier", ref b);
         if (id != "manufactory") Get<ArcCode>("ai_will_do").Compile("ai_will_do", ref b);
@@ -209,24 +188,8 @@ public class Building : ArcObject
         Get<ArcEffect>("on_obsolete").Compile("on_obsolete", ref b);
         b.Add("}");
 
-        string desc = Get<ArcString>("desc").Value;
-        if (UnlockTier != null && UnlockTier.Value > 0)
-        {
-            if (desc != "") desc += "\n\n";
-            desc += $"At least {UnlockTier}:";
-
-            if(IdeaGroupUnlocks != null)
-            {
-                desc += string.Join(' ', from ide in IdeaGroupUnlocks.Values select $"\n\tHas Completed §Y{ide.Name}§! Ideas");
-            }
-            if(ReformUnlocks != null)
-            {
-                desc += string.Join(' ', from ide in ReformUnlocks.Values select $"\n\tHas Enacted §Y{ide.Name}§!");
-            }
-        }
-
         Program.Localisation.Add($"building_{id}", Get<ArcString>("name").Value);
-        Program.Localisation.Add($"building_{id}_desc", desc);
+        Program.Localisation.Add($"building_{id}_desc", Get<ArcString>("desc").Value);
 
         ArcInt? x = GetNullable<ArcInt>("x");
         ArcInt? y = GetNullable<ArcInt>("y");

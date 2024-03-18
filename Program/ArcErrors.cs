@@ -9,25 +9,29 @@ public class ArcException : Exception
         };
         foreach (object arg in args)
         {
-            if (arg is Walker walker) LogWord(walker.Current);
-            else if (arg is Word word) LogWord(word);
-            else if (arg is Args nArgs)
+            try
             {
-                LogBlock(nArgs.block);
-
-                if (nArgs.keyValuePairs != null)
+                if (arg is Walker walker) LogWord(walker.Current);
+                else if (arg is Word word) LogWord(word);
+                else if (arg is Args nArgs)
                 {
-                    foreach (KeyValuePair<string, Block> nArg in nArgs.keyValuePairs)
+                    LogBlock(nArgs.block);
+
+                    if (nArgs.keyValuePairs != null)
                     {
-                        exp.Add($"Key = {nArg.Key}");
-                        LogBlock(nArg.Value);
+                        foreach (KeyValuePair<string, Block> nArg in nArgs.keyValuePairs)
+                        {
+                            exp.Add($"Key = {nArg.Key}");
+                            LogBlock(nArg.Value);
+                        }
                     }
                 }
+                else
+                {
+                    exp.Add(arg.ToString());
+                }
             }
-            else
-            {
-                exp.Add(arg.ToString());
-            }
+            catch { }
         }
         exp.Add("");
         return string.Join('\n', exp);

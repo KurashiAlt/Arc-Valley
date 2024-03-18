@@ -158,7 +158,17 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
 
             i = Compiler.GetScope(i, out Block scope);
 
-            Values.Add(tConstructor(scope));
+            if (Compiler.TryGetVariable(scope.ToWord(), out IVariable? var))
+            {
+                if (var == null) throw ArcException.Create(i, result, scope);
+                else if (var is ArgList ar && ar.Get() is T va) Values.Add(va);
+                else if (var is T v) Values.Add(v);
+                else throw ArcException.Create(i, result, scope, var);
+            }
+            else
+            {
+                Values.Add(tConstructor(scope));
+            }
             i.ForceMoveNext();
             i.Asssert("}");
         }

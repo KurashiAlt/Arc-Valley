@@ -301,7 +301,6 @@ public static partial class Compiler
         { "idea_groups", IdeaGroup.IdeaGroups },
         { "cultures", Culture.Cultures },
         { "estates", Estate.Estates },
-        { "event_modifiers", EventModifier.EventModifiers },
         { "personal_deitys", PersonalDeity.PersonalDeitys },
         { "mission_trees", MissionTree.MissionTrees },
         { "provinces", Province.Provinces },
@@ -322,7 +321,6 @@ public static partial class Compiler
         { "static_modifiers", StaticModifier.StaticModifiers },
         { "customizable_localizations", CustomizableLocalization.CustomizableLocalizations },
         { "custom_buttons", CustomButton.CustomButtons },
-        { "custom_text_boxes", CustomTextBox.CustomTextBoxs },
         { "custom_icons", CustomIcon.CustomIcons },
         { "interface_files", InterfaceNode.Files },
         { "defines", new ArcObject() },
@@ -415,7 +413,6 @@ public static partial class Compiler
             "advisor_type" => AdvisorType.Call(g),
             "tradenode" => TradeNode.Call(g),
             "idea_group" => IdeaGroup.Call(g),
-            "event_modifier" => EventModifier.Call(g),
             "opinion_modifier" => OpinionModifier.Call(g),
             "relation" => Relation.Call(g),
             "culture_group" => CultureGroup.Call(g),
@@ -456,18 +453,40 @@ public static partial class Compiler
             "subject_type" => SubjectType.Call(g),
             "static_modifier" => StaticModifier.Call(g),
             "define" => CallDefine(g),
-            "named_effect" => NamedBlock(g),
+            "named_effect" => NamedBlock(g, ArcEffect.Constructor),
+            "named_trigger" => NamedBlock(g, ArcTrigger.Constructor),
+            "named_modifier" => NamedBlock(g, ArcModifier.Constructor),
+            "named_block" => NamedBlock(g, ArcCode.Constructor),
             "named_int" => NamedInt(g),
             "custom_button" => CustomButton.Call(g),
             "custom_icon" => CustomIcon.Call(g),
-            "custom_text_box" => CustomTextBox.Call(g),
             "interface_file" => InterfaceNode.Call(g),
             "customizable_localization" => CustomizableLocalization.Call(g),
-            _ => throw ArcException.Create($"Unknown Object Type {g.Current} in object declaration", g)
+            "class" => ArcClass.Call(g),
+            _ => DynamicClass(g)
         };
     }
-    static int intId = 0;
-    static Decision? logModTypeModifiers = null;
+    static Walker DynamicClass(Walker i)
+    {
+        foreach (KeyValuePair<string, ArcClass> cls in ArcClass.Classes)
+        {
+            if (i.Current == cls.Key)
+            {
+                i.ForceMoveNext();
+
+                string id = GetId(i.Current);
+
+                i = Args.GetArgs(i, out Args args);
+
+                cls.Value.Define(id);
+                cls.Value.Init(args, id);
+
+                return i;
+            }
+        }
+
+        throw ArcException.Create($"Unknown Object Type {i.Current} in object declaration", i);
+    }
     static Walker NamedInt(Walker i)
     {
         i.ForceMoveNext();
@@ -480,7 +499,7 @@ public static partial class Compiler
 
         return i;
     }
-    static Walker NamedBlock(Walker i)
+    static Walker NamedBlock(Walker i, Func<Block, IVariable> constructor)
     {
         i.ForceMoveNext();
 
@@ -488,7 +507,7 @@ public static partial class Compiler
 
         i = Args.GetArgs(i, out Args args);
 
-        global.Add(id, new ArcEffect(args.block));
+        global.Add(id, constructor(args.block));
 
         return i;
     }
@@ -514,28 +533,28 @@ public static partial class Compiler
 
         string name = args.Get(ArcString.Constructor, "name").Value;
         ArcTrigger Potential = new(
-            "has_country_flag", "=", "coterie_of_organized_scholars", 
-            "NOT", "=", "{", 
-                "has_country_flag", "=", $"coterie_{id}", 
-            "}", 
-            "NOT", "=", "{", 
-                "has_country_modifier", "=", "coterie_of_organized_scholars_research", 
+            "has_country_flag", "=", "coterie_of_organized_scholars",
+            "NOT", "=", "{",
+                "has_country_flag", "=", $"coterie_{id}",
+            "}",
+            "NOT", "=", "{",
+                "has_country_modifier", "=", "coterie_of_organized_scholars_research",
             "}"
         );
         Potential.Value.Add(args.Get(ArcTrigger.Constructor, "potential", new()).Value);
         ArcTrigger Allow = new(
-            "NOT", "=", "{", 
-                "has_country_modifier", "=", "coterie_of_organized_scholars_research", 
+            "NOT", "=", "{",
+                "has_country_modifier", "=", "coterie_of_organized_scholars_research",
             "}"
         );
         Allow.Value.Add(args.Get(ArcTrigger.Constructor, "allow", new()).Value);
         ArcEffect Effect = args.Get(ArcEffect.Constructor, "on_start", new());
         Effect.Value.Add(
-            "scholarly_research", "=", "{", 
-                "id", "=", id, 
+            "scholarly_research", "=", "{",
+                "id", "=", id,
                 "on_complete", "=", "{"
         );
-        foreach(Word w in args.Get(ArcEffect.Constructor, "on_complete", new()).Value)
+        foreach (Word w in args.Get(ArcEffect.Constructor, "on_complete", new()).Value)
         {
             Effect.Value.Add(w);
         }
@@ -611,20 +630,30 @@ public static partial class Compiler
             else throw ArcException.Create($"Invalid command in Object Declaration: {g.Current}", g, result, code);
         } while (g.MoveNext());
     }
-    public static Dict<ArcObject> ModifierLocs = Dict<ArcObject>.Constructor((string id, Args args) =>
+    public static Dict<ArcObject> ModifierLocs = Dict<ArcObject>.Constructor((string id, Args args) => new ArcObject() {
+        { "text", new ArcString(args.Get("text")) },
+        { "localisation_key", new ArcString(args.Get("localisation_key")) },
+        { "multiplier", new ArcFloat(args.Get("multiplier")) },
+        { "percent", new ArcBool(args.Get("percent")) },
+        { "is_good", new ArcBool(args.Get("is_good")) },
+        { "is_bool", new ArcBool(args.Get("is_bool")) },
+        { "is_multiplicative", new ArcBool(args.Get("is_multiplicative")) },
+        { "precision", new ArcInt(args.Get("precision")) },
+    })(Parser.ParseFile($"{Program.directory}modifier_loc.txt"));
+    public static ArcObject ModifierLocConstructor(string id, Args args)
     {
         return new ArcObject()
         {
-            { "text", new ArcString(args.Get("text")) },
-            { "localisation_key", new ArcString(args.Get("localisation_key")) },
-            { "multiplier", new ArcFloat(args.Get("multiplier")) },
-            { "percent", new ArcBool(args.Get("percent")) },
-            { "is_good", new ArcBool(args.Get("is_good")) },
-            { "is_bool", new ArcBool(args.Get("is_bool")) },
-            { "is_multiplicative", new ArcBool(args.Get("is_multiplicative")) },
-            { "precision", new ArcInt(args.Get("precision")) },
+            { "text", args.Get(ArcString.Constructor, "text") },
+            { "localisation_key", args.Get(ArcString.Constructor, "localisation_key") },
+            { "multiplier", args.Get(ArcFloat.Constructor, "multiplier") },
+            { "percent", args.Get(ArcBool.Constructor, "percent") },
+            { "is_good", args.Get(ArcBool.Constructor, "is_good") },
+            { "is_bool", args.Get(ArcBool.Constructor, "is_bool") },
+            { "is_multiplicative", args.Get(ArcBool.Constructor, "is_multiplicative") },
+            { "precision", args.Get(ArcInt.Constructor, "precision") },
         };
-    })(Parser.ParseFile($"{Program.directory}modifier_loc.txt"));
+    }
     public static bool When(Block code)
     {
         if (code.Count == 0)
@@ -680,6 +709,16 @@ public static partial class Compiler
                     return false;
                 }
             }
+            else if (g.Current == "bool:equals")
+            {
+                g = Args.GetArgs(g, out Args args);
+                bool nt = args.Get(ArcBool.Constructor, "bool").Value;
+                bool value = args.Get(ArcBool.Constructor, "value").Value;
+                if (nt != value)
+                {
+                    return false;
+                }
+            }
         } while (g.MoveNext());
 
         return true;
@@ -730,6 +769,23 @@ public static partial class Compiler
                 return When(b);
             }
         }
+        if (g.Current == "arc_call")
+        {
+            g = Args.GetArgs(g, out Args args);
+
+            int id = 0;
+            switch (id)
+            {
+                case 0:
+                    {
+                        ArcString key = args.Get(ArcString.Constructor, "key");
+
+                        ModifierLocs.Add(key.Value, ModifierLocConstructor(key.Value, args));
+                    }
+                    break;
+                default: throw ArcException.Create(g, result, compile, args);
+            }
+        }
         if (g.Current == "modifier_to_string")
         {
             g = Args.GetArgs(g, out Args args);
@@ -738,7 +794,7 @@ public static partial class Compiler
                 if (vr == null) throw ArcException.Create("Unknown Error: Null Reference", g);
                 if (vr is not ArcModifier) throw ArcException.Create($"{string.Join(' ', args.block)} is not ArcModifier in modifier_to_string function", g);
                 Block c = new("{");
-                foreach (Word w in ((ArcModifier)vr).Value)
+                foreach (Word w in Parser.ParseCode(((ArcModifier)vr).Compile(), g.Current.GetFile()))
                 {
                     c.Add(w);
                 }
@@ -930,6 +986,19 @@ public static partial class Compiler
                 Program.Localisation.Add(key, nValue);
             }
             else throw new NotImplementedException();
+            return true;
+        }
+        if (g.Current == "arc_log")
+        {
+            g.ForceMoveNext(); 
+            g.Asssert("=");
+            g.ForceMoveNext(); 
+            string value = g.Current;
+            if (TranspiledString(value, '"', out string? nValue, CompileEffect, g.Current.GetFile()))
+            {
+                Console.WriteLine($"{g.Current.GetFile()} line {g.Current.File}: {nValue}");
+            }
+            else Console.WriteLine($"{g.Current.GetFile()} line {g.Current.File}: {value}"); ;
             return true;
         }
         if (g.Current.Value.EndsWith(',') || g.Current.Value.EndsWith(';'))
@@ -1226,7 +1295,15 @@ public static partial class Compiler
                 ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
                 ArcModifier modifier = args.Get(ArcModifier.Constructor, "modifier");
 
-                new EventModifier(id.ToString(), name, modifier);
+                GetVariable<Dict<IVariable>>(new Word("event_modifiers")).Add(
+                    id.Value,
+                    new ArcObject()
+                    {
+                        { "id", id },
+                        { "name", name },
+                        { "modifier", modifier } 
+                    }
+                );
 
                 if (permanent.Value) result.Add("add_permanent_province_modifier", "=", "{");
                 else result.Add("add_province_modifier", "=", "{");
@@ -1263,7 +1340,15 @@ public static partial class Compiler
                 ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
                 ArcModifier modifier = args.Get(ArcModifier.Constructor, "modifier");
 
-                new EventModifier($"{id}", name, modifier);
+                GetVariable<Dict<IVariable>>(new Word("event_modifiers")).Add(
+                    id.Value,
+                    new ArcObject()
+                    {
+                        { "id", id },
+                        { "name", name },
+                        { "modifier", modifier }
+                    }
+                );
 
                 result.Add("add_country_modifier", "=", "{");
                 result.Add("name", "=", $"{id}");

@@ -1,6 +1,7 @@
 ﻿
 using Pastel;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Arc;
@@ -551,16 +552,32 @@ public class Estate : IArcObject
         };
         Block preloadFile = new()
         {
-            "estate_special", "=", "{",
-                "modifier_definition", "=", "{",
-                    "type", "=", "privileges",
-                    "key", "=", "max_terms",
-                    "trigger", "=", "{",
-                        "has_government_attribute", "=", "has_limited_terms",
-                    "}",
-                "}",
-            "}"
+            "estate_special", "=", "{"
         };
+        foreach (IVariable vr in Compiler.GetVariable<Dict<IVariable>>(new Word("modifier_definitions")).Values())
+        {
+            preloadFile.Add("modifier_definition", "=", "{");
+
+            if (vr is ArcObject modifierDefinition)
+            {
+                string id = modifierDefinition.Get<ArcString>("id").Value;
+                string name = modifierDefinition.Get<ArcString>("name").Value;
+                Program.Localisation.Add(id, name);
+                bool isPercentage = modifierDefinition.Get<ArcBool>("is_percentage").Value;
+
+                preloadFile.Add("type", "=");
+                if (isPercentage) preloadFile.Add("loyalty");
+                else preloadFile.Add("privileges");
+
+                preloadFile.Add("key", "=", id);
+
+                modifierDefinition.Get<ArcTrigger>("trigger").Compile("trigger", ref preloadFile, false);
+            }
+            else throw ArcException.Create("Trying to transpile modifier definition, but vr wasn't an object", preloadFile, estateFile, vr);
+
+            preloadFile.Add("}");
+        }
+        preloadFile.Add("}");
         Block SpawnRebelsFromUnhappyEstate = new()
         {
             "spawn_rebels_from_unhappy_estate", "=", "{",

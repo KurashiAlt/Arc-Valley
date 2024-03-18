@@ -2,6 +2,15 @@
 
 public class ArcObject : Dict<IVariable?>
 {
+    public Dictionary<string, NewCommand>? functions;
+    public new IVariable? Get(string indexer)
+    {
+        if (indexer == "first") return Kvps.Values.First().Value;
+        if (indexer == "last") return Kvps.Values.Last().Value;
+        if (functions != null && functions.TryGetValue(indexer, out NewCommand? value)) return value;
+        return Kvps[indexer].Value;
+    }
+
     protected static Walker Call<T>(Walker i, Func<string, Args, T> func)
     {
         i.ForceMoveNext();

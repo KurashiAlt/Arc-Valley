@@ -1,5 +1,6 @@
 ﻿
 using Pastel;
+using System.Collections.Immutable;
 using System.Text;
 
 namespace Arc;
@@ -35,61 +36,6 @@ public class StaticModifier : ArcModifier
         return "Static Modifiers";
     }
 }
-public class EventModifier : IArcObject
-{
-    public static readonly Dict<EventModifier> EventModifiers = new();
-    public bool IsObject() => true;
-    public ArcString Id { get; set; }
-    public ArcString Name { get; set; }
-    public ArcModifier Modifier { get; set; }
-    public Dict<IVariable> KeyValuePairs { get; set; }
-    public EventModifier(string key, ArcString name, ArcModifier modifier)
-    {
-        Id = new(key);
-        Name = name;
-        Modifier = modifier;
-        KeyValuePairs = new()
-        {
-            { "id", Id },
-            { "name", Name },
-            { "modifier", Modifier }
-        };
-
-        EventModifiers.Add(key, this);
-    }
-    public bool CanGet(string indexer) => KeyValuePairs.CanGet(indexer);
-    public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
-    public static Walker Call(Walker i)
-    {
-        i.ForceMoveNext();
-
-        string id = Compiler.GetId(i.Current);
-
-        i = Args.GetArgs(i, out Args args);
-        EventModifier mod = new(
-            id,
-            args.Get(ArcString.Constructor, "name"),
-            args.Get(ArcModifier.Constructor, "modifier")
-        );
-
-        return i;
-    }
-    public Walker Call(Walker i, ref Block result) => Get("id").Call(i, ref result);
-    public static string Transpile()
-    {
-        StringBuilder sb = new();
-
-        foreach (EventModifier mod in EventModifiers.Values())
-        {
-            sb.Append($"{mod.Id} = {{ {mod.Modifier.Compile()} }}");
-            Program.Localisation.Add(mod.Id.Value, mod.Name.Value);
-        }
-
-        Program.OverwriteFile($"{Program.TranspileTarget}/common/event_modifiers/arc.txt", sb.ToString());
-        return "Event Modifiers";
-    }
-}
-
 public class OpinionModifier : ArcObject
 {
     public static readonly Dict<OpinionModifier> OpinionModifiers = new();

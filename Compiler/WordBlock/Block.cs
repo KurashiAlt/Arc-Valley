@@ -17,6 +17,13 @@ public class Block : LinkedList<Word>
             AddLast(new Word(s2, 0, "unknown"));
         }
     }
+    public Block(Block b)
+    {
+        foreach (Word w in b)
+        {
+            AddLast(new Word(w.Value, w));
+        }
+    }
     public Block(string s)
     {
         AddLast(new Word(s, 0, "unknown"));
