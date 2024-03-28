@@ -26,12 +26,20 @@ public class RulerPersonality : ArcObject
         { "ai_rules", args.Get(ArcCode.Constructor, "ai_rules", new()) },
         { "modifier", args.Get(ArcModifier.Constructor, "modifier", new()) },
         { "nation_designer_cost", args.Get(ArcInt.Constructor, "nation_designer_cost", new(1)) },
+        { "can_be_ancestor", args.Get(ArcBool.Constructor, "can_be_ancestor", new(true)) },
     };
     public override string ToString() => Get("id").ToString();
     public override Walker Call(Walker i, ref Block result) { result.Add(ToString()); return i; }
-    public void Transpile(ref Block s)
+    public Block TranspileThis()
     {
+        Block s = new();
         string id = ToString();
+        if (Get<ArcBool>("can_be_ancestor"))
+        {
+            Program.Localisation.Add($"ancestor_{id}", Get("name").ToString());
+            Program.Localisation.Add($"ancestor_desc_{id}", Get("desc").ToString());
+            Program.Localisation.Add($"ancestor_{id}_die_desc", Get("death").ToString());
+        }
         Program.Localisation.Add($"{id}", Get("name").ToString());
         Program.Localisation.Add($"desc_{id}", Get("desc").ToString());
         Program.Localisation.Add($"{id}_die_desc", Get("death").ToString());
@@ -46,15 +54,25 @@ public class RulerPersonality : ArcObject
         Get<ArcModifier>("modifier").Compile(ref s);
         s.Add("nation_designer_cost", "=", Get("nation_designer_cost"));
         s.Add("}");
+        return s;
     }
     public static string Transpile()
     {
-        Block s = new();
-        foreach (KeyValuePair<string, RulerPersonality> Advisor in RulerPersonalities)
+        Block main = new();
+        Block ancestor = new();
+        foreach (RulerPersonality Personality in RulerPersonalities.Values())
         {
-            Advisor.Value.Transpile(ref s);
+            Block transpiled = Personality.TranspileThis();
+            main.Add(transpiled);
+            if (Personality.Get<ArcBool>("can_be_ancestor"))
+            {
+                if (transpiled.First == null) throw new Exception("?");
+                transpiled.First.Value.Value = $"ancestor_{transpiled.First.Value.Value}";
+                ancestor.Add(transpiled);
+            }
         }
-        Program.OverwriteFile($"{Program.TranspileTarget}/common/ruler_personalities/arc.txt", string.Join(' ', s));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/ruler_personalities/arc.txt", string.Join(' ', main));
+        Program.OverwriteFile($"{Program.TranspileTarget}/common/ancestor_personalities/arc.txt", string.Join(' ', ancestor));
         return "Ruler Personalities";
     }
 }

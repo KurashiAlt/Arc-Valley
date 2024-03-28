@@ -3,6 +3,7 @@ using Pastel;
 using System.Data;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Text.RegularExpressions;
 internal class Program
@@ -53,6 +54,18 @@ internal class Program
 
         if (args.Contains("script") || args.Contains("all"))
         {
+            foreach (string file in GetFiles($"{SelectorFolder}"))
+            {
+                if (!file.EndsWith(".png")) continue;
+                string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
+
+                _ = new ProvinceGroup(name, new())
+                {
+                    { "id", new ArcString(name) },
+                    { "provinces", new ArcList<Province>() }
+                };
+            }
+
             foreach (string location in LoadOrder)
             {
                 TimeSpan start = timer.Elapsed;
@@ -86,7 +99,7 @@ internal class Program
                         }
                     }
 
-                    ArcList<Province> list = new();
+                    List<Province?> list = new();
                     List<string> keys = new();
                     foreach (KeyValuePair<string, Province> v in 
                         from prov in Province.Provinces where 
@@ -100,11 +113,7 @@ internal class Program
                     }
 
                     File.WriteAllText($"{file}.gen", string.Join(' ', from p in keys select p));
-                    _ = new ProvinceGroup(name, new())
-                {
-                    { "id", new ArcString(name) },
-                    { "provinces", list }
-                };
+                    ProvinceGroup.ProvinceGroups[name].Get<ArcList<Province>>("provinces").Values = list;
                 }
                 TimeSpan end = timer.Elapsed;
                 Console.WriteLine($"{$"Finished Loading {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
@@ -119,17 +128,13 @@ internal class Program
 
                     string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
 
-                    ArcList<Province> list = new();
+                    List<Province?> list = new();
                     foreach (Word w in Parser.ParseFile(file))
                     {
                         list.Add(Province.Provinces[w]);
                     }
 
-                    _ = new ProvinceGroup(name, new())
-                {
-                    { "id", new ArcString(name) },
-                    { "provinces", list }
-                };
+                    ProvinceGroup.ProvinceGroups[name].Get<ArcList<Province>>("provinces").Values = list;
                 }
                 TimeSpan end = timer.Elapsed;
                 Console.WriteLine($"{$"Finished Loading Cached {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
@@ -220,6 +225,7 @@ internal class Program
         ("script", "", TranspilerClass.TranspileCustomTextBoxes),
         ("script", "", InterfaceNode.Transpile),
         ("script", "", CustomizableLocalization.Transpile),
+        ("script", "", TechnologyGroups),
         ("script", "", TranspileOnActions),
         ("script", "", TranspileDefines),
         ("script", "", TranspileLocalisations),
@@ -251,6 +257,35 @@ internal class Program
         Console.WriteLine($"Transpilation took: {(double)timer.ElapsedMilliseconds / 1000:0.000} seconds".Pastel(ConsoleColor.Red));
 
         return 0;
+    }
+    static string TechnologyGroups()
+    {
+        Block b = new("groups", "=", "{");
+        foreach (ArcObject obj in Compiler.GetVariable<Dict<IVariable>>(new Word("technology_groups")).Values())
+        {
+            string id = obj.Get<ArcString>("id").ToString();
+            b.Add(
+                id, "=", "{",
+                    "start_level", "=", obj.Get("start_level"),
+                    "start_cost_modifier", "=", obj.Get("start_cost_modifier")
+            );
+            if (obj.Get<ArcBool>("is_primitive")) b.Add("is_primitive", "=", "yes");
+            b.Add(
+                    obj.Get<ArcBlock>("nation_designer_trigger").Compile("nation_designer_trigger"),
+                    obj.Get<ArcBlock>("nation_designer_cost").Compile("nation_designer_cost"),
+                "}"
+            );
+        }
+        b.Add(
+            "}",
+            "tables", "=", "{", 
+                "adm_tech", "=", "\"technologies/adm.txt\"", 
+                "dip_tech", "=", "\"technologies/dip.txt\"", 
+                "mil_tech", "=", "\"technologies/mil.txt\"", 
+            "}"
+        );
+        OverwriteFile($"{TranspileTarget}/common/technology.txt", b.ToString());
+        return "Technology Groups";
     }
     static string NavalDoctrines()
     {

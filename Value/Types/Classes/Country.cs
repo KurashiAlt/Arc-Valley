@@ -8,7 +8,6 @@ namespace Arc;
 public class Country : IArcObject
 {
     public static readonly Dict<Country> Countries = new();
-    public bool IsObject() => true;
     public ArcCode HistoricalIdeaGroups { get; set; }
     public ArcCode HistoricalUnits { get; set; }
     public ArcCode MonarchNames { get; set; }
@@ -23,7 +22,7 @@ public class Country : IArcObject
     public ArcString Government { get; set; }
     public ArcInt GovernmentRank { get; set; }
     public ArcInt Mercantilism { get; set; }
-    public ArcString TechnologyGroup { get; set; }
+    public ArcObject TechnologyGroup { get; set; }
     public LazyPointer<Religion> iReligion { get; set; }
     public Culture PrimaryCulture { get; set; }
     public ArcString GraphicalCulture { get; set; }
@@ -32,7 +31,7 @@ public class Country : IArcObject
     public Province Capital { get; set; }
     public LazyPointer<GovernmentReform>? StartingReform { get; set; }
     public Dict<IVariable?> keyValuePairs { get; set; }
-    public Country(string key, ArcCode historicalIdeaGroups, ArcCode historicalUnits, ArcCode monarchNames, ArcCode leaderNames, ArcCode shipNames, ArcCode armyNames, ArcCode fleetNames, ArcString tag, ArcString name, ArcString adj, ArcCode color, ArcString government, ArcInt governmentRank, ArcInt mercantilism, ArcString technologyGroup, LazyPointer<Religion> religion, Culture primaryCulture, ArcString graphicalCulture, ArcCode definitions, ArcEffect history, Province capital, LazyPointer<GovernmentReform>? startingReform)
+    public Country(string key, ArcCode historicalIdeaGroups, ArcCode historicalUnits, ArcCode monarchNames, ArcCode leaderNames, ArcCode shipNames, ArcCode armyNames, ArcCode fleetNames, ArcString tag, ArcString name, ArcString adj, ArcCode color, ArcString government, ArcInt governmentRank, ArcInt mercantilism, ArcObject technologyGroup, LazyPointer<Religion> religion, Culture primaryCulture, ArcString graphicalCulture, ArcCode definitions, ArcEffect history, Province capital, LazyPointer<GovernmentReform>? startingReform)
     {
         HistoricalIdeaGroups = historicalIdeaGroups;
         HistoricalUnits = historicalUnits;
@@ -154,7 +153,7 @@ public class Country : IArcObject
             args.GetDefault(ArcString.Constructor, "government", new("monarchy")),
             args.GetDefault(ArcInt.Constructor, "government_rank", new(1)),
             args.GetDefault(ArcInt.Constructor, "mercantilism", new(1)),
-            args.Get(ArcString.Constructor, "technology_group"),
+            args.Get(ArcClass.Classes["technology_group"].ClassGetConstrutor<ArcObject>, "technology_group"),
             args.GetLazyFromList(Religion.Religions, "religion"),
             args.GetFromList(Culture.Cultures, "primary_culture"),
             args.Get(ArcString.Constructor, "graphical_culture"),
@@ -189,7 +188,7 @@ public class Country : IArcObject
             "government", "=", Government,
             "government_rank", "=", GovernmentRank,
             "mercantilism", "=", Mercantilism,
-            "technology_group", "=", TechnologyGroup,
+            "technology_group", "=", TechnologyGroup.Get("id"),
             "religion", "=", iReligion.Get().Id,
             "primary_culture", "=", PrimaryCulture.Id,
             "capital", "=", Capital.Id,

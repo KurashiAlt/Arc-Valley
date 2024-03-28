@@ -47,10 +47,10 @@ public class BuildingLine : IArcObject
             { "is_percentage", new ArcBool(false) },
             { "trigger", new ArcTrigger("always", "=", "yes") }
         };
-        Compiler.global.Add("this", tThis);
+        ArgList.Add("this", tThis);
         Compiler.GetVariable<Dict<IVariable>>(new Word("modifier_definitions")).Add($"{id}_line", tThis);
         ArcClass.Classes["modifier_definition"].OnCreate.Compile();
-        Compiler.global.Delete("this");
+        ArgList.Drop("this");
 
         Block buildTrigger = args.keyValuePairs["build_trigger"];
         ArcList<Building> buildings = new();

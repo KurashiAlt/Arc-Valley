@@ -3,7 +3,21 @@ using System.Numerics;
 
 public class ArgList : IArcObject, IArcNumber
 {
-    public static LinkedList<IVariable> list = new();
+    public static Dictionary<string, LinkedList<IVariable>> lists = new();
+    public LinkedList<IVariable> list;
+    public static void Add(string list, IVariable v)
+    {
+        lists[list].AddFirst(v);
+    }
+    public static void Drop(string list)
+    {
+        lists[list].RemoveFirst();
+    }
+    public ArgList(string listName, LinkedList<IVariable> list)
+    {
+        this.list = list;
+        lists.Add(listName, list);
+    }
     public bool CanGet(string indexer)
     {
         if (list.Count == 0) return false;
@@ -262,9 +276,9 @@ public class CommandCall : IVariable
     public Walker Call(Walker i, ref Block result)
     {
         i = Args.GetArgs(i, out Args args);
-        Compiler.global.Add("this", This);
+        ArgList.Add("this", This);
         Command.Call(args, ref result);
-        Compiler.global.Delete("this");
+        ArgList.Drop("this");
         return i;
     }
 }
@@ -298,11 +312,11 @@ public class NewCommand : ArcObject
         if (Get("args") is Dict<ArcType>) a = FromArgs(args, this);
         else a = QFromArgs(args, this);
 
-        ArgList.list.AddFirst(a);
+        ArgList.Add("args", a);
 
         Get<ArcBlock>("transpile").Compile(ref result);
 
-        ArgList.list.RemoveFirst();
+        ArgList.Drop("args");
     }
     public override Walker Call(Walker i, ref Block result)
     {

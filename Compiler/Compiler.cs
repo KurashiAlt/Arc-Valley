@@ -328,7 +328,8 @@ public static partial class Compiler
         { "default_reform", new ArcCode() },
         { "terrain_declarations", new ArcBlock() },
         { "tree", new ArcBlock() },
-        { "args", new ArgList() },
+        { "args", new ArgList("args", new()) },
+        { "this", new ArgList("this", new()) },
         { "hre_defines", new Dict<IVariable>()
         {
             { "emperor", new ArcString("") }
@@ -891,9 +892,9 @@ public static partial class Compiler
             TryGetVariable(dictKey, out IVariable? dictValue);
             if (dictValue == null) throw ArcException.Create($"Variable {dictKey} does not exist", g);
 
-            if (dictValue is ArgList)
+            if (dictValue is ArgList lst)
             {
-                IVariable arg = ArgList.list.First();
+                IVariable arg = lst.list.First();
                 if (arg is ArcObject arcObject)
                 {
                     dictValue = arcObject;
@@ -1010,8 +1011,8 @@ public static partial class Compiler
             g.ForceMoveNext();
             Word Operator = g.Current;
             g.ForceMoveNext();
-            g = GetScope(g, out Block right);
-
+            g = GetScope(g, out Block rightBlock);
+            Args args = Args.GetArgs(rightBlock);
             switch (Operator)
             {
                 case ":=": VariableOperator("set_variable", ref result); break;
@@ -1026,12 +1027,13 @@ public static partial class Compiler
                 case "<" : VariableOperator("check_variable", ref result, Invert: true); break;
                 case "==": VariableOperator("is_variable_equal", ref result); break;
                 case "!=": VariableOperator("is_variable_equal", ref result, Invert: true); break;
-                default: throw ArcException.Create($"While performing a quick variable operation '&' syntax, operator {Operator} was not recognized", left, Operator, right, result);
+                default: throw ArcException.Create($"While performing a quick variable operation '&' syntax, operator {Operator} was not recognized", left, Operator, args, result);
             }
 
             return true;
             void VariableOperator(string command, ref Block result, bool Invert = false, bool CheckOrEqual = false, bool CheckNotEqual = false, bool BothAreValue = false)
             {
+                if (CheckNotEqual) result.Add("AND", "=", "{");
                 if (CheckOrEqual) result.Add("OR", "=", "{");
                 if (Invert) result.Add("NOT", "=", "{");
                 try
@@ -1039,14 +1041,14 @@ public static partial class Compiler
                     result.Add(
                         command, "=", "{",
                             "which", "=", left,
-                            "value", "=", new ArcFloat(right),
+                            "value", "=", new ArcFloat(args.block),
                         "}"
                     );
                     if (CheckNotEqual) result.Add(
                         "NOT", "=", "{",
                             "is_variable_equal", "=", "{",
                                 "which", "=", left,
-                                "value", "=", new ArcFloat(right),
+                                "value", "=", new ArcFloat(args.block),
                             "}",
                         "}"
                     );
@@ -1054,7 +1056,7 @@ public static partial class Compiler
                     if (CheckOrEqual) result.Add(
                         "is_variable_equal", "=", "{",
                             "which", "=", left,
-                            "value", "=", new ArcFloat(right),
+                            "value", "=", new ArcFloat(args.block),
                         "}"
                     );
                 }
@@ -1063,14 +1065,14 @@ public static partial class Compiler
                     result.Add(
                         command, "=", "{",
                             "which", "=", left,
-                            BothAreValue?"value":"which", "=", right,
+                            BothAreValue?"value":"which", "=", args.block,
                         "}"
                     );
                     if (CheckNotEqual) result.Add(
                         "NOT", "=", "{",
                             "is_variable_equal", "=", "{",
                                 "which", "=", left,
-                                "which", "=", right,
+                                "which", "=", args.block,
                             "}",
                         "}"
                     );
@@ -1078,12 +1080,13 @@ public static partial class Compiler
                     if (CheckOrEqual) result.Add(
                         "is_variable_equal", "=", "{",
                             "which", "=", left,
-                            "which", "=", right,
+                            "which", "=", args.block,
                         "}"
                     );
-                    if (!VariableExists(left)) Console.WriteLine(ArcException.CreateMessage($"Variable Definition not found for {left}", left, Operator, right, command, result));
+                    if (!VariableExists(left)) Console.WriteLine(ArcException.CreateMessage($"Variable Definition not found for {left}", left, Operator, args, command, result));
                 }
                 if (CheckOrEqual) result.Add("}");
+                if (CheckNotEqual) result.Add("}");
             }
             bool VariableExists(string id)
             {
@@ -1249,7 +1252,28 @@ public static partial class Compiler
                     if (scope > 0) nc.Append(c);
                     if (scope == 0)
                     {
-                        s.Append(StringCompile(nc.ToString(), fileName, compile));
+                        string tv = StringCompile(nc.ToString(), fileName, compile);
+                        string[] tvc = tv.Split('\n');
+                        string tc = s.ToString();
+                        int indent = 0;
+                        if (tc.Contains('\n'))
+                        {
+                            int ti = tc.LastIndexOf('\n');
+                            while (true)
+                            {
+                                ti++;
+
+                                if (ti < tc.Length && tc[ti] == '\t') indent++;
+                                else break;
+                            }
+                        }
+                        s.Append(tvc[0]);
+                        for (int i = 1; i < tvc.Length; i++)
+                        {
+                            s.Append("\\n");
+                            s.Append(new string('\t', indent));
+                            s.Append(tvc[i]);
+                        }
                         nc = new();
                     }
                     continue;

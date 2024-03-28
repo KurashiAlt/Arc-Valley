@@ -15,7 +15,7 @@ public class Unit : IArcObject
     public ArcString Desc { get; set; }
      
     public ArcString Type { get; set; }
-    public ArcString? UnitType { get; set; }
+    public ArcObject? UnitType { get; set; }
      
     public ArcFloat? Manpower { get; set; }
     public ArcTrigger Trigger { get; set; }
@@ -31,7 +31,7 @@ public class Unit : IArcObject
         ArcString name,
         ArcString desc,
         ArcString type,
-        ArcString? unitType,
+        ArcObject? unitType,
         ArcFloat? manpower,
         ArcTrigger trigger,
         Dict<ArcCode> attributes
@@ -80,7 +80,7 @@ public class Unit : IArcObject
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "desc"),
             args.Get(ArcString.Constructor, "type"),
-            args.Get(ArcString.Constructor, "unit_type", null),
+            args.Get(ArcClass.Classes["technology_group"].ClassGetConstrutor<ArcObject>, "unit_type", null),
             args.Get(ArcFloat.Constructor, "manpower", null),
             args.Get(ArcTrigger.Constructor, "trigger", new()),
             args.GetAttributes(ImplementedAttributes)
@@ -96,7 +96,7 @@ public class Unit : IArcObject
         };
         Trigger.Compile("trigger", ref b);
         if (Manpower != null) b.Add("manpower", "=", Manpower);
-        if (UnitType != null) b.Add("unit_type", "=", UnitType);
+        if (UnitType != null) b.Add("unit_type", "=", UnitType.Get("id"));
         foreach(KeyValuePair<string, ArcCode> attribute in Attributes)
         {
             attribute.Value.Compile(attribute.Key, ref b, true, true);

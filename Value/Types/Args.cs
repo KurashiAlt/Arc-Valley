@@ -16,7 +16,14 @@ public class ArgsObject : IArcObject
         Block b = args.keyValuePairs[indexer];
         if (b.ToWord() == "yes") return new ArcBool(true);
         if (b.ToWord() == "no") return new ArcBool(false);
-        return new ArcString(b);
+        try
+        {
+            return new ArcFloat(b);
+        }
+        catch
+        {
+            return new ArcString(b);
+        }
     }
 }
 public class Args
@@ -56,7 +63,7 @@ public class Args
             if(value is T @val) return @val;
             else if (value is ArgList aList)
             {
-                if (ArgList.list.First.Value is IVariable v && v is T @val2) return @val2;
+                if (aList.list.First.Value is IVariable v && v is T @val2) return @val2;
             }
         }
         return Constructor(keyValuePairs[key]);
@@ -99,7 +106,7 @@ public class Args
             if (value is T @val) return @val;
             else if (value is ArgList aList)
             {
-                if (ArgList.list.First.Value is IVariable v && v is T @val2) return @val2;
+                if (aList.Get() is IVariable v && v is T @val2) return @val2;
             }
         }
 

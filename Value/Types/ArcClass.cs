@@ -9,11 +9,17 @@ public class ArcClass : ArcObject
     public Func<string, IVariable> Define;
     public Func<Args, string, IVariable> Init;
     public ArcCode OnCreate;
+    public Dict<IVariable> List;
+    public T ClassGetConstrutor<T>(Block b) where T : IVariable
+    {
+        IVariable? v = List.Get(b.ToString()) ?? throw ArcException.Create("v is null", b);
+        if (v is not T) throw ArcException.Create($"v is not T", b);
+        return (T)v;
+    }
     public ArcClass(string id, Args args)
     {
         if (args.keyValuePairs == null) throw ArcException.Create(id, args);
 
-        Dict<IVariable> List;
         if (args.keyValuePairs.ContainsKey("list"))
         {
             List = new();
@@ -51,20 +57,23 @@ public class ArcClass : ArcObject
         Init = (Args s, string obj) =>
         {
             if (Default != null) s.Inherit(Default);
-            if (s.keyValuePairs != null) s.keyValuePairs.Add("id", new Block(obj));
-            Compiler.global.Add("this", new ArgsObject(s));
+            s.keyValuePairs?.Add("id", new Block(obj));
             ArcType t = ArcType.Constructor(args.Get("args"));
             IVariable v = t.ThisConstructor(s.block);
             if (v is ArcObject ob)
             {
+                ArgList.Add("this", new ArgsObject(s));
                 ob.Add("id", new ArcString(idConst));
                 ob.functions = functions;
+                ArgList.Drop("this");
             }
             List[obj] = v;
 
+            ArgList.Add("this", v);
+
             OnCreate.Compile();
 
-            Compiler.global.Delete("this");
+            ArgList.Drop("this");
             return v;
         };
     }

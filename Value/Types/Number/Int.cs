@@ -38,18 +38,18 @@ public class ArcInt : IArcNumber, IValue
                     {
                         i.ForceMoveNext();
 
-                        string k = i.Current;
+                        i = Compiler.GetScope(i, out Block k);
 
-                        Value += int.Parse(k);
+                        Value += Constructor(k).Value;
                     }
                     break;
                 case ":=":
                     {
                         i.ForceMoveNext();
 
-                        string k = i.Current;
+                        i = Compiler.GetScope(i, out Block k);
 
-                        Value = int.Parse(k);
+                        Value = Constructor(k).Value;
                     }
                     break;
 
