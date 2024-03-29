@@ -6,7 +6,7 @@ public class ArcString : IValue
 {
     //Regular Stuff
     public string Value { get; set; }
-    public string TrimOneQuote(string value)
+    public static string TrimOneQuote(string value)
     {
         if (value.StartsWith('"') && value.EndsWith('"')) return value[1..^1];
         return value;
@@ -23,7 +23,7 @@ public class ArcString : IValue
         }
         else
         {
-            Value = TrimOneQuote(value);
+            Value = Compiler.TranspiledString(value, Compiler.Compile, "unknown");
         }
     }
     public ArcString(Block b)
@@ -51,8 +51,6 @@ public class ArcString : IValue
         return new(b);
     }
     //Type Finding
-    public bool IsString() => true;
-
     public override string ToString()
     {
         return Value.ToString();

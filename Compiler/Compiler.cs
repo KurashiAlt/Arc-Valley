@@ -1238,65 +1238,69 @@ public static partial class Compiler
         }
         return false;
     }
+    public static string TranspiledString(string newValue, Func<Block, string> compile, string fileName)
+    {
+        StringBuilder s = new();
+        StringBuilder nc = new();
+        int scope = 0;
+        foreach (char c in newValue)
+        {
+            if (c == '{')
+            {
+                if (scope > 0) nc.Append(c);
+                scope++;
+                continue;
+            }
+
+            if (c == '}')
+            {
+                scope--;
+                if (scope > 0) nc.Append(c);
+                if (scope == 0)
+                {
+                    string tv = StringCompile(nc.ToString(), fileName, compile);
+                    string[] tvc = tv.Split('\n');
+                    string tc = s.ToString();
+                    int indent = 0;
+                    if (tc.Contains('\n'))
+                    {
+                        int ti = tc.LastIndexOf('\n');
+                        while (true)
+                        {
+                            ti++;
+
+                            if (ti < tc.Length && tc[ti] == '\t') indent++;
+                            else break;
+                        }
+                    }
+                    s.Append(tvc[0]);
+                    for (int i = 1; i < tvc.Length; i++)
+                    {
+                        s.Append("\\n");
+                        s.Append(new string('\t', indent));
+                        s.Append(tvc[i]);
+                    }
+                    nc = new();
+                }
+                continue;
+            }
+
+            if (scope != 0)
+            {
+                nc.Append(c);
+                continue;
+            }
+
+            s.Append(c);
+        }
+
+        return s.ToString();
+    }
     public static bool TranspiledString(string str, char ch, out string? newValue, Func<Block, string> compile, string fileName)
     {
         if (TryTrimOne(str, ch, out newValue) && newValue != null)
         {
-            StringBuilder s = new();
-            StringBuilder nc = new();
-            int scope = 0;
-            foreach (char c in newValue)
-            {
-                if (c == '{')
-                {
-                    if (scope > 0) nc.Append(c);
-                    scope++;
-                    continue;
-                }
-
-                if (c == '}')
-                {
-                    scope--;
-                    if (scope > 0) nc.Append(c);
-                    if (scope == 0)
-                    {
-                        string tv = StringCompile(nc.ToString(), fileName, compile);
-                        string[] tvc = tv.Split('\n');
-                        string tc = s.ToString();
-                        int indent = 0;
-                        if (tc.Contains('\n'))
-                        {
-                            int ti = tc.LastIndexOf('\n');
-                            while (true)
-                            {
-                                ti++;
-
-                                if (ti < tc.Length && tc[ti] == '\t') indent++;
-                                else break;
-                            }
-                        }
-                        s.Append(tvc[0]);
-                        for (int i = 1; i < tvc.Length; i++)
-                        {
-                            s.Append("\\n");
-                            s.Append(new string('\t', indent));
-                            s.Append(tvc[i]);
-                        }
-                        nc = new();
-                    }
-                    continue;
-                }
-
-                if (scope != 0)
-                {
-                    nc.Append(c);
-                    continue;
-                }
-
-                s.Append(c);
-            }
-
-            newValue = s.ToString();
+            newValue = TranspiledString(newValue, compile, fileName);
             return true;
         }
         return false;

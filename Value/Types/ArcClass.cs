@@ -97,7 +97,8 @@ public class ArcClass : ArcObject
         ArcType.Types.Add(id, new(List.Get));
         Classes.Add(id, this);
 
-        string idConst = args.Get("id", new("`{this:id}`")).ToString();
+        string idConst = args.Get("id", new("this:id")).ToString();
+        idConst = $"{{{idConst}}}";
         Args? Default;
         Block? DefaultBlock = args.GetNullable("default");
         if (DefaultBlock != null) Default = Args.GetArgs(DefaultBlock);
