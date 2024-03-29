@@ -83,8 +83,8 @@ public class Religion : IArcObject
     public ArcBool UsesPiety { get; set; }
     public ArcBool UsesAnglicanPower { get; set; }
     public ArcBool Fervor { get; set; }                   
+    public ArcEffect Papacy { get; set; }
 /* Disabled for now since each one has so many special implementations
-    public ArcBlock Papacy { get; set; }
     public ArcBool FetishistCult { get; set; }
     public ArcBool HasPatriachs { get; set; }
     public ArcBool Authority { get; set; }
@@ -101,7 +101,7 @@ public class Religion : IArcObject
     public AspectsName? AspectsName { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
     public Religion(ArcString name, ArcString desc, ArcString id, ArcInt icon, ArcBlock color, ArcBlock heretic, ArcBlock country, ArcBlock province, ArcBlock countryAsSecondary, ArcBlock allowedConversions, ArcBlock onConvert, ArcBool hreReligion, ArcBool hreHereticReligion, ArcString date, ArcBool misguidedHeretic, ArcBool declareWarInRegency, ArcBool canHaveSecondaryReligion, ReligionGroup religionGroup, ArcBool allowFemaleDefenderOfFaith, ArcBool personalDeity, ArcList<Province>? holySites, ArcList<Blessing>? blessings, ArcBool usesChurchPower, ArcList<ChurchAspect>? aspects, ArcBool usesKarma, ArcBool usesPiety, ArcBool usesAnglicanPower
-        , AspectsName? aspectsName, ArcBool fervor, ArcBool ancestors)
+        , AspectsName? aspectsName, ArcBool fervor, ArcBool ancestors, ArcEffect papacy)
     {
         Name = name;
         Desc = desc;
@@ -133,6 +133,7 @@ public class Religion : IArcObject
         AspectsName = aspectsName;
         Fervor = fervor;
         Ancestors = ancestors;
+        Papacy = papacy;
         KeyValuePairs = new()
         {
             { "name", Name },
@@ -165,6 +166,7 @@ public class Religion : IArcObject
             { "aspects_name", AspectsName },
             { "fervor", Fervor },
             { "ancestors", Ancestors },
+            { "papacy", Papacy },
         };
     }
 
@@ -211,7 +213,8 @@ public class Religion : IArcObject
             args.Get(ArcBool.Constructor, "uses_anglican_power", new(false)),
             args.Get((Block b) => AspectsName.Constructor(b, id), "aspects_name", null),
             args.Get(ArcBool.Constructor, "fervor", new ArcBool(false)),
-            args.Get(ArcBool.Constructor, "ancestors", new ArcBool(false))
+            args.Get(ArcBool.Constructor, "ancestors", new ArcBool(false)),
+            args.Get(ArcEffect.Constructor, "papacy", new())
         );
 
         Religions.Add(id, religion);
@@ -229,6 +232,7 @@ public class Religion : IArcObject
         if (Date.Value != "") sb.Append($"date = {Date} ");
         if (!AllowedConversions.IsEmpty()) sb.Append($"allowed_conversion = {{ {AllowedConversions} }} ");
         if (!OnConvert.IsEmpty()) sb.Append($"on_convert = {{ {OnConvert} }} ");
+        if (!Papacy.IsEmpty()) sb.Append($"papacy = {{ {Papacy} }} ");
         if (MisguidedHeretic) sb.Append("misguided_heretic = yes ");
         if (DeclareWarInRegency) sb.Append("declare_war_in_regency = yes ");
         if (CanHaveSecondaryReligion) sb.Append("can_have_secondary_religion = yes ");

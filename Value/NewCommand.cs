@@ -136,7 +136,7 @@ public class ArcType : IValue
         { "incident", new(Incident.Incidents.Get) },
         { "unit", new(Unit.Units.Get) },
         { "great_project", new(GreatProject.GreatProjects.Get) },
-        { "mercenary_company", new(MercenaryCompany.Companies.Get) },
+        //{ "mercenary_company", new(MercenaryCompany.Companies.Get) },
         { "advisor", new(Advisor.Advisors.Get) },
         { "age", new(Age.Ages.Get) },
         { "decision", new(Decision.Decisions.Get) },

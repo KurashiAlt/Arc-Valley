@@ -320,7 +320,6 @@ public static partial class Compiler
         { "province_groups", ProvinceGroup.ProvinceGroups },
         { "subject_types", SubjectType.SubjectTypes },
         { "static_modifiers", StaticModifier.StaticModifiers },
-        { "customizable_localizations", CustomizableLocalization.CustomizableLocalizations },
         { "custom_buttons", CustomButton.CustomButtons },
         { "custom_icons", CustomIcon.CustomIcons },
         { "interface_files", InterfaceNode.Files },
@@ -432,7 +431,7 @@ public static partial class Compiler
             "unit" => Unit.Call(g),
             "great_project" => GreatProject.Call(g),
             "localisation" => DefineLoc(g),
-            "mercenary_company" => MercenaryCompany.Call(g),
+            //"mercenary_company" => MercenaryCompany.Call(g),
             "advisor" => Advisor.Call(g),
             "age" => Age.Call(g),
             "decision" => Decision.Call(g),
@@ -463,8 +462,8 @@ public static partial class Compiler
             "custom_button" => CustomButton.Call(g),
             "custom_icon" => CustomIcon.Call(g),
             "interface_file" => InterfaceNode.Call(g),
-            "customizable_localization" => CustomizableLocalization.Call(g),
             "class" => ArcClass.Call(g),
+            "struct" => ArcStruct.Call(g),
             _ => DynamicClass(g)
         };
     }
@@ -731,6 +730,15 @@ public static partial class Compiler
         {
             g.ForceMoveNext();
             g = Declare(g);
+            return true;
+        }
+        if (g.Current == "delete")
+        {
+            g = Args.GetArgs(g, out Args args);
+
+            ArcString key = ArcString.Constructor(args.block);
+            global.Delete(key.Value);
+
             return true;
         }
         if (g.Current == "replace")

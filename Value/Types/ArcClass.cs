@@ -1,7 +1,58 @@
 ﻿using Arc;
+using System.Collections.Generic;
 public class ArcNull : IVariable
 {
 
+}
+public class ArcStruct : ArcObject
+{
+    public static Dict<ArcStruct> Structs = new();
+    public ArcStruct(string id, Args args)
+    {
+        if (args.keyValuePairs == null) throw ArcException.Create(id, args);
+        Args Default = Args.GetArgs(args.Get("default", new()));
+        Block thisArgs = args.Get("args");
+
+        ArcType.Types.Add(id, new(
+            (Block b) =>
+            {
+                ArcType type = ArcType.Constructor(thisArgs);
+                return type.ThisConstructor(b);
+            }
+        ));
+
+        Structs.Add(id, this);
+    }
+    public static ArcStruct Constructor(string id, Args args) => new(id, args)
+    {
+        { "id", new ArcString(id) },
+    };
+    public static Walker Call(Walker i) => Call(i, Constructor);
+}
+public static partial class Transpiler
+{
+    public static List<ArcObject> SimpleTranspilers = new();
+    public static string TranspileSimples()
+    {
+        foreach (ArcObject obj in SimpleTranspilers)
+        {
+            string fileLocation = $"{Program.TranspileTarget}/{obj.Get("file")}";
+
+            Block b = new(obj.Get<ArcBlock>("prepend").Value);
+            Dict<IVariable> list = obj.Get<Dict<IVariable>>("list");
+            foreach (KeyValuePair<string, IVariable> v in list)
+            {
+                ArgList.Add("this", v.Value);
+                obj.Get<ArcCode>("each").Compile(ref b);
+                ArgList.Drop("this");
+            }
+            b.Add(obj.Get<ArcBlock>("append").Value);
+
+            Program.OverwriteFile(fileLocation, b.ToString());
+        }
+
+        return "Simple Dynamic Classes";
+    }
 }
 public class ArcClass : ArcObject
 {
@@ -10,6 +61,22 @@ public class ArcClass : ArcObject
     public Func<Args, string, IVariable> Init;
     public ArcCode OnCreate;
     public Dict<IVariable> List;
+    public void InitSimpleTranspiles(Args args)
+    {
+        Block? simpleTranspile = args.GetNullable("simple_transpile");
+        if (simpleTranspile != null)
+        {
+            Args sArgs = Args.GetArgs(simpleTranspile);
+            Transpiler.SimpleTranspilers.Add(new ArcObject()
+            {
+                { "file", sArgs.Get(ArcString.Constructor, "file") },
+                { "prepend", sArgs.Get(ArcCode.NamelessConstructor, "prepend", new()) },
+                { "append", sArgs.Get(ArcCode.NamelessConstructor, "append", new()) },
+                { "each", sArgs.Get(ArcCode.NamelessConstructor, "each", new()) },
+                { "list", List }
+            });
+        }
+    }
     public T ClassGetConstrutor<T>(Block b) where T : IVariable
     {
         IVariable? v = List.Get(b.ToString()) ?? throw ArcException.Create("v is null", b);
@@ -44,8 +111,11 @@ public class ArcClass : ArcObject
             if (pair.Key == "args") continue;
             if (pair.Key == "default") continue;
             if (pair.Key == "on_create") continue;
+            if (pair.Key == "simple_transpile") continue;
             functions.Add(pair.Key, new NewCommand(pair.Key, Args.GetArgs(pair.Value), CompileType.Block));
         }
+
+        InitSimpleTranspiles(args);
 
         OnCreate = args.Get(ArcCode.NamelessConstructor, "on_create", new() { ShouldBeCompiled = false });
         Define = (string s) =>
