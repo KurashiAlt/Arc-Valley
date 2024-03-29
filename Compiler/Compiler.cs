@@ -450,7 +450,6 @@ public static partial class Compiler
             "province_group" => ProvinceGroup.Call(g),
             "personality_trait" => RulerPersonality.Call(g),
             "policy" => Policy.Call(g),
-            "scholarly_research" => ScholarlyResearch(g),
             "subject_type" => SubjectType.Call(g),
             "static_modifier" => StaticModifier.Call(g),
             "define" => CallDefine(g),
@@ -521,58 +520,6 @@ public static partial class Compiler
         i = Args.GetArgs(i, out Args args);
 
         global.Get<ArcObject>("defines").Add(id, new ArcString(args.block));
-
-        return i;
-    }
-    static Walker ScholarlyResearch(Walker i)
-    {
-        i.ForceMoveNext();
-
-        string id = GetId(i.Current);
-
-        i = Args.GetArgs(i, out Args args);
-
-        string name = args.Get(ArcString.Constructor, "name").Value;
-        ArcTrigger Potential = new(
-            "has_country_flag", "=", "coterie_of_organized_scholars",
-            "NOT", "=", "{",
-                "has_country_flag", "=", $"coterie_{id}",
-            "}",
-            "NOT", "=", "{",
-                "has_country_modifier", "=", "coterie_of_organized_scholars_research",
-            "}"
-        );
-        Potential.Value.Add(args.Get(ArcTrigger.Constructor, "potential", new()).Value);
-        ArcTrigger Allow = new(
-            "NOT", "=", "{",
-                "has_country_modifier", "=", "coterie_of_organized_scholars_research",
-            "}"
-        );
-        Allow.Value.Add(args.Get(ArcTrigger.Constructor, "allow", new()).Value);
-        ArcEffect Effect = args.Get(ArcEffect.Constructor, "on_start", new());
-        Effect.Value.Add(
-            "scholarly_research", "=", "{",
-                "id", "=", id,
-                "on_complete", "=", "{"
-        );
-        foreach (Word w in args.Get(ArcEffect.Constructor, "on_complete", new()).Value)
-        {
-            Effect.Value.Add(w);
-        }
-        Effect.Value.Add("}");
-
-        new Decision($"coterie_{id}",
-            new ArcString($"Scholarly Research: {name}"),
-            args.Get(ArcString.Constructor, "desc", new("")),
-            args.Get(ArcBool.Constructor, "major", new(false)),
-            args.Get(ArcCode.Constructor, "color", new("0", "108", "255")),
-            args.Get(ArcTrigger.Constructor, "provinces_to_highlight", new()),
-            Potential,
-            Allow,
-            Effect,
-            args.Get(ArcCode.Constructor, "ai_will_do", new()),
-            args.Get(ArcInt.Constructor, "ai_importance", new(400))
-        );
 
         return i;
     }
