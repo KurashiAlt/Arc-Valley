@@ -702,10 +702,6 @@ public static partial class Compiler
 
             return true;
         }
-        if (g.Current == "defineloc") {
-            DefineLoc(g);
-            return true;
-        }
         if (g.Current == "when")
         {
             g.ForceMoveNext();
