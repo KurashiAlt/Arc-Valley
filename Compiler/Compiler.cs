@@ -688,20 +688,6 @@ public static partial class Compiler
 
             return true;
         }
-        if (g.Current == "replace")
-        {
-            g.ForceMoveNext(); string what = GetId(g.Current);
-            g.ForceMoveNext(); g.Asssert("with");
-            g.ForceMoveNext(); string with = GetId(g.Current);
-
-            Walker f = new(g);
-            do
-            {
-                f.Current.Value = f.Current.Value.Replace(what, with);
-            } while (f.MoveNext());
-
-            return true;
-        }
         if (g.Current == "when")
         {
             g.ForceMoveNext();
