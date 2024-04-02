@@ -679,6 +679,14 @@ public static partial class Compiler
             g = Declare(g);
             return true;
         }
+        if (g.Current == "write_file")
+        {
+            g.ForceMoveNext();
+            string file = GetId(g.Current);
+            g = Args.GetArgs(g, out Args args);
+            ArcCode blo = ArcCode.NamelessConstructor(args.block);
+            Program.OverwriteFile($"{Program.TranspileTarget}/{file}", blo.Compile());
+        }
         if (g.Current == "delete")
         {
             g = Args.GetArgs(g, out Args args);
@@ -748,7 +756,7 @@ public static partial class Compiler
                 ArcObject modInfo = ModifierLocs[b.Key];
                 string text = modInfo.Get<ArcString>("text").Value;
                 string key = modInfo.Get<ArcString>("localisation_key").Value;
-                if (Program.Localisation.ContainsKey(key)) text = Program.Localisation[key];
+                if (Program.Localisation.TryGetValue(key, out string? v)) text = v;
                 bool percent = modInfo.Get<ArcBool>("percent").Value;
                 bool isBool = modInfo.Get<ArcBool>("is_bool").Value;
                 bool isGood = modInfo.Get<ArcBool>("is_good").Value;
@@ -772,7 +780,7 @@ public static partial class Compiler
 
                 str += '\n';
             }
-            result.Add(str);
+            result.Add(str.Trim());
             return true;
         }
         if (g.Current == "id_to_name")

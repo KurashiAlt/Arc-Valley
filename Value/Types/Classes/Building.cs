@@ -121,7 +121,7 @@ public class Building : ArcObject
             { "time", args.Get(ArcInt.Constructor, "time") },
             { "make_obsolete", args.GetFromListNullable(Buildings, "make_obsolete") },
             { "one_per_country", args.Get(ArcBool.Constructor, "one_per_country", new(false)) },
-            { "allow_in_gold_provinces", args.Get(ArcBool.Constructor, "allow_in_gold_provinces", new(false)) },
+            { "allow_in_gold_provinces", args.Get(ArcBool.Constructor, "allow_in_gold_provinces", null) },
             { "indestructible", args.Get(ArcBool.Constructor, "indestructible", new(false)) },
             { "onmap", args.Get(ArcBool.Constructor, "onmap", new(false)) },
             { "influencing_fort", args.Get(ArcBool.Constructor, "influencing_fort", new(false)) },
@@ -173,7 +173,7 @@ public class Building : ArcObject
             }
         }
         b.Add("one_per_country", Get<ArcBool>("one_per_country"));
-        b.Add("allow_in_gold_provinces", Get<ArcBool>("allow_in_gold_provinces"));
+        if(CanGet("allow_in_gold_provinces")) b.Add("allow_in_gold_provinces", "=", Get<ArcBool>("allow_in_gold_provinces"));
         b.Add("indestructible", Get<ArcBool>("indestructible"));
         b.Add("onmap", Get<ArcBool>("onmap"));
         b.Add("influencing_fort", Get<ArcBool>("influencing_fort"));

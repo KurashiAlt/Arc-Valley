@@ -21,7 +21,7 @@ public class ArcObject : Dict<IVariable?>
         if (indexer == "first") return true;
         if (indexer == "last") return true;
         if (functions != null && functions.ContainsKey(indexer)) return true;
-        return Kvps.ContainsKey(indexer);
+        return Kvps.ContainsKey(indexer) && Kvps[indexer].Value != null;
     }
     protected static Walker Call<T>(Walker i, Func<string, Args, T> func)
     {

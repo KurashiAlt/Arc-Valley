@@ -31,24 +31,12 @@ public class ArcStruct : ArcObject
 }
 public static partial class Transpiler
 {
-    public static List<ArcObject> SimpleTranspilers = new();
+    public static List<ArcCode> SimpleTranspilers = new();
     public static string TranspileSimples()
     {
-        foreach (ArcObject obj in SimpleTranspilers)
+        foreach (ArcCode obj in SimpleTranspilers)
         {
-            string fileLocation = $"{Program.TranspileTarget}/{obj.Get("file")}";
-
-            Block b = new(obj.Get<ArcBlock>("prepend").Value);
-            Dict<IVariable> list = obj.Get<Dict<IVariable>>("list");
-            foreach (KeyValuePair<string, IVariable> v in list)
-            {
-                ArgList.Add("this", v.Value);
-                obj.Get<ArcCode>("each").Compile(ref b);
-                ArgList.Drop("this");
-            }
-            b.Add(obj.Get<ArcBlock>("append").Value);
-
-            Program.OverwriteFile(fileLocation, b.ToString());
+            obj.Compile();
         }
 
         return "Simple Dynamic Classes";
@@ -64,18 +52,7 @@ public class ArcClass : ArcObject
     public void InitSimpleTranspiles(Args args)
     {
         Block? simpleTranspile = args.GetNullable("simple_transpile");
-        if (simpleTranspile != null)
-        {
-            Args sArgs = Args.GetArgs(simpleTranspile);
-            Transpiler.SimpleTranspilers.Add(new ArcObject()
-            {
-                { "file", sArgs.Get(ArcString.Constructor, "file") },
-                { "prepend", sArgs.Get(ArcCode.NamelessConstructor, "prepend", new()) },
-                { "append", sArgs.Get(ArcCode.NamelessConstructor, "append", new()) },
-                { "each", sArgs.Get(ArcCode.NamelessConstructor, "each", new()) },
-                { "list", List }
-            });
-        }
+        if (simpleTranspile != null) Transpiler.SimpleTranspilers.Add(ArcCode.NamelessConstructor(simpleTranspile));
     }
     public T ClassGetConstrutor<T>(Block b) where T : IVariable
     {

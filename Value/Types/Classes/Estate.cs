@@ -554,28 +554,32 @@ public class Estate : IArcObject
         {
             "estate_special", "=", "{"
         };
-        foreach (IVariable vr in Compiler.GetVariable<Dict<IVariable>>(new Word("modifier_definitions")).Values())
+        if (Compiler.TryGetVariable(new("modifier_definitions"), out IVariable? tvar))
         {
-            preloadFile.Add("modifier_definition", "=", "{");
-
-            if (vr is ArcObject modifierDefinition)
+            if (tvar == null) throw new Exception();
+            foreach (IVariable vr in ((Dict<IVariable>)tvar).Values())
             {
-                string id = modifierDefinition.Get<ArcString>("id").Value;
-                string name = modifierDefinition.Get<ArcString>("name").Value;
-                Program.Localisation.Add(id, name);
-                bool isPercentage = modifierDefinition.Get<ArcBool>("is_percentage").Value;
+                preloadFile.Add("modifier_definition", "=", "{");
 
-                preloadFile.Add("type", "=");
-                if (isPercentage) preloadFile.Add("loyalty");
-                else preloadFile.Add("privileges");
+                if (vr is ArcObject modifierDefinition)
+                {
+                    string id = modifierDefinition.Get<ArcString>("id").Value;
+                    string name = modifierDefinition.Get<ArcString>("name").Value;
+                    Program.Localisation.Add(id, name);
+                    bool isPercentage = modifierDefinition.Get<ArcBool>("is_percentage").Value;
 
-                preloadFile.Add("key", "=", id);
+                    preloadFile.Add("type", "=");
+                    if (isPercentage) preloadFile.Add("loyalty");
+                    else preloadFile.Add("privileges");
 
-                modifierDefinition.Get<ArcTrigger>("trigger").Compile("trigger", ref preloadFile, false);
+                    preloadFile.Add("key", "=", id);
+
+                    modifierDefinition.Get<ArcTrigger>("trigger").Compile("trigger", ref preloadFile, false);
+                }
+                else throw ArcException.Create("Trying to transpile modifier definition, but vr wasn't an object", preloadFile, estateFile, vr);
+
+                preloadFile.Add("}");
             }
-            else throw ArcException.Create("Trying to transpile modifier definition, but vr wasn't an object", preloadFile, estateFile, vr);
-
-            preloadFile.Add("}");
         }
         preloadFile.Add("}");
         Block SpawnRebelsFromUnhappyEstate = new()
