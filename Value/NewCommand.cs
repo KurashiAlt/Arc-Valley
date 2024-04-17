@@ -55,7 +55,7 @@ public class ArgList : IArcObject, IArcNumber
     }
     public override string ToString()
     {
-        return list.First().ToString();
+        return list.First().ToString() ?? "";
     }
     public double GetNum()
     {
@@ -154,6 +154,7 @@ public class ArcType : IValue
             string id = Compiler.GetId(b.ToString());
             string[] parts = id.Split(':');
             Estate est = Estate.Estates[parts[0]];
+            if (est.Privileges.dict == null) throw new Exception();
             EstatePrivilege pr = est.Privileges.dict[parts[1]];
             return pr;
         }) },

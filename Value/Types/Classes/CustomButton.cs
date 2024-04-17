@@ -14,6 +14,15 @@ public class CustomButton : ArcObject
     }
     public static new Walker Call(Walker i) => Call(i, Constructor);
     public override string ToString() => Get("id").ToString();
+    public static ArcObject FrameConstructor(Block b)
+    {
+        Args args = Args.GetArgs(b);
+        return new ArcObject()
+        {
+            { "frame", args.Get(ArcInt.Constructor, "frame") },
+            { "trigger", args.Get(ArcTrigger.Constructor, "trigger") },
+        };
+    }
     public static CustomButton Constructor(string id, Args args) => new(id)
     {
         { "id", new ArcString(id) },
@@ -22,6 +31,7 @@ public class CustomButton : ArcObject
         { "trigger", args.Get(ArcTrigger.Constructor, "trigger", new ArcTrigger()) },
         { "effect", args.Get(ArcEffect.Constructor, "effect", new ArcEffect()) },
         { "tooltip", args.Get(ArcString.Constructor, "tooltip", null) },
+        { "frames", args.Get(ArcList<ArcObject>.GetConstructor(FrameConstructor), "frames", new(FrameConstructor)) }
     };
     public void Transpile(ref Block b)
     {
@@ -38,6 +48,16 @@ public class CustomButton : ArcObject
         {
             b.Add("tooltip", "=", $"{id}_tt");
             Program.Localisation.Add($"{id}_tt", Tooltip.ToString());
+        }
+        foreach (ArcObject? frame in Get<ArcList<ArcObject>>("frames").Values)
+        {
+            if (frame == null) continue;
+            b.Add(
+                "frame", "=", "{",
+                    "number", "=", frame.Get("frame"),
+                    frame.Get<ArcTrigger>("trigger").Compile("trigger"),
+                "}"
+            );
         }
         b.Add(
             "}"

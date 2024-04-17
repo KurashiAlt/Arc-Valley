@@ -323,6 +323,7 @@ public static partial class Compiler
         { "custom_buttons", CustomButton.CustomButtons },
         { "custom_icons", CustomIcon.CustomIcons },
         { "interface_files", InterfaceNode.Files },
+        { "units", Unit.Units },
         { "defines", new ArcObject() },
         { "default_reform", new ArcCode() },
         { "terrain_declarations", new ArcBlock() },
@@ -568,6 +569,14 @@ public static partial class Compiler
                 CompileEffect(args.block);
                 continue;
             }
+            if (g.Current == "write_file")
+            {
+                g.ForceMoveNext();
+                string file = GetId(g.Current);
+                g = Args.GetArgs(g, out Args args);
+                ArcCode blo = ArcCode.NamelessConstructor(args.block);
+                Program.OverwriteFile($"{Program.TranspileTarget}/{file}", blo.Compile());
+            }
             else if (TryGetVariable(g.Current, out IVariable? var))
             {
                 Block f = new();
@@ -610,10 +619,15 @@ public static partial class Compiler
         Walker g = new(code);
         do
         {
+            if (g.Current == "NOT")
+            {
+                g = Args.GetArgs(g, out Args args);
+                args.block.RemoveEnclosingBlock();
+                if (When(args.block)) return false;
+            }
             if (g.Current == "exists")
             {
                 g = Args.GetArgs(g, out Args args);
-                if (args.block == null) throw ArcException.Create("Unknown Error: Null Reference", g);
                 Word key = args.block.ToWord();
                 if (!TryGetVariable(key, out _)) return false;
             }
@@ -677,6 +691,11 @@ public static partial class Compiler
         {
             g.ForceMoveNext();
             g = Declare(g);
+            return true;
+        }
+        if (g.Current == "INTERNALS:LOG_CURRENT_COMPILE")
+        {
+            Console.WriteLine(Parser.FormatCode(result.ToString()));
             return true;
         }
         if (g.Current == "write_file")
@@ -934,6 +953,18 @@ public static partial class Compiler
             }
             else throw new NotImplementedException();
             return true;
+        }
+        if (g.Current == "arc_throw")
+        {
+            g.ForceMoveNext(); 
+            g.Asssert("=");
+            g.ForceMoveNext(); 
+            string value = g.Current;
+            if (TranspiledString(value, '"', out string? nValue, CompileEffect, g.Current.GetFile()) && nValue != null)
+            {
+                throw ArcException.Create(nValue, g);
+            }
+            else throw ArcException.Create(value, g);
         }
         if (g.Current == "arc_log")
         {
@@ -1541,25 +1572,7 @@ public static partial class Compiler
 
         return string.Join(' ', result);
     }
-    public static string Compile(Block code)
-    {
-        if (code.Count == 0)
-            return "";
-
-        Block result = new();
-
-        Walker g = new(code);
-        do
-        {
-            if (AllCompile(ref g, ref result, Compile)) continue;
-                
-            result.Add(g.Current);
-        } while (g.MoveNext());
-
-        if (Parser.HasEnclosingBrackets(result)) result = RemoveEnclosingBrackets(result);
-
-        return string.Join(' ', result);
-    }
+    
     [GeneratedRegex("{([^}]+)}", RegexOptions.Compiled)]
     public static partial Regex TranspiledString();
 }

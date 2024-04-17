@@ -76,6 +76,7 @@ internal class Program
 
             if (args.Contains("selector"))
             {
+#pragma warning disable CA1416 // Validate platform compatibility
                 TimeSpan start = timer.Elapsed;
                 using System.Drawing.Bitmap provmap = new($"{directory}/{MapFolder}/provinces.bmp");
                 foreach (string file in GetFiles($"{SelectorFolder}"))
@@ -115,8 +116,9 @@ internal class Program
                     File.WriteAllText($"{file}.gen", string.Join(' ', from p in keys select p));
                     ProvinceGroup.ProvinceGroups[name].Get<ArcList<Province>>("provinces").Values = list;
                 }
+#pragma warning restore CA1416 // Validate platform compatibility
                 TimeSpan end = timer.Elapsed;
-                Console.WriteLine($"{$"Finished Loading {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
+                Console.WriteLine($"{$"Finished Loading {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
             }
             else
             {
@@ -137,7 +139,7 @@ internal class Program
                     ProvinceGroup.ProvinceGroups[name].Get<ArcList<Province>>("provinces").Values = list;
                 }
                 TimeSpan end = timer.Elapsed;
-                Console.WriteLine($"{$"Finished Loading Cached {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
+                Console.WriteLine($"{$"Finished Loading Cached {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
             }
 
             TimeSpan tstart = timer.Elapsed;
@@ -164,7 +166,7 @@ internal class Program
                 vList = (from c in ArcBlock.CompileList where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
             }
             TimeSpan tend = timer.Elapsed;
-            Console.WriteLine($"{$"Finished Compiling Code".PadRight(50).Pastel(ConsoleColor.Magenta)}{$"{(tend - tstart).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Magenta)}");
+            Console.WriteLine($"{$"Finished Compiling Code".PadRight(50).Pastel(ConsoleColor.Magenta)}{$"{(tend - tstart).TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Magenta)}");
         }
 
         (string, string, Func<string>)[] Transpilers =
@@ -218,7 +220,6 @@ internal class Program
         ("script", "", RulerPersonality.Transpile),
         ("script", "", OpinionModifier.Transpile),
         ("script", "", StaticModifier.Transpile),
-        ("script", "", TranspilerClass.TranspileEventModifiers),
         ("script", "", SubjectType.Transpile),
         ("script", "", CustomButton.Transpile),
         ("script", "", CustomIcon.Transpile),
@@ -252,7 +253,7 @@ internal class Program
             Unsorted(file);
         }
         
-        OverwriteFile($"warnings.txt", string.Join('\n', warnings));
+        OverwriteFile($"warnings.txt", string.Join('\n', warnings), false);
 
         Console.WriteLine($"Transpilation took: {(double)timer.ElapsedMilliseconds / 1000:0.000} seconds".Pastel(ConsoleColor.Red));
 
@@ -373,6 +374,34 @@ internal class Program
     static string Gfx()
     {
         Block b = new("spriteTypes", "=", "{");
+
+        CreateTillFolder($"{TranspileTarget}/gfx/interface/ideas_EU4");
+        foreach (string c in GetFiles($"{GfxFolder}/modifiers"))
+        {
+            string s = c.Split('\\').Last();
+
+            b.Add(
+                "spriteType", "=", "{",
+                    "name", "=", $"\"GFX_modifier_{s.Split('.').First()}\"",
+                    "texturefile", "=", $"\"gfx/interface/ideas_EU4/{s}\"",
+                "}"
+            );
+
+            File.Delete($"{TranspileTarget}/gfx/interface/ideas_EU4/{s}");
+            File.Copy(c, $"{TranspileTarget}/gfx/interface/ideas_EU4/{s}");
+        }
+        foreach (string c in GetFile($"{GfxFolder}/modifiers/files.txt"))
+        {
+            string s = c.Split('\\').Last();
+
+            b.Add(
+                "spriteType", "=", "{",
+                    "name", "=", $"\"GFX_modifier_{s.Split('.').First()}\"",
+                    "texturefile", "=", $"\"gfx/interface/ideas_EU4/{s}\"",
+                "}"
+            );
+        }
+        
 
         CreateTillFolder($"{TranspileTarget}/gfx/special");
         foreach (string c in GetFiles($"{GfxFolder}/special"))
@@ -611,25 +640,32 @@ internal class Program
     public static string[] GetFiles(string path)
     {
         if (!Path.Exists(Path.Combine(directory, path))) return new string[] { };
-        if(!path.StartsWith(directory)) path = Path.Combine(directory, path);
+        if (!path.StartsWith(directory)) path = Path.Combine(directory, path);
 
         return Directory.GetFiles(path).OrderBy(d => d).ToArray();
+    }
+    public static string[] GetFile(string path)
+    {
+        if (!Path.Exists(Path.Combine(directory, path))) return new string[] { };
+        if (!path.StartsWith(directory)) path = Path.Combine(directory, path);
+
+        return File.ReadAllLines(path);
     }
     public static string SpecialUnitTranspile()
     {
         IArcObject specialUnits = (IArcObject)Compiler.global["special_units"];
 
-        IArcObject galleass = (IArcObject)specialUnits.Get("galleass");
-        IArcObject musketeer = (IArcObject)specialUnits.Get("musketeer");
-        IArcObject rajput = (IArcObject)specialUnits.Get("rajput");
+        IArcObject galleass = (IArcObject?)specialUnits.Get("galleass") ?? throw new Exception();
+        IArcObject musketeer = (IArcObject?)specialUnits.Get("musketeer") ?? throw new Exception();
+        IArcObject rajput = (IArcObject?)specialUnits.Get("rajput") ?? throw new Exception();
 
         Block staticModifiers = new()
             {
-                ((ArcModifier)galleass.Get("modifier")).Compile("galleass_modifier"),
-                ((ArcModifier)galleass.Get("ship")).Compile("galleass_ship"),
-                ((ArcModifier)musketeer.Get("modifier")).Compile("musketeer_modifier"),
-                ((ArcModifier)musketeer.Get("regiment")).Compile("musketeer_regiment"),
-                ((ArcModifier)rajput.Get("regiment")).Compile("rajput_regiment"),
+                ((ArcModifier?)galleass.Get("modifier") ?? throw new Exception()).Compile("galleass_modifier"),
+                ((ArcModifier?)galleass.Get("ship") ?? throw new Exception()).Compile("galleass_ship"),
+                ((ArcModifier?)musketeer.Get("modifier") ?? throw new Exception()).Compile("musketeer_modifier"),
+                ((ArcModifier?)musketeer.Get("regiment") ?? throw new Exception()).Compile("musketeer_regiment"),
+                ((ArcModifier?)rajput.Get("regiment") ?? throw new Exception()).Compile("rajput_regiment"),
             };
 
         OverwriteFile($"{TranspileTarget}/common/static_modifiers/special_units.txt", string.Join(' ', staticModifiers));

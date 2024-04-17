@@ -40,7 +40,7 @@ public partial class Compiler
     }
     public static bool TryGetVariable(Word locator, out IVariable? var)
     {
-        return TryGetVariable(locator, out var, new Func<string, IVariable>(global.Get), global.CanGet);
+        return TryGetVariable(locator, out var, new Func<string, IVariable?>(global.Get), global.CanGet);
     }
     public static bool TryGetVariable(string locator, out IVariable? var, Func<string, IVariable?> Get, Func<string, bool> CanGet)
     {

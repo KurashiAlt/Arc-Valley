@@ -40,6 +40,7 @@ public static partial class Calculator
             ).ToString();
         });
 
+        s.ReplaceSelf(" ", "");
         s.ReplaceSelf(',', '.');
         List<string> steps = GetSteps(s);
 
@@ -84,9 +85,9 @@ public static partial class Calculator
     {
         if(Compiler.TryGetVariable(new Word(s, 0, "unknown"), out IVariable? var))
         {
-            if(var is IArcNumber)
+            if(var is IArcNumber v)
             {
-                return ((IArcNumber)var).GetNum();
+                return v.GetNum();
             }
         }
         

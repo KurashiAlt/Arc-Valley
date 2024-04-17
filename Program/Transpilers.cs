@@ -32,18 +32,4 @@ public static partial class TranspilerClass
         Program.OverwriteFile($"{Program.TranspileTarget}/common/custom_gui/custom_text_boxes.txt", b.ToString());
         return "Custom Text Boxes";
     }
-    public static string TranspileEventModifiers()
-    {
-        Block sb = new();
-
-        foreach (IVariable mod in Compiler.GetVariable<Dict<IVariable>>(new Word("event_modifiers")).Values())
-        {
-            ArcObject obj = (ArcObject)mod;
-            sb.Add(obj.Get<ArcBlock>("modifier").Compile(obj.Get("id").ToString()));
-            Program.Localisation.Add(obj.Get("id").ToString(), obj.Get("name").ToString());
-        }
-
-        Program.OverwriteFile($"{Program.TranspileTarget}/common/event_modifiers/arc.txt", sb.ToString());
-        return "Event Modifiers";
-    }
 }

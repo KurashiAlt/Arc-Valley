@@ -1,17 +1,18 @@
 ﻿using Arc;
 public class ArcException : Exception
 {
-    public static string CreateMessage(params object[] args)
+    public static string CreateMessage(params object?[] args)
     {
         List<string> exp = new()
         {
             ""
         };
-        foreach (object arg in args)
+        foreach (object? arg in args)
         {
             try
             {
-                if (arg is Walker walker) LogWord(walker.Current);
+                if (arg == null) exp.Add("");
+                else if (arg is Walker walker) LogWord(walker.Current);
                 else if (arg is Word word) LogWord(word);
                 else if (arg is Args nArgs)
                 {
@@ -28,7 +29,7 @@ public class ArcException : Exception
                 }
                 else
                 {
-                    exp.Add(arg.ToString());
+                    exp.Add(arg.ToString() ?? "");
                 }
             }
             catch { }
@@ -49,7 +50,7 @@ public class ArcException : Exception
             exp.Add($"at line {word.Line} in file {word.GetFile()} found '{word.Value}'");
         }
     }
-    public static ArcException Create(params object[] args)
+    public static ArcException Create(params object?[] args)
     {
         return new ArcException(CreateMessage(args));
     }

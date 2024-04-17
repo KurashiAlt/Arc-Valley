@@ -10,9 +10,14 @@ public class ArgsObject : IArcObject
     { 
         this.args = args; 
     }
-    public bool CanGet(string indexer) => args.keyValuePairs.ContainsKey(indexer);
+    public bool CanGet(string indexer)
+    {
+        if (args.keyValuePairs == null) throw new Exception();
+        return args.keyValuePairs.ContainsKey(indexer);
+    }
     public IVariable? Get(string indexer)
     {
+        if (args.keyValuePairs == null) throw new Exception();
         Block b = args.keyValuePairs[indexer];
         if (b.ToWord() == "yes") return new ArcBool(true);
         if (b.ToWord() == "no") return new ArcBool(false);
