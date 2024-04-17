@@ -1254,34 +1254,6 @@ public static partial class Compiler
 
         QuickEventModifiers++;
     }
-    public static void __create_flagship(ref Walker g, ref Block result)
-    {
-        g = Args.GetArgs(g, out Args args);
-
-        Block traits = args.Get(ArcCode.Constructor, "traits", new()).Value;
-
-        if (Parser.HasEnclosingBrackets(traits)) traits = RemoveEnclosingBrackets(traits);
-
-        foreach (Word trait in traits)
-        {
-            result.Add("set_country_flag", "=", trait);
-        }
-        if (traits.Any()) result.Add("set_country_flag", "=", "forced_trait");
-        result.Add(
-            args.GetFromList(Province.Provinces, "where").Id, "=", "{",
-                "create_flagship", "=", "{",
-                    "name", "=", $"\"{args.Get(ArcString.Constructor, "name")}\"",
-                    "type", "=", args.Get(ArcString.Constructor, "type"),
-                "}",
-            "}"
-        );
-        foreach (Word trait in traits)
-        {
-            result.Add("clr_country_flag", "=", trait);
-        }
-        if (traits.Any()) result.Add("clr_country_flag", "=", "forced_trait");
-    }
-
     public static string TranspiledString(string newValue, BlockType type, ArcObject? bound, string fileName)
     {
         StringBuilder s = new();

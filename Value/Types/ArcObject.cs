@@ -3,6 +3,13 @@
 public class ArcObject : Dict<IVariable?>
 {
     public Dictionary<string, NewCommand>? functions;
+    public bool TryGetVariable(Word locator, out IVariable? var)
+    {
+        bool value = Compiler.TryGetVariable(locator.Value, out IVariable? vr, Get, CanGet);
+        var = vr;
+        return value;
+    }
+
     public override IVariable? Get(string indexer)
     {
         if (indexer == "first") return Kvps.Values.First().Value;

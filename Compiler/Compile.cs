@@ -48,6 +48,7 @@ public static partial class Compiler
             else if (g.EndsWith('%')) result.Add((double.Parse(g.Current.Value[..^1]) / 100).ToString("0.000"));
             else if (g.EnclosedBy('[', ']')) __quick_limit(ref g, ref result, type, bound);
             else if (g.EnclosedBy('(', ')')) __quick_math(ref g, ref result);
+            else if (bound != null && bound.TryGetVariable(g, out IVariable? boundVar) && boundVar != null) g = boundVar.Call(g, ref result);
             else if (TryGetVariable(g.Current, out IVariable? var) && var != null) g = var.Call(g, ref result);
             //Effects
             else if (type == BlockType.Effect && NewFunctions(g, ref result, NewEffects)) continue;
