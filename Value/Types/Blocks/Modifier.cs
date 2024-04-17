@@ -28,13 +28,13 @@ public class ArcModifier : ArcBlock
     }
     public override string Compile()
     {
-        if (!ShouldBeCompiled) return Compiler.CompileModifier(Value);
-        Compiled ??= Compiler.CompileModifier(Value);
+        if (!ShouldBeCompiled) return Compiler.Compile(BlockType.Modifier, Value);
+        Compiled ??= Compiler.Compile(BlockType.Modifier, Value);
         return Compiled;
     }
     public override string Compile(Block b)
     {
-        return Compiler.CompileModifier(b);
+        return Compiler.Compile(BlockType.Modifier, b);
     }
     internal static ArcModifier Constructor(Block block) => new(block);
     internal static ArcModifier NamelessConstructor(Block block) => new(block) { ShouldBeCompiled = false };

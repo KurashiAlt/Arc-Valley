@@ -53,7 +53,7 @@ public class Relation : ArcBlock
     }
     public override string Compile()
     {
-        return Compiler.Compile(Value);
+        return Compiler.Compile(BlockType.Block, Value);
     }
     public override string ToString() => "[Arc Relation]";
 }

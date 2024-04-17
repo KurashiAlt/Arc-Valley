@@ -13,27 +13,27 @@ public class ArcString : IValue
     }
     public ArcString(string value)
     {
-        if (Compiler.TranspiledString(value, '`', out string? newValue, Compiler.Compile, "unknown") && newValue != null)
+        if (Compiler.TranspiledString(value, '`', out string? newValue, BlockType.Block, null, "unknown") && newValue != null)
         {
             Value = newValue;
         }
-        else if (Compiler.TranspiledString(value, '"', out string? nw2, Compiler.Compile, "unknown") && nw2 != null)
+        else if (Compiler.TranspiledString(value, '"', out string? nw2, BlockType.Block, null, "unknown") && nw2 != null)
         {
             Value = nw2;
         }
         else
         {
-            Value = Compiler.TranspiledString(value, Compiler.Compile, "unknown");
+            Value = Compiler.TranspiledString(value, BlockType.Block, null, "unknown");
         }
     }
     public ArcString(Block b)
     {
         string value = string.Join(' ', b);
-        if (Compiler.TranspiledString(value, '`', out string? newValue, Compiler.Compile, "unknown") && newValue != null)
+        if (Compiler.TranspiledString(value, '`', out string? newValue, BlockType.Block, null, "unknown") && newValue != null)
         {
             Value = newValue;
         }
-        else if (Compiler.TranspiledString(value, '"', out string? nw2, Compiler.Compile, "unknown") && nw2 != null)
+        else if (Compiler.TranspiledString(value, '"', out string? nw2, BlockType.Block, null, "unknown") && nw2 != null)
         {
             Value = nw2;
         }

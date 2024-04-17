@@ -27,13 +27,13 @@ public class ArcTrigger : ArcBlock
     }
     public override string Compile()
     {
-        if (!ShouldBeCompiled) return Compiler.CompileTrigger(Value);
-        Compiled ??= Compiler.CompileTrigger(Value);
+        if (!ShouldBeCompiled) return Compiler.Compile(BlockType.Trigger, Value);
+        Compiled ??= Compiler.Compile(BlockType.Trigger, Value);
         return Compiled;
     }
     public override string Compile(Block b)
     {
-        return Compiler.CompileTrigger(b);
+        return Compiler.Compile(BlockType.Trigger, b);
     }
     internal static ArcTrigger Constructor(Block block) => new(block);
     internal static ArcTrigger NamelessConstructor(Block block) => new(block) { ShouldBeCompiled = false };

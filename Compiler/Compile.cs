@@ -1,4 +1,8 @@
-﻿namespace Arc;
+﻿using System.Diagnostics;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+
+namespace Arc;
 public enum BlockType
 {
     Effect,
@@ -8,23 +12,61 @@ public enum BlockType
 }
 public static partial class Compiler
 {
-    public static string Compile(Block code)
+    public static string Compile(
+        BlockType type,
+        Block code,
+        ArcObject? bound = null
+    )
     {
-        if (code.Count == 0)
-            return "";
+        if (code.Count == 0) return "";
 
         Block result = new();
 
         Walker g = new(code);
         do
         {
-            if (AllCompile(ref g, ref result, Compile)) continue;
-
-            result.Add(g.Current);
+            //All
+            if (g == "new") __new(ref g);
+            else if (g == "LOG_CURRENT_COMPILE") __LOG_CURRENT_COMPILE(result);
+            else if (g == "DEFINE_MODIFIER") __DEFINE_MODIFIER(ref g);
+            else if (g == "write_file") __write_file(ref g);
+            else if (g == "delete") __delete(ref g);
+            else if (g == "when") __when(ref g, ref result, type, bound);
+            else if (g == "modifier_to_string") __modifier_to_string(ref g, ref result);
+            else if (g == "id_to_name") __id_to_name(ref g, ref result);
+            else if (g == "breakpoint") Debugger.Break();
+            else if (g == "foreach") __foreach(ref g, ref result, type, bound);
+            else if (g == "for") __for(ref g, ref result, type, bound);
+            else if (g == "if") __if(ref g, ref result);
+            else if (g == "else_if") __else_if(ref g, ref result);
+            else if (g == "else") __else(ref g, ref result);
+            else if (g == "new_tooltip") __new_tooltip(ref g, ref result, type, bound);
+            else if (g == "arc_throw") __arc_throw(ref g, type, bound);
+            else if (g == "arc_log") __arc_log(ref g, type, bound);
+            else if (g.StartsWith('&')) __variable(ref g, ref result);
+            else if (g.EndsWith(',') || g.EndsWith(';')) __multi_scope(ref g, ref result, type, bound);
+            else if (TranspiledString(g.Current, '`', out string? newValue, type, bound, g.Current.GetFile()) && newValue != null) result.Add(newValue);
+            else if (g.EndsWith('%')) result.Add((double.Parse(g.Current.Value[..^1]) / 100).ToString("0.000"));
+            else if (g.EnclosedBy('[', ']')) __quick_limit(ref g, ref result, type, bound);
+            else if (g.EnclosedBy('(', ')')) __quick_math(ref g, ref result);
+            else if (TryGetVariable(g.Current, out IVariable? var) && var != null) g = var.Call(g, ref result);
+            //Effects
+            else if (type == BlockType.Effect && NewFunctions(g, ref result, NewEffects)) continue;
+            else if (type == BlockType.Effect && g == "float_random") __float_random(ref g, ref result);
+            else if (type == BlockType.Effect && g == "new_custom_tooltip") __new_custom_tooltip(ref g, ref result, type, bound);
+            else if (type == BlockType.Effect && g == "quick_province_modifier") __quick_province_modifier(ref g, ref result);
+            else if (type == BlockType.Effect && g == "quick_country_modifier") __quick_country_modifier(ref g, ref result);
+            else if (type == BlockType.Effect && g == "create_flagship") __create_flagship(ref g, ref result);
+            //Triggers
+            else if (type == BlockType.Trigger && NewFunctions(g, ref result, NewTriggers)) continue;
+            //Modifiers
+            else if (type == BlockType.Modifier && NewFunctions(g, ref result, NewModifiers)) continue;
+            //None
+            else result.Add(g.Current);
         } while (g.MoveNext());
 
-        if (Parser.HasEnclosingBrackets(result)) result = RemoveEnclosingBrackets(result);
+        result.RemoveEnclosingBlock();
 
-        return string.Join(' ', result);
+        return result.ToString();
     }
 }

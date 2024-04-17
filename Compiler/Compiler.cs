@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using System.Diagnostics;
 using System.Collections.Concurrent;
+using System.Numerics;
 
 namespace Arc;
 public static partial class Compiler
@@ -566,7 +567,7 @@ public static partial class Compiler
             {
                 g = Args.GetArgs(g, out Args args);
                 if (args.block == null) throw ArcException.Create("Unknown Error: Null Reference", g, args);
-                CompileEffect(args.block);
+                Compile(BlockType.Effect, args.block);
                 continue;
             }
             if (g.Current == "write_file")
@@ -583,7 +584,7 @@ public static partial class Compiler
                 if (var == null) throw ArcException.Create("Unknown Error: Null Reference", g);
                 g = var.Call(g, ref f);
             }
-            else if (NewFunctions(g, ref result, NewEffects, CompileEffect)) continue;
+            else if (NewFunctions(g, ref result, NewEffects)) continue;
             else throw ArcException.Create($"Invalid command in Object Declaration: {g.Current}", g, result, code);
         } while (g.MoveNext());
     }
@@ -634,7 +635,7 @@ public static partial class Compiler
             else if (g.Current == "force:str:contains")
             {
                 g = Args.GetArgs(g, out Args args);
-                string str = GetVariable<IVariable>(args.Get("variable").ToWord()).ToString();
+                string str = GetVariable<IVariable>(args.Get("variable").ToWord()).ToString() ?? "";
                 string value = args.Get(ArcString.Constructor, "value").Value;
                 if (!str.Contains(value))
                 {
@@ -685,528 +686,631 @@ public static partial class Compiler
 
         return true;
     }
-    public static bool AllCompile(ref Walker g, ref Block result, Func<Block, string> compile)
+    
+    public static void __new(ref Walker g)
     {
-        if (g.Current == "new")
+        g.ForceMoveNext();
+        g = Declare(g);
+    }
+    public static void __LOG_CURRENT_COMPILE(Block result)
+    {
+        Console.WriteLine(Parser.FormatCode(result.ToString()));
+    }
+    public static void __write_file(ref Walker g)
+    {
+        g.ForceMoveNext();
+        string file = GetId(g.Current);
+        g = Args.GetArgs(g, out Args args);
+        ArcCode blo = ArcCode.NamelessConstructor(args.block);
+        Program.OverwriteFile($"{Program.TranspileTarget}/{file}", blo.Compile());
+    }
+    public static void __delete(ref Walker g)
+    {
+        g = Args.GetArgs(g, out Args args);
+
+        ArcString key = ArcString.Constructor(args.block);
+        global.Delete(key.Value);
+    }
+    public static void __when(ref Walker g, ref Block result, BlockType type, ArcObject? bound)
+    {
+        g.ForceMoveNext();
+        string trigger = g.Current.Value[1..^1];
+        string file = g.Current.GetFile();
+
+        g.ForceMoveNext();
+        g = GetScope(g, out Block scope);
+
+        if (Parser.HasEnclosingBrackets(scope)) scope = RemoveEnclosingBrackets(scope);
+
+        if (WhenInterpret(trigger)) result.Add(Compile(type, scope, bound));
+
+        bool WhenInterpret(string trigger)
         {
+            Block b = Parser.ParseCode(trigger, file);
+            if (Parser.HasEnclosingBrackets(b)) b = RemoveEnclosingBrackets(b);
+            return When(b);
+        }
+    }
+    public static void __DEFINE_MODIFIER(ref Walker g)
+    {
+        g = Args.GetArgs(g, out Args args);
+
+        ArcString key = args.Get(ArcString.Constructor, "key");
+
+        ModifierLocs.Add(key.Value, ModifierLocConstructor(key.Value, args));
+    }
+    public static void __modifier_to_string(ref Walker g, ref Block result)
+    {
+        g = Args.GetArgs(g, out Args args);
+        if (args.block != null && TryGetVariable(args.block.ToWord(), out IVariable? vr))
+        {
+            if (vr == null) throw ArcException.Create("Unknown Error: Null Reference", g);
+            if (vr is not ArcModifier) throw ArcException.Create($"{string.Join(' ', args.block)} is not ArcModifier in modifier_to_string function", g);
+            Block c = new("{");
+            foreach (Word w in Parser.ParseCode(((ArcModifier)vr).Compile(), g.Current.GetFile()))
+            {
+                c.Add(w);
+            }
+            c.Add("}");
+
+            args = Args.GetArgs(c);
+        }
+        if (args.keyValuePairs == null) throw ArcException.Create("Unknown Error: Null Reference", g);
+        string str = "";
+        foreach (KeyValuePair<string, Block> b in args.keyValuePairs)
+        {
+            ArcObject modInfo = ModifierLocs[b.Key];
+            string text = modInfo.Get<ArcString>("text").Value;
+            string key = modInfo.Get<ArcString>("localisation_key").Value;
+            if (Program.Localisation.TryGetValue(key, out string? v)) text = v;
+            bool percent = modInfo.Get<ArcBool>("percent").Value;
+            bool isBool = modInfo.Get<ArcBool>("is_bool").Value;
+            bool isGood = modInfo.Get<ArcBool>("is_good").Value;
+            int precision = modInfo.Get<ArcInt>("precision").Value;
+            double multiplier = modInfo.Get<ArcFloat>("multiplier").Value;
+
+            Word value = b.Value.ToWord();
+
+            if (isBool)
+            {
+                bool nValue = new ArcBool(value).Value;
+
+                str += $"{text}: §{(isGood == nValue ? 'G' : 'R')}{value}§!";
+            }
+            else
+            {
+                double nValue = new ArcFloat(value).Value * multiplier;
+
+                str += $"{text}: §{(isGood == nValue >= 0 ? 'G' : 'R')}{nValue.ToString($"F{precision}")}{(percent ? "%" : "")}§!";
+            }
+
+            str += '\n';
+        }
+        result.Add(str.Trim());
+    }
+    public static void __id_to_name(ref Walker g, ref Block result)
+    {
+        g = Args.GetArgs(g, out Args args);
+        IVariable i0 = GetVariable<IVariable>(args.block.ToWord());
+        string i1 = i0.ToString() ?? "";
+        string i2 = i1.Replace('_', ' ');
+        Block i3 = Parser.ParseCode(i2, g.Current.GetFile());
+        IEnumerable<string> i4 = from iz in i3 select ToUpperFirstLetter(iz);
+        result.Add(string.Join(' ', i4));
+
+        string ToUpperFirstLetter(string source)
+        {
+            if (string.IsNullOrEmpty(source))
+                return string.Empty;
+            // convert to char array of the string
+            char[] letters = source.ToCharArray();
+            // upper case the first char
+            letters[0] = char.ToUpper(letters[0]);
+            // return the array made of the new char array
+            return new string(letters);
+        }
+    }
+    public static void __foreach(ref Walker g, ref Block result, BlockType type, ArcObject? bound)
+    {
+        g.ForceMoveNext(); Word varKey = g.Current;
+        g.ForceMoveNext(); g.Asssert("in");
+        g.ForceMoveNext(); Word dictKey = g.Current;
+        g.ForceMoveNext();
+        string? whenBlock = null;
+        if (g.Current.Value.StartsWith("[") && g.Current.Value.EndsWith("]"))
+        {
+            whenBlock = g.Current;
             g.ForceMoveNext();
-            g = Declare(g);
-            return true;
         }
-        if (g.Current == "INTERNALS:LOG_CURRENT_COMPILE")
+        GetScope(g, out Block scope);
+        if (whenBlock != null)
         {
-            Console.WriteLine(Parser.FormatCode(result.ToString()));
-            return true;
+            scope.Prepend("{");
+            scope.Prepend(whenBlock);
+            scope.Prepend("when");
+            scope.Add("}");
         }
-        if (g.Current == "write_file")
+        if (Parser.HasEnclosingBrackets(scope)) RemoveEnclosingBrackets(scope);
+
+        if (TryGetVariable(varKey, out IVariable? _)) throw ArcException.Create($"Variable {varKey} already exists", g);
+        TryGetVariable(dictKey, out IVariable? dictValue);
+        if (dictValue == null) throw ArcException.Create($"Variable {dictKey} does not exist", g);
+
+        if (dictValue is ArgList lst)
         {
-            g.ForceMoveNext();
-            string file = GetId(g.Current);
-            g = Args.GetArgs(g, out Args args);
-            ArcCode blo = ArcCode.NamelessConstructor(args.block);
-            Program.OverwriteFile($"{Program.TranspileTarget}/{file}", blo.Compile());
-        }
-        if (g.Current == "delete")
-        {
-            g = Args.GetArgs(g, out Args args);
-
-            ArcString key = ArcString.Constructor(args.block);
-            global.Delete(key.Value);
-
-            return true;
-        }
-        if (g.Current == "when")
-        {
-            g.ForceMoveNext();
-            string trigger = g.Current.Value[1..^1];
-            string file = g.Current.GetFile();
-
-            g.ForceMoveNext();
-            g = GetScope(g, out Block scope);
-
-            if (Parser.HasEnclosingBrackets(scope)) scope = RemoveEnclosingBrackets(scope);
-
-            if(WhenInterpret(trigger)) result.Add(compile(scope));
-            return true;
-            bool WhenInterpret(string trigger)
+            IVariable arg = lst.list.First();
+            if (arg is ArcObject arcObject)
             {
-                Block b = Parser.ParseCode(trigger, file);
-                if (Parser.HasEnclosingBrackets(b)) b = RemoveEnclosingBrackets(b);
-                return When(b);
+                dictValue = arcObject;
             }
-        }
-        if (g.Current == "arc_call")
-        {
-            g = Args.GetArgs(g, out Args args);
-
-            int id = 0;
-            switch (id)
+            else if (arg is IVariable Vc)
             {
-                case 0:
-                    {
-                        ArcString key = args.Get(ArcString.Constructor, "key");
-
-                        ModifierLocs.Add(key.Value, ModifierLocConstructor(key.Value, args));
-                    }
-                    break;
-                default: throw ArcException.Create(g, result, compile, args);
-            }
-        }
-        if (g.Current == "modifier_to_string")
-        {
-            g = Args.GetArgs(g, out Args args);
-            if (args.block != null && TryGetVariable(args.block.ToWord(), out IVariable? vr))
-            {
-                if (vr == null) throw ArcException.Create("Unknown Error: Null Reference", g);
-                if (vr is not ArcModifier) throw ArcException.Create($"{string.Join(' ', args.block)} is not ArcModifier in modifier_to_string function", g);
-                Block c = new("{");
-                foreach (Word w in Parser.ParseCode(((ArcModifier)vr).Compile(), g.Current.GetFile()))
-                {
-                    c.Add(w);
-                }
-                c.Add("}");
-
-                args = Args.GetArgs(c);
-            }
-            if (args.keyValuePairs == null) throw ArcException.Create("Unknown Error: Null Reference", g);
-            string str = "";
-            foreach (KeyValuePair<string, Block> b in args.keyValuePairs)
-            {
-                ArcObject modInfo = ModifierLocs[b.Key];
-                string text = modInfo.Get<ArcString>("text").Value;
-                string key = modInfo.Get<ArcString>("localisation_key").Value;
-                if (Program.Localisation.TryGetValue(key, out string? v)) text = v;
-                bool percent = modInfo.Get<ArcBool>("percent").Value;
-                bool isBool = modInfo.Get<ArcBool>("is_bool").Value;
-                bool isGood = modInfo.Get<ArcBool>("is_good").Value;
-                int precision = modInfo.Get<ArcInt>("precision").Value;
-                double multiplier = modInfo.Get<ArcFloat>("multiplier").Value;
-
-                Word value = b.Value.ToWord();
-
-                if (isBool)
-                {
-                    bool nValue = new ArcBool(value).Value;
-
-                    str += $"{text}: §{(isGood == nValue ? 'G' : 'R')}{value}§!";
-                }
-                else
-                {
-                    double nValue = new ArcFloat(value).Value * multiplier;
-
-                    str += $"{text}: §{(isGood == nValue >= 0 ? 'G' : 'R')}{nValue.ToString($"F{precision}")}{(percent ? "%" : "")}§!";
-                }
-
-                str += '\n';
-            }
-            result.Add(str.Trim());
-            return true;
-        }
-        if (g.Current == "id_to_name")
-        {
-            g = Args.GetArgs(g, out Args args);
-            IVariable i0 = GetVariable<IVariable>(args.block.ToWord());
-            string? i1 = i0.ToString();
-            string i2 = i1.Replace('_', ' ');
-            Block i3 = Parser.ParseCode(i2, g.Current.GetFile());
-            IEnumerable<string> i4 = from iz in i3 select ToUpperFirstLetter(iz);
-            result.Add(string.Join(' ', i4));
-            return true;
-
-            string ToUpperFirstLetter(string source)
-            {
-                if (string.IsNullOrEmpty(source))
-                    return string.Empty;
-                // convert to char array of the string
-                char[] letters = source.ToCharArray();
-                // upper case the first char
-                letters[0] = char.ToUpper(letters[0]);
-                // return the array made of the new char array
-                return new string(letters);
-            }
-        }
-        if (g.Current == "breakpoint")
-        {
-            Debugger.Break();
-            return true;
-        }
-        if (g.Current == "foreach")
-        {
-            g.ForceMoveNext(); Word varKey = g.Current;
-            g.ForceMoveNext(); g.Asssert("in");
-            g.ForceMoveNext(); Word dictKey = g.Current;
-            g.ForceMoveNext();
-            string? whenBlock = null;
-            if (g.Current.Value.StartsWith("[") && g.Current.Value.EndsWith("]"))
-            {
-                whenBlock = g.Current;
-                g.ForceMoveNext();
-            }
-            GetScope(g, out Block scope);
-            if(whenBlock != null)
-            {
-                scope.Prepend("{");
-                scope.Prepend(whenBlock);
-                scope.Prepend("when");
-                scope.Add("}");
-            }
-            if (Parser.HasEnclosingBrackets(scope)) RemoveEnclosingBrackets(scope);
-
-            if (TryGetVariable(varKey, out IVariable? _)) throw ArcException.Create($"Variable {varKey} already exists", g);
-            TryGetVariable(dictKey, out IVariable? dictValue);
-            if (dictValue == null) throw ArcException.Create($"Variable {dictKey} does not exist", g);
-
-            if (dictValue is ArgList lst)
-            {
-                IVariable arg = lst.list.First();
-                if (arg is ArcObject arcObject)
-                {
-                    dictValue = arcObject;
-                }
-                else if (arg is IVariable Vc)
-                {
-                    dictValue = Vc;
-                }
-                else throw new Exception();
-            }
-
-            if (dictValue is ArcEnumerable arcEnum)
-            {
-                IEnumerator<IVariable> enume = arcEnum.GetArcEnumerator();
-                if (enume.MoveNext())
-                {
-                    do
-                    {
-                        global.Add(varKey, enume.Current);
-                        result.Add(compile(scope));
-                        global.Delete(varKey);
-                    } while (enume.MoveNext());
-                }
+                dictValue = Vc;
             }
             else throw new Exception();
+        }
 
-            return true;
-        }
-        if (g.Current == "for")
+        if (dictValue is ArcEnumerable arcEnum)
         {
-            g.ForceMoveNext(); Word varKey = g.Current;
-            g.ForceMoveNext(); g.Asssert("as");
-            g.ForceMoveNext(); int start = new ArcInt(g.Current).Value;
-            g.ForceMoveNext(); g.Asssert("to");
-            g.ForceMoveNext(); int end = new ArcInt(g.Current).Value;
-            g.ForceMoveNext(); GetScope(g, out Block scope);
-            if (Parser.HasEnclosingBrackets(scope)) RemoveEnclosingBrackets(scope);
-
-            if (TryGetVariable(varKey, out IVariable? _)) throw ArcException.Create($"Variable {varKey} already exists", g);
-            ArcInt varValue = new(start);
-            global.Add(varKey, varValue);
-
-            while (varValue.Value != end)
+            IEnumerator<IVariable> enume = arcEnum.GetArcEnumerator();
+            if (enume.MoveNext())
             {
-                result.Add(compile(scope));
-                if (varValue.Value > end) varValue.Value--;
-                else varValue.Value++;
-            }
-
-            global.Delete(varKey);
-
-            return true;
-        }
-        if (g.Current == "if") 
-        {
-            if (g.MoveNext())
-            {
-                if (g.Current != "=") g.MoveBack();
-            }
-            result.Add("if", "=");
-            return true;
-        }
-        if (g.Current == "else_if") 
-        {
-            if (g.MoveNext())
-            {
-                if (g.Current != "=") g.MoveBack();
-            }
-            result.Add("else_if", "=");
-            return true;
-        }
-        if (g.Current == "else") 
-        {
-            if (g.MoveNext())
-            {
-                if (g.Current != "=") g.MoveBack();
-            }
-            result.Add("else", "=");
-            return true;
-        }
-        if (g.Current == "new_tooltip")
-        {
-            string key = $"nct_{NctAmount}";
-            result.Add("tooltip", "=", $"nct_{NctAmount}");
-            NctAmount++;
-            g.ForceMoveNext(); g.Asssert("=");
-            g.ForceMoveNext(); string value = g.Current;
-            if (TranspiledString(value, '"', out string? nValue, CompileEffect, g.Current.GetFile()))
-            {
-                if (nValue == null) throw new Exception();
-                Program.Localisation.Add(key, nValue);
-            }
-            else throw new NotImplementedException();
-            return true;
-        }
-        if (g.Current == "arc_throw")
-        {
-            g.ForceMoveNext(); 
-            g.Asssert("=");
-            g.ForceMoveNext(); 
-            string value = g.Current;
-            if (TranspiledString(value, '"', out string? nValue, CompileEffect, g.Current.GetFile()) && nValue != null)
-            {
-                throw ArcException.Create(nValue, g);
-            }
-            else throw ArcException.Create(value, g);
-        }
-        if (g.Current == "arc_log")
-        {
-            g.ForceMoveNext(); 
-            g.Asssert("=");
-            g.ForceMoveNext(); 
-            string value = g.Current;
-            if (TranspiledString(value, '"', out string? nValue, CompileEffect, g.Current.GetFile()))
-            {
-                Console.WriteLine($"{g.Current.GetFile()} line {g.Current.File}: {nValue}");
-            }
-            else Console.WriteLine($"{g.Current.GetFile()} line {g.Current.File}: {value}"); ;
-            return true;
-        }
-        if (g.Current.StartsWith('&'))
-        {
-            string left = g.Current.Value[1..];
-            if (!VariableExists(left)) Console.WriteLine(ArcException.CreateMessage($"Variable Definition not found for {left}", g));
-
-            g.ForceMoveNext();
-            Word Operator = g.Current;
-            g.ForceMoveNext();
-            g = GetScope(g, out Block rightBlock);
-            Args args = Args.GetArgs(rightBlock);
-            switch (Operator)
-            {
-                case ":=": VariableOperator("set_variable", ref result); break;
-                case "+=": VariableOperator("change_variable", ref result); break;
-                case "-=": VariableOperator("subtract_variable", ref result); break;
-                case "*=": VariableOperator("multiply_variable", ref result); break;
-                case "/=": VariableOperator("divide_variable", ref result); break;
-                case "&=": VariableOperator("export_to_variable", ref result, BothAreValue: true); break;
-                case ">=": VariableOperator("check_variable", ref result); break;
-                case ">" : VariableOperator("check_variable", ref result, CheckNotEqual: true); break;
-                case "<=": VariableOperator("check_variable", ref result, CheckOrEqual: true, Invert: true) ; break;
-                case "<" : VariableOperator("check_variable", ref result, Invert: true); break;
-                case "==": VariableOperator("is_variable_equal", ref result); break;
-                case "!=": VariableOperator("is_variable_equal", ref result, Invert: true); break;
-                default: throw ArcException.Create($"While performing a quick variable operation '&' syntax, operator {Operator} was not recognized", left, Operator, args, result);
-            }
-
-            return true;
-            void VariableOperator(string command, ref Block result, bool Invert = false, bool CheckOrEqual = false, bool CheckNotEqual = false, bool BothAreValue = false)
-            {
-                if (CheckNotEqual) result.Add("AND", "=", "{");
-                if (CheckOrEqual) result.Add("OR", "=", "{");
-                if (Invert) result.Add("NOT", "=", "{");
-                try
+                do
                 {
-                    result.Add(
-                        command, "=", "{",
-                            "which", "=", left,
-                            "value", "=", new ArcFloat(args.block),
-                        "}"
-                    );
-                    if (CheckNotEqual) result.Add(
-                        "NOT", "=", "{",
-                            "is_variable_equal", "=", "{",
-                                "which", "=", left,
-                                "value", "=", new ArcFloat(args.block),
-                            "}",
-                        "}"
-                    );
-                    if (Invert) result.Add("}");
-                    if (CheckOrEqual) result.Add(
-                        "is_variable_equal", "=", "{",
-                            "which", "=", left,
-                            "value", "=", new ArcFloat(args.block),
-                        "}"
-                    );
-                }
-                catch
-                {
-                    result.Add(
-                        command, "=", "{",
-                            "which", "=", left,
-                            BothAreValue?"value":"which", "=", args.block,
-                        "}"
-                    );
-                    if (CheckNotEqual) result.Add(
-                        "NOT", "=", "{",
-                            "is_variable_equal", "=", "{",
-                                "which", "=", left,
-                                "which", "=", args.block,
-                            "}",
-                        "}"
-                    );
-                    if (Invert) result.Add("}");
-                    if (CheckOrEqual) result.Add(
-                        "is_variable_equal", "=", "{",
-                            "which", "=", left,
-                            "which", "=", args.block,
-                        "}"
-                    );
-                    if (!VariableExists(left)) Console.WriteLine(ArcException.CreateMessage($"Variable Definition not found for {left}", left, Operator, args, command, result));
-                }
-                if (CheckOrEqual) result.Add("}");
-                if (CheckNotEqual) result.Add("}");
-            }
-            bool VariableExists(string id)
-            {
-                if (global.CanGet("variables"))
-                    if (global.Get<IArcObject>("variables").CanGet(left))
-                        return true;
-                return false;
+                    global.Add(varKey, enume.Current);
+                    result.Add(Compile(type, scope, bound));
+                    global.Delete(varKey);
+                } while (enume.MoveNext());
             }
         }
-        if (g.Current.Value.EndsWith(',') || g.Current.Value.EndsWith(';'))
+        else throw new Exception();
+    }
+    public static void __for(ref Walker g, ref Block result, BlockType type, ArcObject? bound)
+    {
+        g.ForceMoveNext(); Word varKey = g.Current;
+        g.ForceMoveNext(); g.Asssert("as");
+        g.ForceMoveNext(); int start = new ArcInt(g.Current).Value;
+        g.ForceMoveNext(); g.Asssert("to");
+        g.ForceMoveNext(); int end = new ArcInt(g.Current).Value;
+        g.ForceMoveNext(); GetScope(g, out Block scope);
+        if (Parser.HasEnclosingBrackets(scope)) RemoveEnclosingBrackets(scope);
+
+        if (TryGetVariable(varKey, out IVariable? _)) throw ArcException.Create($"Variable {varKey} already exists", g);
+        ArcInt varValue = new(start);
+        global.Add(varKey, varValue);
+
+        while (varValue.Value != end)
         {
-            string pre = g.Current.Value.Split(':')[0];
-            List<string> s = new()
-            {
-                g.Current.Value[..^1]
-            };
-            while (g.Current.Value.EndsWith(',') || g.Current.Value.EndsWith(';'))
-            {
-                if (g.Current.Value.EndsWith(';'))
-                {
-                    g.ForceMoveNext();
-                    if (g.Current.Value.EndsWith(',') || g.Current.Value.EndsWith(';')) s.Add($"{pre}:{g.Current.Value[..^1]}");
-                    else s.Add($"{pre}:{g.Current.Value}"); ;
-                }
-                else
-                {
-                    g.ForceMoveNext();
-                    if (g.Current.Value.EndsWith(',') || g.Current.Value.EndsWith(';')) s.Add(g.Current.Value[..^1]);
-                    else s.Add(g.Current.Value);
-                }
-            }
-
-            g.ForceMoveNext();
-
-            if (g.Current.Value.StartsWith('[') && g.Current.Value.EndsWith(']'))
-            {
-                string trigger = g.Current.Value[1..^1];
-
-                g.ForceMoveNext();
-                string file = g.Current.GetFile();
-                g = GetScope(g, out Block scope);
-
-                if (Parser.HasEnclosingBrackets(scope)) scope = RemoveEnclosingBrackets(scope);
-
-                Block n = new()
-                    {
-                        "=", "{",
-                            "limit", "=", "{",
-                                StringCompile(trigger, file, CompileTrigger),
-                            "}",
-                            compile(scope),
-                        "}"
-                    };
-
-                foreach (string k in s)
-                {
-                    result.Add(StringCompile(k, file, compile));
-                    result.Add(n);
-                }
-                return true;
-            }
-            else if (g.Current.Value == "=")
-            {
-                g.ForceMoveNext();
-
-                string file = g.Current.GetFile();
-                g = GetScope(g, out Block scope);
-
-                string compiled = compile(scope);
-                foreach (string k in s)
-                {
-                    Block n = new()
-                        {
-                            StringCompile(k, file, Compile),
-                            "=",
-                            "{",
-                            compiled,
-                            "}"
-                        };
-
-                    result.Add(n);
-                }
-                return true;
-            }
-            else throw ArcException.Create("Unknown Error", g);
+            result.Add(Compile(type, scope, bound));
+            if (varValue.Value > end) varValue.Value--;
+            else varValue.Value++;
         }
-        if (TranspiledString(g.Current, '`', out string? newValue, compile, g.Current.GetFile()) && newValue != null)
+
+        global.Delete(varKey);
+    }
+    public static void __if(ref Walker g, ref Block result)
+    {
+        if (g.MoveNext())
         {
-            result.Add(newValue);
-            return true;
+            if (g.Current != "=") g.MoveBack();
         }
-        if (g.Current.Value.EndsWith('%'))
+        result.Add("if", "=");
+    }
+    public static void __else_if(ref Walker g, ref Block result)
+    {
+        if (g.MoveNext())
         {
-            result.Add((double.Parse(g.Current.Value[..^1]) / 100).ToString("0.000"));
-            return true;
+            if (g.Current != "=") g.MoveBack();
         }
-        if (g.Current.Value.StartsWith('[') && g.Current.Value.EndsWith(']'))
+        result.Add("else_if", "=");
+    }
+    public static void __else(ref Walker g, ref Block result)
+    {
+        if (g.MoveNext())
         {
-            string trigger = g.Current.Value[1..^1];
-            string file = g.Current.GetFile();
-
-            g.ForceMoveNext();
-            g = GetScope(g, out Block scope);
-
-            if (Parser.HasEnclosingBrackets(scope)) scope = RemoveEnclosingBrackets(scope);
-
-            if (result.Last?.Value.Value != "=") result.Add("=");
-
-            result.Add(
-                "{",
-                    "limit", "=", "{",
-                        StringCompile(trigger, file, CompileTrigger),
-                    "}",
-                    compile(scope),
-                "}"
-            );
-            return true;
+            if (g.Current != "=") g.MoveBack();
         }
-        if (g.Current.Value.StartsWith('(') && g.Current.Value.EndsWith(')'))
+        result.Add("else", "=");
+    }
+    public static void __new_tooltip(ref Walker g, ref Block result, BlockType type, ArcObject? bound)
+    {
+        string key = $"nct_{NctAmount}";
+        result.Add("tooltip", "=", $"nct_{NctAmount}");
+        NctAmount++;
+        g.ForceMoveNext(); g.Asssert("=");
+        g.ForceMoveNext(); string value = g.Current;
+        if (TranspiledString(value, '"', out string? nValue, type, bound, g.Current.GetFile()))
         {
-            string calc = g.Current.Value[1..^1];
-
-            result.Add(
-                Calculator.Calculate(new Word(calc, g))
-            );
-            return true;
+            if (nValue == null) throw new Exception();
+            Program.Localisation.Add(key, nValue);
         }
-        if (TryGetVariable(g.Current, out IVariable? var))
+        else throw new NotImplementedException();
+    }
+    public static void __new_custom_tooltip(ref Walker g, ref Block result, BlockType type, ArcObject? bound)
+    {
+        string key = $"nct_{NctAmount}";
+        result.Add("custom_tooltip", "=", $"nct_{NctAmount}");
+        NctAmount++;
+        g.ForceMoveNext(); g.Asssert("=");
+        g.ForceMoveNext(); string value = g.Current;
+        if (TranspiledString(value, '"', out string? nValue, type, bound, g.Current.GetFile()))
         {
-            if (var == null) throw ArcException.Create(g);
+            if (nValue == null) throw ArcException.Create(g);
+            Program.Localisation.Add(key, nValue);
+        }
+        else throw new NotImplementedException();
+    }
+    public static void __arc_throw(ref Walker g, BlockType type, ArcObject? bound)
+    {
+        g.ForceMoveNext();
+        g.Asssert("=");
+        g.ForceMoveNext();
+        string value = g.Current;
+        if (TranspiledString(value, '"', out string? nValue, type, bound, g.Current.GetFile()) && nValue != null)
+        {
+            throw ArcException.Create(nValue, g);
+        }
+        else throw ArcException.Create(value, g);
+    }
+    public static void __arc_log(ref Walker g, BlockType type, ArcObject? bound)
+    {
+        g.ForceMoveNext();
+        g.Asssert("=");
+        g.ForceMoveNext();
+        string value = g.Current;
+        if (TranspiledString(value, '"', out string? nValue, type, bound, g.Current.GetFile()))
+        {
+            Console.WriteLine($"{g.Current.GetFile()} line {g.Current.File}: {nValue}");
+        }
+        else Console.WriteLine($"{g.Current.GetFile()} line {g.Current.File}: {value}");
+    }
+    public static void __variable(ref Walker g, ref Block result)
+    {
+        string left = g.Current.Value[1..];
+        if (!VariableExists(left)) Console.WriteLine(ArcException.CreateMessage($"Variable Definition not found for {left}", g));
+
+        g.ForceMoveNext();
+        Word Operator = g.Current;
+        g.ForceMoveNext();
+        g = GetScope(g, out Block rightBlock);
+        Args args = Args.GetArgs(rightBlock);
+        switch (Operator)
+        {
+            case ":=": VariableOperator("set_variable", ref result); break;
+            case "+=": VariableOperator("change_variable", ref result); break;
+            case "-=": VariableOperator("subtract_variable", ref result); break;
+            case "*=": VariableOperator("multiply_variable", ref result); break;
+            case "/=": VariableOperator("divide_variable", ref result); break;
+            case "&=": VariableOperator("export_to_variable", ref result, BothAreValue: true); break;
+            case ">=": VariableOperator("check_variable", ref result); break;
+            case ">": VariableOperator("check_variable", ref result, CheckNotEqual: true); break;
+            case "<=": VariableOperator("check_variable", ref result, CheckOrEqual: true, Invert: true); break;
+            case "<": VariableOperator("check_variable", ref result, Invert: true); break;
+            case "==": VariableOperator("is_variable_equal", ref result); break;
+            case "!=": VariableOperator("is_variable_equal", ref result, Invert: true); break;
+            default: throw ArcException.Create($"While performing a quick variable operation '&' syntax, operator {Operator} was not recognized", left, Operator, args, result);
+        }
+
+        void VariableOperator(string command, ref Block result, bool Invert = false, bool CheckOrEqual = false, bool CheckNotEqual = false, bool BothAreValue = false)
+        {
+            if (CheckNotEqual) result.Add("AND", "=", "{");
+            if (CheckOrEqual) result.Add("OR", "=", "{");
+            if (Invert) result.Add("NOT", "=", "{");
             try
             {
-                g = var.Call(g, ref result);
+                result.Add(
+                    command, "=", "{",
+                        "which", "=", left,
+                        "value", "=", new ArcFloat(args.block),
+                    "}"
+                );
+                if (CheckNotEqual) result.Add(
+                    "NOT", "=", "{",
+                        "is_variable_equal", "=", "{",
+                            "which", "=", left,
+                            "value", "=", new ArcFloat(args.block),
+                        "}",
+                    "}"
+                );
+                if (Invert) result.Add("}");
+                if (CheckOrEqual) result.Add(
+                    "is_variable_equal", "=", "{",
+                        "which", "=", left,
+                        "value", "=", new ArcFloat(args.block),
+                    "}"
+                );
             }
             catch
             {
-                Console.WriteLine(ArcException.CreateMessage(g, result));
-                throw;
+                result.Add(
+                    command, "=", "{",
+                        "which", "=", left,
+                        BothAreValue ? "value" : "which", "=", args.block,
+                    "}"
+                );
+                if (CheckNotEqual) result.Add(
+                    "NOT", "=", "{",
+                        "is_variable_equal", "=", "{",
+                            "which", "=", left,
+                            "which", "=", args.block,
+                        "}",
+                    "}"
+                );
+                if (Invert) result.Add("}");
+                if (CheckOrEqual) result.Add(
+                    "is_variable_equal", "=", "{",
+                        "which", "=", left,
+                        "which", "=", args.block,
+                    "}"
+                );
+                if (!VariableExists(left)) Console.WriteLine(ArcException.CreateMessage($"Variable Definition not found for {left}", left, Operator, args, command, result));
             }
-            return true;
+            if (CheckOrEqual) result.Add("}");
+            if (CheckNotEqual) result.Add("}");
         }
-        return false;
+        bool VariableExists(string id)
+        {
+            if (global.CanGet("variables"))
+                if (global.Get<IArcObject>("variables").CanGet(left))
+                    return true;
+            return false;
+        }
     }
-    public static string TranspiledString(string newValue, Func<Block, string> compile, string fileName)
+    public static void __multi_scope(ref Walker g, ref Block result, BlockType type, ArcObject? bound)
+    {
+        string pre = g.Current.Value.Split(':')[0];
+        List<string> s = new() { g.Current.Value[..^1] };
+        while (g.Current.Value.EndsWith(',') || g.Current.Value.EndsWith(';'))
+        {
+            if (g.Current.Value.EndsWith(';'))
+            {
+                g.ForceMoveNext();
+                if (g.Current.Value.EndsWith(',') || g.Current.Value.EndsWith(';')) s.Add($"{pre}:{g.Current.Value[..^1]}");
+                else s.Add($"{pre}:{g.Current.Value}"); ;
+            }
+            else
+            {
+                g.ForceMoveNext();
+                if (g.Current.Value.EndsWith(',') || g.Current.Value.EndsWith(';')) s.Add(g.Current.Value[..^1]);
+                else s.Add(g.Current.Value);
+            }
+        }
+
+        g.ForceMoveNext();
+
+        if (g.Current.Value.StartsWith('[') && g.Current.Value.EndsWith(']'))
+        {
+            string trigger = g.Current.Value[1..^1];
+
+            g.ForceMoveNext();
+            string file = g.Current.GetFile();
+            g = GetScope(g, out Block scope);
+
+            if (Parser.HasEnclosingBrackets(scope)) scope = RemoveEnclosingBrackets(scope);
+
+            Block n = new()
+                    {
+                        "=", "{",
+                            "limit", "=", "{",
+                                StringCompile(trigger, file, BlockType.Trigger, bound),
+                            "}",
+                            Compile(type, scope, bound),
+                        "}"
+                    };
+
+            foreach (string k in s)
+            {
+                result.Add(StringCompile(k, file, type, bound));
+                result.Add(n);
+            }
+        }
+        else if (g.Current.Value == "=")
+        {
+            g.ForceMoveNext();
+
+            string file = g.Current.GetFile();
+            g = GetScope(g, out Block scope);
+
+            string compiled = Compile(type, scope, bound);
+            foreach (string k in s)
+            {
+                Block n = new()
+                {
+                    StringCompile(k, file, type, bound), "=", "{",
+                        compiled,
+                    "}"
+                };
+
+                result.Add(n);
+            }
+        }
+        else throw ArcException.Create("Unknown Error", g);
+    }
+    public static void __quick_limit(ref Walker g, ref Block result, BlockType type, ArcObject? bound)
+    {
+        string trigger = g.Current.Value[1..^1];
+        string file = g.Current.GetFile();
+
+        g.ForceMoveNext();
+        g = GetScope(g, out Block scope);
+
+        if (Parser.HasEnclosingBrackets(scope)) scope = RemoveEnclosingBrackets(scope);
+
+        if (result.Last?.Value.Value != "=") result.Add("=");
+
+        result.Add(
+            "{",
+                "limit", "=", "{",
+                    StringCompile(trigger, file, BlockType.Trigger, bound),
+                "}",
+                Compile(type, scope, bound),
+            "}"
+        );
+    }
+    public static void __quick_math(ref Walker g, ref Block result)
+    {
+        string calc = g.Current.Value[1..^1];
+
+        result.Add(Calculator.Calculate(new Word(calc, g)));
+    }
+    public static void __float_random(ref Walker g, ref Block result)
+    {
+        g = Args.GetArgs(g, out Args args);
+
+        double Chance = args.Get(ArcFloat.Constructor, "chance").Value;
+        string Effect = args.Get(ArcEffect.Constructor, "effect").Compile();
+
+        if (Chance >= 1)
+        {
+            result.Add(
+                "random_list", "=", "{",
+                    (int)Chance, "=", "{",
+                        Effect,
+                    "}",
+                    100 - (int)Chance, "=", "{",
+                        "random", "=", "{",
+                            "chance", "=", "1",
+                            "random_list", "=", "{",
+                                (int)(Chance % 1 * 100), "=", "{",
+                                    Effect,
+                                "}",
+                                100 - (int)(Chance % 1 * 100), "=", "{", "}",
+                            "}",
+                        "}",
+                    "}",
+                "}"
+            );
+        }
+        else
+        {
+            result.Add(
+                "random", "=", "{",
+                    "chance", "=", "1",
+                    "random_list", "=", "{",
+                        (int)(Chance % 1 * 100), "=", "{",
+                            Effect,
+                        "}",
+                        100 - (int)(Chance % 1 * 100), "=", "{", "}",
+                    "}",
+                "}"
+            );
+        }
+    }
+    public static void __quick_province_modifier(ref Walker g, ref Block result)
+    {
+        g = Args.GetArgs(g, out Args args);
+
+        ArcString id = args.Get(ArcString.Constructor, "id", new(""));
+        if (id.Value == "")
+        {
+            id.Value = $"qem_{QuickEventModifiers}";
+            QuickEventModifiers++;
+        }
+
+        ArcString name = args.Get(ArcString.Constructor, "name");
+        ArcBool permanent = args.Get(ArcBool.Constructor, "permanent", new(true));
+        ArcInt? years = args.Get(ArcInt.Constructor, "years", null);
+        ArcInt duration;
+        if (years == null) duration = args.Get(ArcInt.Constructor, "duration", new(-1));
+        else duration = args.Get(ArcInt.Constructor, "duration", new(years.Value * 365));
+        ArcString desc = args.Get(ArcString.Constructor, "desc", new(""));
+        ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
+        ArcModifier modifier = args.Get(ArcModifier.Constructor, "modifier");
+
+        GetVariable<Dict<IVariable>>(new Word("event_modifiers")).Add(
+            id.Value,
+            new ArcObject()
+            {
+                        { "id", id },
+                        { "name", name },
+                        { "modifier", modifier }
+            }
+        );
+
+        if (permanent.Value) result.Add("add_permanent_province_modifier", "=", "{");
+        else result.Add("add_province_modifier", "=", "{");
+        result.Add("name", "=", $"{id}");
+        result.Add("duration", "=", duration.Value);
+        if (desc.Value.Count() != 0)
+        {
+            result.Add("desc", "=", $"{id}_desc ");
+            Program.Localisation.Add($"{id}_desc", desc.Value);
+        }
+        if (hidden.Value) result.Add("hidden", "=", "yes");
+        result.Add("}");
+    }
+    public static void __quick_country_modifier(ref Walker g, ref Block result)
+    {
+        g = Args.GetArgs(g, out Args args);
+
+        ArcString id = args.Get(ArcString.Constructor, "id", new(""));
+        if (id.Value == "")
+        {
+            id.Value = $"qem_{QuickEventModifiers}";
+            QuickEventModifiers++;
+        }
+
+        ArcString name = args.Get(ArcString.Constructor, "name");
+        ArcInt? years = args.Get(ArcInt.Constructor, "years", null);
+        ArcInt duration;
+        if (years == null) duration = args.Get(ArcInt.Constructor, "duration", new(-1));
+        else duration = args.Get(ArcInt.Constructor, "duration", new(years.Value * 365));
+        ArcString desc = args.Get(ArcString.Constructor, "desc", new(""));
+        ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
+        ArcModifier modifier = args.Get(ArcModifier.Constructor, "modifier");
+
+        GetVariable<Dict<IVariable>>(new Word("event_modifiers")).Add(
+            id.Value,
+            new ArcObject()
+            {
+                        { "id", id },
+                        { "name", name },
+                        { "modifier", modifier }
+            }
+        );
+
+        result.Add("add_country_modifier", "=", "{");
+        result.Add("name", "=", $"{id}");
+        result.Add("duration", "=", duration.Value);
+        if (desc.Value.Count() != 0)
+        {
+            result.Add("desc", "=", $"{id}_desc ");
+            Program.Localisation.Add($"{id}_desc", desc.Value);
+        }
+        if (hidden.Value) result.Add("hidden", "=", "yes");
+        result.Add("}");
+
+        QuickEventModifiers++;
+    }
+    public static void __create_flagship(ref Walker g, ref Block result)
+    {
+        g = Args.GetArgs(g, out Args args);
+
+        Block traits = args.Get(ArcCode.Constructor, "traits", new()).Value;
+
+        if (Parser.HasEnclosingBrackets(traits)) traits = RemoveEnclosingBrackets(traits);
+
+        foreach (Word trait in traits)
+        {
+            result.Add("set_country_flag", "=", trait);
+        }
+        if (traits.Any()) result.Add("set_country_flag", "=", "forced_trait");
+        result.Add(
+            args.GetFromList(Province.Provinces, "where").Id, "=", "{",
+                "create_flagship", "=", "{",
+                    "name", "=", $"\"{args.Get(ArcString.Constructor, "name")}\"",
+                    "type", "=", args.Get(ArcString.Constructor, "type"),
+                "}",
+            "}"
+        );
+        foreach (Word trait in traits)
+        {
+            result.Add("clr_country_flag", "=", trait);
+        }
+        if (traits.Any()) result.Add("clr_country_flag", "=", "forced_trait");
+    }
+
+    public static string TranspiledString(string newValue, BlockType type, ArcObject? bound, string fileName)
     {
         StringBuilder s = new();
         StringBuilder nc = new();
@@ -1226,7 +1330,7 @@ public static partial class Compiler
                 if (scope > 0) nc.Append(c);
                 if (scope == 0)
                 {
-                    string tv = StringCompile(nc.ToString(), fileName, compile);
+                    string tv = StringCompile(nc.ToString(), fileName, type, bound);
                     string[] tvc = tv.Split('\n');
                     string tc = s.ToString();
                     int indent = 0;
@@ -1264,11 +1368,11 @@ public static partial class Compiler
 
         return s.ToString();
     }
-    public static bool TranspiledString(string str, char ch, out string? newValue, Func<Block, string> compile, string fileName)
+    public static bool TranspiledString(string str, char ch, out string? newValue, BlockType type, ArcObject? bound, string fileName)
     {
         if (TryTrimOne(str, ch, out newValue) && newValue != null)
         {
-            newValue = TranspiledString(newValue, compile, fileName);
+            newValue = TranspiledString(newValue, type, bound, fileName);
             return true;
         }
         return false;
@@ -1276,246 +1380,18 @@ public static partial class Compiler
     public static bool IsBaseScope(string v) => v == "ROOT" || v == "PREV" || v == "THIS" || v == "FROM";
     public static bool IsLogicalScope(string v) => v == "NOT" || v == "AND" || v == "OR";
     public static bool IsDefaultScope(string v) => v == "REB" || v == "NAT" || v == "PIR";
-    public static string StringCompile(string file, string fileName, Func<Block, string> compiler, bool preprocessor = false)
+    public static string StringCompile(string file, string fileName, BlockType type, ArcObject? bound, bool preprocessor = false)
     {
         if (preprocessor)
             file = Parser.Preprocessor(file);
 
-        return compiler(Parser.ParseCode(file, fileName));
+        return Compile(type, Parser.ParseCode(file, fileName), bound);
     }
-    public static List<(string, NewCommand)> NewTriggers = new();
-    public static string CompileTrigger(Block code)
-    {
-        if (code.Count == 0)
-            return "";
-
-        Block result = new();
-
-        Walker g = new(code);
-        do
-        {
-            if (AllCompile(ref g, ref result, CompileTrigger)) continue;
-
-            if (NewFunctions(g, ref result, NewTriggers, CompileTrigger)) continue;
-
-            Program.Warn($"Unknown Trigger: {g.Current}");
-            result.Add(g.Current);
-        } while (g.MoveNext());
-
-        if (Parser.HasEnclosingBrackets(result)) result = RemoveEnclosingBrackets(result);
-
-        return string.Join(' ', result);
-    }
-    public static List<(string, NewCommand)> NewEffects = new();
     public static int NctAmount = 0;
-    public static string CompileEffect(Block code)
-    {
-        if (code.Count == 0)
-            return "";
-
-        Block result = new();
-
-        Walker g = new(code);
-        do
-        {
-            if (AllCompile(ref g, ref result, CompileEffect)) continue;
-
-            if (g.Current == "args:monument") Console.WriteLine();
-
-            if (NewFunctions(g, ref result, NewEffects, CompileEffect)) continue;
-
-            if (g.Current == "float_random")
-            {
-                g = Args.GetArgs(g, out Args args);
-
-                double Chance = args.Get(ArcFloat.Constructor, "chance").Value;
-                string Effect = args.Get(ArcEffect.Constructor, "effect").Compile();
-
-                if (Chance >= 1)
-                {
-                    result.Add(
-                        "random_list", "=", "{",
-                            (int)Chance, "=", "{",
-                                Effect,
-                            "}",
-                            100-(int)Chance, "=", "{",
-                                "random", "=", "{",
-                                    "chance", "=", "1",
-                                    "random_list", "=", "{",
-                                        (int)(Chance % 1 * 100), "=", "{",
-                                            Effect,
-                                        "}",
-                                        100-(int)(Chance % 1 * 100), "=", "{", "}",
-                                    "}",
-                                "}",
-                            "}",
-                        "}"
-                    );
-                }
-                else
-                {
-                    result.Add(
-                        "random", "=", "{",
-                            "chance", "=", "1",
-                            "random_list", "=", "{",
-                                (int)(Chance % 1 * 100), "=", "{",
-                                    Effect,
-                                "}",
-                                100-(int)(Chance % 1 * 100), "=", "{", "}",
-                            "}",
-                        "}"
-                    );
-                }
-
-                continue;
-            }
-
-            if (g.Current == "quick_province_modifier")
-            {
-                g = Args.GetArgs(g, out Args args);
-
-                ArcString id = args.Get(ArcString.Constructor, "id", new(""));
-                if (id.Value == "")
-                {
-                    id.Value = $"qem_{QuickEventModifiers}";
-                    QuickEventModifiers++;
-                }
-
-                ArcString name = args.Get(ArcString.Constructor, "name");
-                ArcBool permanent = args.Get(ArcBool.Constructor, "permanent", new(true));
-                ArcInt? years = args.Get(ArcInt.Constructor, "years", null);
-                ArcInt duration;
-                if (years == null) duration = args.Get(ArcInt.Constructor, "duration", new(-1));
-                else duration = args.Get(ArcInt.Constructor, "duration", new(years.Value * 365));
-                ArcString desc = args.Get(ArcString.Constructor, "desc", new(""));
-                ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
-                ArcModifier modifier = args.Get(ArcModifier.Constructor, "modifier");
-
-                GetVariable<Dict<IVariable>>(new Word("event_modifiers")).Add(
-                    id.Value,
-                    new ArcObject()
-                    {
-                        { "id", id },
-                        { "name", name },
-                        { "modifier", modifier } 
-                    }
-                );
-
-                if (permanent.Value) result.Add("add_permanent_province_modifier", "=", "{");
-                else result.Add("add_province_modifier", "=", "{");
-                result.Add("name", "=", $"{id}");
-                result.Add("duration", "=", duration.Value);
-                if (desc.Value.Count() != 0)
-                {
-                    result.Add("desc", "=", $"{id}_desc ");
-                    Program.Localisation.Add($"{id}_desc", desc.Value);
-                }
-                if (hidden.Value) result.Add("hidden", "=", "yes");
-                result.Add("}");
-
-                continue;
-            }
-                 
-            if (g.Current == "quick_country_modifier")
-            {
-                g = Args.GetArgs(g, out Args args);
-
-                ArcString id = args.Get(ArcString.Constructor, "id", new(""));
-                if (id.Value == "")
-                {
-                    id.Value = $"qem_{QuickEventModifiers}";
-                    QuickEventModifiers++;
-                }
-
-                ArcString name = args.Get(ArcString.Constructor, "name");
-                ArcInt? years = args.Get(ArcInt.Constructor, "years", null);
-                ArcInt duration;
-                if (years == null) duration = args.Get(ArcInt.Constructor, "duration", new(-1));
-                else duration = args.Get(ArcInt.Constructor, "duration", new(years.Value*365));
-                ArcString desc = args.Get(ArcString.Constructor, "desc", new(""));
-                ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
-                ArcModifier modifier = args.Get(ArcModifier.Constructor, "modifier");
-
-                GetVariable<Dict<IVariable>>(new Word("event_modifiers")).Add(
-                    id.Value,
-                    new ArcObject()
-                    {
-                        { "id", id },
-                        { "name", name },
-                        { "modifier", modifier }
-                    }
-                );
-
-                result.Add("add_country_modifier", "=", "{");
-                result.Add("name", "=", $"{id}");
-                result.Add("duration", "=", duration.Value);
-                if (desc.Value.Count() != 0)
-                {
-                    result.Add("desc", "=", $"{id}_desc ");
-                    Program.Localisation.Add($"{id}_desc", desc.Value);
-                }
-                if (hidden.Value) result.Add("hidden", "=", "yes");
-                result.Add("}");
-
-                QuickEventModifiers++;
-                continue;
-            }
-                 
-            if (g.Current == "create_flagship")
-            {
-                g = Args.GetArgs(g, out Args args);
-
-                Block traits = args.Get(ArcCode.Constructor, "traits", new()).Value;
-
-                if (Parser.HasEnclosingBrackets(traits)) traits = RemoveEnclosingBrackets(traits);
-
-                foreach (Word trait in traits)
-                {
-                    result.Add("set_country_flag", "=", trait);
-                }
-                if (traits.Any()) result.Add("set_country_flag", "=", "forced_trait");
-                result.Add(
-                    args.GetFromList(Province.Provinces, "where").Id, "=", "{",
-                        "create_flagship", "=", "{",
-                            "name", "=", $"\"{args.Get(ArcString.Constructor, "name")}\"",
-                            "type", "=", args.Get(ArcString.Constructor, "type"),
-                        "}",
-                    "}"
-                );
-                foreach (Word trait in traits)
-                {
-                    result.Add("clr_country_flag", "=", trait);
-                }
-                if (traits.Any()) result.Add("clr_country_flag", "=", "forced_trait");
-
-                continue;
-            }
-
-            if (g.Current == "new_custom_tooltip")
-            {
-                string key = $"nct_{NctAmount}";
-                result.Add("custom_tooltip", "=", $"nct_{NctAmount}");
-                NctAmount++;
-                g.ForceMoveNext(); g.Asssert("=");
-                g.ForceMoveNext(); string value = g.Current;
-                if (TranspiledString(value, '"', out string? nValue, CompileEffect, g.Current.GetFile()))
-                {
-                    if (nValue == null) throw ArcException.Create(g);
-                    Program.Localisation.Add(key, nValue);
-                }
-                else throw new NotImplementedException();
-                continue;
-            }
-            
-            Program.Warn($"Unknown Effect: {g.Current}");
-            result.Add(g.Current);
-        } while (g.MoveNext());
-
-        if (Parser.HasEnclosingBrackets(result)) result = RemoveEnclosingBrackets(result);
-
-        return string.Join(' ', result);
-    }
-    public static bool NewFunctions(Walker g, ref Block result, List<(string, NewCommand)> newList, Func<Block, string> compile)
+    public static List<(string, NewCommand)> NewTriggers = new();
+    public static List<(string, NewCommand)> NewEffects = new();
+    public static List<(string, NewCommand)> NewModifiers = new();
+    public static bool NewFunctions(Walker g, ref Block result, List<(string, NewCommand)> newList)
     {
         Word key = g.Current;
         IEnumerable<(string, NewCommand)> ThisFunctions = from c in newList where c.Item1 == key select c;
@@ -1550,28 +1426,7 @@ public static partial class Compiler
         }
         return false;
     }
-    public static List<(string, NewCommand)> NewModifiers = new();
-    public static string CompileModifier(Block code)
-    {
-        if (code.Count == 0)
-            return "";
-
-        Block result = new();
-
-        Walker g = new(code);
-        do
-        {
-            if (AllCompile(ref g, ref result, CompileModifier)) continue;
-
-            if (NewFunctions(g, ref result, NewModifiers, CompileModifier)) continue;
-
-            result.Add(g.Current);
-        } while (g.MoveNext());
-
-        if (Parser.HasEnclosingBrackets(result)) result = RemoveEnclosingBrackets(result);
-
-        return string.Join(' ', result);
-    }
+    
     
     [GeneratedRegex("{([^}]+)}", RegexOptions.Compiled)]
     public static partial Regex TranspiledString();

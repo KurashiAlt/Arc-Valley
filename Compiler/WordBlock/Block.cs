@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.Design;
 using System.Text;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Arc;
 
@@ -91,14 +92,13 @@ public class Block : LinkedList<Word>
 public class Walker
 {
     private LinkedListNode<Word> node;
-    public Walker(Walker w)
-    {
-        node = w.node;
-    }
-    public Walker(LinkedListNode<Word> node)
-    {
-        this.node = node;
-    }
+    public static implicit operator string(Walker w) => w.Current;
+    public bool StartsWith(string w) => Current.StartsWith(w);
+    public bool StartsWith(char w) => Current.StartsWith(w);
+    public bool EndsWith(string w) => Current.EndsWith(w);
+    public bool EndsWith(char w) => Current.EndsWith(w);
+    public bool EnclosedBy(string left, char right) => Current.StartsWith(left) && Current.EndsWith(right);
+    public bool EnclosedBy(char left, char right) => Current.StartsWith(left) && Current.EndsWith(right);
     public Walker(Block code)
     {
         if (code.First == null)

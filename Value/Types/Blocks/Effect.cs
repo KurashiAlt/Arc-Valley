@@ -28,13 +28,13 @@ public class ArcEffect : ArcBlock
     }
     public override string Compile()
     {
-        if (!ShouldBeCompiled) return Compiler.CompileEffect(Value);
-        Compiled ??= Compiler.CompileEffect(Value);
+        if (!ShouldBeCompiled) return Compiler.Compile(BlockType.Effect, Value);
+        Compiled ??= Compiler.Compile(BlockType.Effect, Value);
         return Compiled;
     }
     public override string Compile(Block b)
     {
-        return Compiler.CompileEffect(b);
+        return Compiler.Compile(BlockType.Effect, b);
     }
     public override string ToString()
     {
