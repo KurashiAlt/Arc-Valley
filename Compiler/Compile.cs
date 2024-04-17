@@ -54,7 +54,6 @@ public static partial class Compiler
             else if (type == BlockType.Effect && g == "float_random") __float_random(ref g, ref result);
             else if (type == BlockType.Effect && g == "quick_province_modifier") __quick_province_modifier(ref g, ref result);
             else if (type == BlockType.Effect && g == "quick_country_modifier") __quick_country_modifier(ref g, ref result);
-            else if (type == BlockType.Effect && g == "create_flagship") __create_flagship(ref g, ref result);
             //Triggers
             else if (type == BlockType.Trigger && NewFunctions(g, ref result, NewTriggers)) continue;
             //Modifiers

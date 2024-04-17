@@ -187,9 +187,9 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
     {
         return (Block s) => new ArcList<T>(s, dict);
     }
-    public static Func<Block, ArcList<T>> GetConstructor(Func<Block, T> func)
+    public static Func<Block, ArcList<T>> GetConstructor(Func<Block, T> func, bool va = true)
     {
-        return (Block s) => new ArcList<T>(s, func);
+        return (Block s) => new ArcList<T>(s, func, va);
     }
     public static Func<Block, ArcList<T>> GetConstructor(Func<Args, T> func)
     {

@@ -243,7 +243,7 @@ public class ArcType : IValue
             {
                 ArcType sub = Regulat(t, false);
 
-                return ArcList<IVariable>.GetConstructor(sub.ThisConstructor)(b);
+                return ArcList<IVariable>.GetConstructor(sub.ThisConstructor, va: false)(b);
             }, nullable);
         }
         else
