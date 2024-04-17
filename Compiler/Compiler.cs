@@ -912,34 +912,6 @@ public static partial class Compiler
         }
         result.Add("else", "=");
     }
-    public static void __new_tooltip(ref Walker g, ref Block result, BlockType type, ArcObject? bound)
-    {
-        string key = $"nct_{NctAmount}";
-        result.Add("tooltip", "=", $"nct_{NctAmount}");
-        NctAmount++;
-        g.ForceMoveNext(); g.Asssert("=");
-        g.ForceMoveNext(); string value = g.Current;
-        if (TranspiledString(value, '"', out string? nValue, type, bound, g.Current.GetFile()))
-        {
-            if (nValue == null) throw new Exception();
-            Program.Localisation.Add(key, nValue);
-        }
-        else throw new NotImplementedException();
-    }
-    public static void __new_custom_tooltip(ref Walker g, ref Block result, BlockType type, ArcObject? bound)
-    {
-        string key = $"nct_{NctAmount}";
-        result.Add("custom_tooltip", "=", $"nct_{NctAmount}");
-        NctAmount++;
-        g.ForceMoveNext(); g.Asssert("=");
-        g.ForceMoveNext(); string value = g.Current;
-        if (TranspiledString(value, '"', out string? nValue, type, bound, g.Current.GetFile()))
-        {
-            if (nValue == null) throw ArcException.Create(g);
-            Program.Localisation.Add(key, nValue);
-        }
-        else throw new NotImplementedException();
-    }
     public static void __arc_throw(ref Walker g, BlockType type, ArcObject? bound)
     {
         g.ForceMoveNext();
@@ -1387,7 +1359,7 @@ public static partial class Compiler
 
         return Compile(type, Parser.ParseCode(file, fileName), bound);
     }
-    public static int NctAmount = 0;
+    
     public static List<(string, NewCommand)> NewTriggers = new();
     public static List<(string, NewCommand)> NewEffects = new();
     public static List<(string, NewCommand)> NewModifiers = new();

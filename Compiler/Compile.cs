@@ -40,7 +40,6 @@ public static partial class Compiler
             else if (g == "if") __if(ref g, ref result);
             else if (g == "else_if") __else_if(ref g, ref result);
             else if (g == "else") __else(ref g, ref result);
-            else if (g == "new_tooltip") __new_tooltip(ref g, ref result, type, bound);
             else if (g == "arc_throw") __arc_throw(ref g, type, bound);
             else if (g == "arc_log") __arc_log(ref g, type, bound);
             else if (g.StartsWith('&')) __variable(ref g, ref result);
@@ -53,7 +52,6 @@ public static partial class Compiler
             //Effects
             else if (type == BlockType.Effect && NewFunctions(g, ref result, NewEffects)) continue;
             else if (type == BlockType.Effect && g == "float_random") __float_random(ref g, ref result);
-            else if (type == BlockType.Effect && g == "new_custom_tooltip") __new_custom_tooltip(ref g, ref result, type, bound);
             else if (type == BlockType.Effect && g == "quick_province_modifier") __quick_province_modifier(ref g, ref result);
             else if (type == BlockType.Effect && g == "quick_country_modifier") __quick_country_modifier(ref g, ref result);
             else if (type == BlockType.Effect && g == "create_flagship") __create_flagship(ref g, ref result);
