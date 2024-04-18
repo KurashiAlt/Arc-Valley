@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 internal class Program
 {
     public static Stopwatch timer = Stopwatch.StartNew();
-    public static string directory = AppDomain.CurrentDomain.BaseDirectory;
+    public static string directory = ArcDirectory.directory;
     public static Dictionary<string, string> Localisation = new();
     public static List<string> Vanilla = new();
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -24,10 +24,6 @@ internal class Program
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     public static List<string> warnings = new();
     public static bool Format = false;
-    public static void Warn(string s)
-    {
-        warnings.Add(s);
-    }
     private static int Main(string[] args)
     {
         CultureInfo.CurrentCulture = CultureInfo.CreateSpecificCulture("en");
@@ -42,6 +38,23 @@ internal class Program
         LoadOrder = from c in arcDefines.Get(ArcCode.Constructor, "load_order").Value select new string(c.Value);
         PartialMod = (from a in arcDefines.Get(ArcCode.Constructor, "partial_mod", new()).Value select a.Value).ToArray();
 
+        if (args.Length == 0)
+        {
+            Console.WriteLine("You provided no arguments for arc, would you like to transpile all? y/n");
+            string? response = Console.ReadLine();
+            if (response == "y") args = new string[] { "all" };
+        }
+        if (
+            !File.Exists(Path.Combine(directory, ".arc/script.vdir")) ||
+            !File.Exists(Path.Combine(directory, ".arc/unsorted.vdir")) ||
+            !File.Exists(Path.Combine(directory, ".arc/map.vdir")) ||
+            !File.Exists(Path.Combine(directory, ".arc/gfx.vdir"))
+        ) {
+            Console.WriteLine("One of the virtual directory caches was missing, arguments have been edited to transpile all");
+            Array.Resize(ref args, args.Length + 1);
+            args[args.Length - 1] = "all";
+        }
+
         if (Debugger.IsAttached)
         {
             args = new string[]
@@ -54,7 +67,7 @@ internal class Program
 
         if (args.Contains("script") || args.Contains("all"))
         {
-            foreach (string file in GetFiles($"{SelectorFolder}"))
+            foreach (string file in ArcDirectory.GetFiles($"{SelectorFolder}"))
             {
                 if (!file.EndsWith(".png")) continue;
                 string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
@@ -79,7 +92,7 @@ internal class Program
 #pragma warning disable CA1416 // Validate platform compatibility
                 TimeSpan start = timer.Elapsed;
                 using System.Drawing.Bitmap provmap = new($"{directory}/{MapFolder}/provinces.bmp");
-                foreach (string file in GetFiles($"{SelectorFolder}"))
+                foreach (string file in ArcDirectory.GetFiles($"{SelectorFolder}"))
                 {
                     if (!file.EndsWith(".png")) continue;
                     List<System.Drawing.Color> colors = new();
@@ -124,7 +137,7 @@ internal class Program
             {
                 TimeSpan start = timer.Elapsed;
 
-                foreach (string file in GetFiles($"{SelectorFolder}"))
+                foreach (string file in ArcDirectory.GetFiles($"{SelectorFolder}"))
                 {
                     if (!file.EndsWith(".gen")) continue;
 
@@ -205,7 +218,6 @@ internal class Program
         ("script", "", GovernmentMechanic.Transpile),
         ("script", "", Unit.Transpile),
         ("script", "", GreatProject.Transpile),
-        //("script", "", MercenaryCompany.Transpile),
         ("script", "", Advisor.Transpile),
         ("script", "", Age.Transpile),
         ("script", "", DiplomaticAction.Transpile),
@@ -240,12 +252,19 @@ internal class Program
 
         foreach ((string, string, Func<string>) transpiler in Transpilers)
         {
-            if (!(args.Contains(transpiler.Item1) || args.Contains("all"))) continue;
+            if (!(args.Contains(transpiler.Item1) || transpiler.Item1 == "" || args.Contains("all"))) continue;
 
             TimeSpan start = timer.Elapsed;
             string type = transpiler.Item3();
             start = timer.Elapsed - start;
             Console.WriteLine($"{$"Finished Transpiling{transpiler.Item2} {type}".PadRight(50).Pastel(ConsoleColor.Cyan)}{$"{start.TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
+        }
+
+        {
+            TimeSpan start = timer.Elapsed;
+            ArcDirectory.VDirPopulate(args);
+            start = timer.Elapsed - start;
+            Console.WriteLine($"{$"Virtual Directory Populated".PadRight(50).Pastel(ConsoleColor.Cyan)}{$"{start.TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
         }
 
         for (int i = 0; i < args.Length; i++)
@@ -259,6 +278,28 @@ internal class Program
         OverwriteFile($"warnings.txt", string.Join('\n', warnings), false);
 
         Console.WriteLine($"Transpilation took: {(double)timer.ElapsedMilliseconds / 1000:0.000} seconds".Pastel(ConsoleColor.Red));
+
+        ArcDirectory.CheckFolder(TranspileTarget);
+        if (ArcDirectory.ExtraFiles.Count == 0) Console.WriteLine("All files recognized");
+        else
+        {
+            Console.WriteLine($"{ArcDirectory.ExtraFiles.Count} unknown files found in {TranspileTarget}");
+            foreach (string extraFile in ArcDirectory.ExtraFiles)
+            {
+                Console.WriteLine($"\t{extraFile}".Pastel(ConsoleColor.Gray));
+            }
+            Console.WriteLine($"Would you like to delete these files? y/n");
+            string? response = Console.ReadLine();
+            if (response == "y")
+            {
+                foreach (string extraFile in ArcDirectory.ExtraFiles)
+                {
+                    File.Delete(Path.Combine(directory, extraFile));
+                }
+                Console.WriteLine("Deleted all unrecognized files");
+            }
+            else Console.WriteLine("Did not delete unrecognized files");
+        }
 
         return 0;
     }
@@ -337,7 +378,7 @@ internal class Program
         RFold(MapFolder);
         void RFold(string fold)
         {
-            IEnumerable<string> Folders = GetFolders(fold);
+            IEnumerable<string> Folders = ArcDirectory.GetFolders(fold);
             foreach (string folder in Folders)
             {
                 RFold(folder);
@@ -345,7 +386,7 @@ internal class Program
 
             string tfold = $"{TranspileTarget}\\map\\{Path.GetRelativePath($"{directory}/{MapFolder}", fold)}".Replace('\\', '/');
             CreateTillFolder(tfold);
-            IEnumerable<string> files = GetFiles(fold);
+            IEnumerable<string> files = ArcDirectory.GetFiles(fold);
             foreach (string file in files)
             {
                 if (file.EndsWith("colormap.dds"))
@@ -368,6 +409,7 @@ internal class Program
 
         void frw(string cfile, string tfile)
         {
+            ArcDirectory.MapVDir.Add(tfile);
             if (File.Exists(tfile)) File.Delete(tfile);
             File.Copy(cfile, tfile);
         }
@@ -379,7 +421,7 @@ internal class Program
         Block b = new("spriteTypes", "=", "{");
 
         CreateTillFolder($"{TranspileTarget}/gfx/interface/ideas_EU4");
-        foreach (string c in GetFiles($"{GfxFolder}/modifiers"))
+        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/modifiers"))
         {
             string s = c.Split('\\').Last();
 
@@ -390,10 +432,11 @@ internal class Program
                 "}"
             );
 
+            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/interface/ideas_EU4/{s}");
             File.Delete($"{TranspileTarget}/gfx/interface/ideas_EU4/{s}");
             File.Copy(c, $"{TranspileTarget}/gfx/interface/ideas_EU4/{s}");
         }
-        foreach (string c in GetFile($"{GfxFolder}/modifiers/files.txt"))
+        foreach (string c in ArcDirectory.GetFile($"{GfxFolder}/modifiers/files.txt"))
         {
             string s = c.Split('\\').Last();
 
@@ -407,16 +450,17 @@ internal class Program
         
 
         CreateTillFolder($"{TranspileTarget}/gfx/special");
-        foreach (string c in GetFiles($"{GfxFolder}/special"))
+        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/special"))
         {
             string s = c.Split('\\').Last();
 
+            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/special/{s}");
             if (File.Exists($"{TranspileTarget}/gfx/special/{s}")) File.Delete($"{TranspileTarget}/gfx/special/{s}");
             File.Copy(c, $"{TranspileTarget}/gfx/special/{s}");
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/loose");
-        foreach (string c in GetFiles($"{GfxFolder}/loose"))
+        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/loose"))
         {
             string s = c.Split('\\').Last();
 
@@ -427,12 +471,13 @@ internal class Program
                 "}"
             );
 
+            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/loose/{s}");
             File.Delete($"{TranspileTarget}/gfx/loose/{s}");
             File.Copy(c, $"{TranspileTarget}/gfx/loose/{s}");
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/event_pictures/arc");
-        foreach (string c in GetFiles($"{GfxFolder}/event_pictures"))
+        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/event_pictures"))
         {
             string s = c.Split('\\').Last();
 
@@ -443,12 +488,13 @@ internal class Program
                 "}"
             );
 
+            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/event_pictures/arc/{s}");
             File.Delete($"{TranspileTarget}/gfx/event_pictures/arc/{s}");
             File.Copy(c, $"{TranspileTarget}/gfx/event_pictures/arc/{s}");
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/interface/missions");
-        foreach (string c in GetFiles($"{GfxFolder}/missions"))
+        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/missions"))
         {
             string s = c.Split('\\').Last();
 
@@ -459,15 +505,16 @@ internal class Program
                 "}"
             );
 
+            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/interface/missions/{s}");
             File.Delete($"{TranspileTarget}/gfx/interface/missions/{s}");
             File.Copy(c, $"{TranspileTarget}/gfx/interface/missions/{s}");
         }
 
-        foreach (string folder in GetFolders($"{GfxFolder}/ages"))
+        foreach (string folder in ArcDirectory.GetFolders($"{GfxFolder}/ages"))
         {
             string folderName = folder.Split('\\').Last();
             CreateTillFolder($"{TranspileTarget}/gfx/interface/ages/{folderName}");
-            foreach (string file in GetFiles(folder))
+            foreach (string file in ArcDirectory.GetFiles(folder))
             {
                 string s = file.Split('\\').Last();
                 string v = $"gfx/interface/ages/{folderName}/{s}";
@@ -481,13 +528,14 @@ internal class Program
                 string oldPath = Path.GetRelativePath(directory, file);
                 string newPath = $"{TranspileTarget}/{v}";
 
+                ArcDirectory.GfxVDir.Add(newPath);
                 File.Delete(newPath);
                 File.Copy(oldPath, newPath);
             }
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/interface/buildings");
-        foreach (string c in GetFiles($"{GfxFolder}/buildings"))
+        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/buildings"))
         {
             string s = c.Split('\\').Last();
             string oldPath = $"{GfxFolder}/buildings/{s}";
@@ -501,12 +549,13 @@ internal class Program
                 "}"
             );
 
+            ArcDirectory.GfxVDir.Add(newPath);
             File.Delete(newPath);
             File.Copy(oldPath, newPath);
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/interface/great_projects");
-        foreach (string c in GetFiles($"{GfxFolder}/great_projects"))
+        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/great_projects"))
         {
             string s = c.Split('\\').Last();
             string oldPath = $"{GfxFolder}/great_projects/{s}";
@@ -519,12 +568,13 @@ internal class Program
                 "}"
             );
 
+            ArcDirectory.GfxVDir.Add(newPath);
             File.Delete(newPath);
             File.Copy(oldPath, newPath);
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/interface/privileges");
-        foreach (string c in GetFiles($"{GfxFolder}/privileges"))
+        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/privileges"))
         {
             string s = c.Split('\\').Last();
             string oldPath = $"{GfxFolder}/privileges/{s}";
@@ -537,12 +587,13 @@ internal class Program
                 "}"
             );
 
+            ArcDirectory.GfxVDir.Add(newPath);
             File.Delete(newPath);
             File.Copy(oldPath, newPath);
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/interface/holy_orders");
-        foreach (string c in GetFiles($"{GfxFolder}/holy_orders"))
+        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/holy_orders"))
         {
             string s = c.Split('\\').Last();
             string oldPath = $"{GfxFolder}/holy_orders/{s}";
@@ -556,12 +607,13 @@ internal class Program
                 "}"
             );
 
+            ArcDirectory.GfxVDir.Add(newPath);
             File.Delete(newPath);
             File.Copy(oldPath, newPath);
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/interface/government_reform_icons");
-        foreach (string c in GetFiles($"{GfxFolder}/government_reforms"))
+        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/government_reforms"))
         {
             string s = c.Split('\\').Last();
             string oldPath = $"{GfxFolder}/government_reforms/{s}";
@@ -574,24 +626,26 @@ internal class Program
                 "}"
             );
 
+            ArcDirectory.GfxVDir.Add(newPath);
             File.Delete(newPath);
             File.Copy(oldPath, newPath);
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/flags");
-        foreach (string c in GetFiles($"{GfxFolder}/flags"))
+        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/flags"))
         {
             string s = c.Split('\\').Last();
             string oldPath = $"{GfxFolder}/flags/{s}";
             string newPath = $"{TranspileTarget}/gfx/flags/{Country.Countries[s.Split('.')[0]].Tag}.tga";
 
+            ArcDirectory.GfxVDir.Add(newPath);
             File.Delete(newPath);
             File.Copy(oldPath, newPath);
         }
 
         b.Add("}");
 
-        OverwriteFile($"{TranspileTarget}/interface/arc5.gfx", string.Join(' ', b));
+        OverwriteFile($"{TranspileTarget}/interface/arc5.gfx", string.Join(' ', b), vdirOverride: ArcDirectory.GfxVDir);
 
         return "GFX folder";
     }
@@ -604,7 +658,7 @@ internal class Program
         RFold(UnsortedFolder);
         void RFold(string fold)
         {
-            IEnumerable<string> Folders = GetFolders(fold);
+            IEnumerable<string> Folders = ArcDirectory.GetFolders(fold);
             foreach (string folder in Folders)
             {
                 RFold(folder);
@@ -612,7 +666,7 @@ internal class Program
 
             string tfold = $"{TranspileTarget}\\{Path.GetRelativePath($"{directory}/{UnsortedFolder}", fold)}".Replace('\\', '/');
             CreateTillFolder(tfold);
-            IEnumerable<string> files = GetFiles(fold);
+            IEnumerable<string> files = ArcDirectory.GetFiles(fold);
             foreach (string file in files)
             {
                 if(file.EndsWith(fileEnd)) UnsortedSingleFile(file);
@@ -625,34 +679,9 @@ internal class Program
     {
         string cfile = Path.GetRelativePath(directory, file).Replace('\\', '/');
         string tfile = $"{TranspileTarget}\\{Path.GetRelativePath($"{directory}/{UnsortedFolder}", file)}".Replace('\\', '/');
+        ArcDirectory.UnsortedVDir.Add(TranspileTarget + "/" + Path.GetRelativePath($"{directory}/{UnsortedFolder}", file).Replace('\\', '/'));
         File.Delete(tfile);
         File.Copy(cfile, tfile);
-    }
-    public static IEnumerable<string> GetFolders(string path)
-    {
-        string location = Path.Combine(directory, path);
-
-        return from s in GetDirectories(location) select Path.GetRelativePath(directory, s);
-    }
-    public static string[] GetDirectories(string path)
-    {
-        if (!path.StartsWith(directory)) path = Path.Combine(directory, path);
-
-        return Directory.GetDirectories(path).OrderBy(d => d).ToArray();
-    }
-    public static string[] GetFiles(string path)
-    {
-        if (!Path.Exists(Path.Combine(directory, path))) return new string[] { };
-        if (!path.StartsWith(directory)) path = Path.Combine(directory, path);
-
-        return Directory.GetFiles(path).OrderBy(d => d).ToArray();
-    }
-    public static string[] GetFile(string path)
-    {
-        if (!Path.Exists(Path.Combine(directory, path))) return new string[] { };
-        if (!path.StartsWith(directory)) path = Path.Combine(directory, path);
-
-        return File.ReadAllLines(path);
     }
     public static string SpecialUnitTranspile()
     {
@@ -733,8 +762,10 @@ internal class Program
             }
         }
     }
-    public static void OverwriteFile(string path, string text, bool AllowFormatting = true, bool BOM = false)
+    public static void OverwriteFile(string path, string text, bool AllowFormatting = true, bool BOM = false, List<string>? vdirOverride = null)
     {
+        if (vdirOverride == null) ArcDirectory.ScriptVDir.Add(path);
+        else vdirOverride.Add(path);
         text = ReplaceBlocks(text);
 
         bool v = PartialMod.Length == 0;
@@ -777,7 +808,7 @@ internal class Program
 
         string ReplaceBlocks(string text)
         {
-            Regex blockSpot = new Regex("__ARC\\.BLOCK__ = (\\d+)");
+            Regex blockSpot = new("__ARC\\.BLOCK__ = (\\d+)");
             while (text.Contains("__ARC.BLOCK__"))
             {
                 text = blockSpot.Replace(text, new MatchEvaluator((Match m) =>
@@ -865,7 +896,7 @@ internal class Program
 
             LoadTarget(current);
 
-            foreach (string folder in GetDirectories(current))
+            foreach (string folder in ArcDirectory.GetDirectories(current))
             {   
                 string next = Path.GetRelativePath(directory, folder) + "/*";
 
@@ -874,7 +905,7 @@ internal class Program
         }
         else if (fileLocation.EndsWith("/"))
         {
-            string[] files = GetFiles(fileLocation);
+            string[] files = ArcDirectory.GetFiles(fileLocation);
             foreach (string file in files)
             {
                 string fileContent = File.ReadAllText(file);
