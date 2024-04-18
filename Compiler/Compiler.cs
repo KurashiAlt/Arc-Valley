@@ -448,7 +448,6 @@ public static partial class Compiler
             "province_triggered_modifier" => ProvinceTriggeredModifier.Call(g),
             "casus_belli" => CasusBelli.Call(g),
             "war_goal" => WarGoal.Call(g),
-            "expedition" => Expedition.Call(g),
             "province_group" => ProvinceGroup.Call(g),
             "personality_trait" => RulerPersonality.Call(g),
             "policy" => Policy.Call(g),

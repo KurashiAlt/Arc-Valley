@@ -147,7 +147,6 @@ public class ArcType : IValue
         { "casus_belli", new(CasusBelli.CasusBellies.Get) },
         { "province_triggered_modifier", new(ProvinceTriggeredModifier.ProvinceTriggeredModifiers.Get) },
         { "war_goal", new(WarGoal.WarGoals.Get) },
-        { "expedition", new(Expedition.Expeditions.Get) },
         { "province_group", new(ProvinceGroup.ProvinceGroups.Get) },
         { "subject_type", new(SubjectType.SubjectTypes.Get) },
         { "estate_privilege", new((Block b) => {

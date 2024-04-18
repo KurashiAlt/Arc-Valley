@@ -16,6 +16,7 @@ public class ArcEffect : ArcBlock
         Value = value;
         Id = CompileList.Count;
         CompileList.Add(this);
+        //if (PastDefineStep) Compile();
     }
     public ArcEffect(params string[] s)
     {

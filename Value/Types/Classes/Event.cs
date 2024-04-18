@@ -8,53 +8,6 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Arc;
-public class Expedition : ArcObject
-{
-    public static Dict<Expedition> Expeditions = new();
-    public static new Walker Call(Walker i) => Call(i, Constructor);
-    public Expedition(string id, Args args)
-    {
-        ArcString? picture = args.Get(ArcString.Constructor, "picture", null);
-        int length = args.Get(ArcInt.Constructor, "length").Value;
-        Province prov = Province.Provinces[id];
-        prov.History.Value.Add(
-            "1.1.1", "=", "{", 
-                "add_permanent_province_modifier", "=", "{", 
-                    "name", "=", "expedition_target",
-                    "duration", "=", "-1", 
-                "}", 
-                "set_variable", "=", "{", 
-                    "which", "=", "expedition_start_length", 
-                    "value", "=", length, 
-                "}", 
-                "set_variable", "=", "{", 
-                    "which", "=", "expedition_length", 
-                    "value", "=", length, 
-                "}", 
-            "}"
-        );
-        Event.Events["expedition.3"].Options.Add(
-            new(
-                new("Great"),
-                new("factor", "=", "1"),
-                new(false),
-                prov,
-                new($"`province_id = {prov.Id}`"),
-                args.Get(ArcEffect.Constructor, "on_complete")
-            )
-        );
-        if(picture != null)
-        {
-            Event.Events["expedition.1"].Pictures.Add(picture.Value, new($"`province_id = {prov.Id}`"));
-            Event.Events["expedition.2"].Pictures.Add(picture.Value, new($"`province_id = {prov.Id}`"));
-            Event.Events["expedition.3"].Pictures.Add(picture.Value, new($"`province_id = {prov.Id}`"));
-        }
-
-        Expeditions.Add(id, this);
-    }
-    public static Expedition Constructor(string id, Args args) => null;
-}
-
 public class Option : IArcObject
 {
     public string Class => "Option";
