@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis;
 using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.Numerics;
+using Pastel;
 
 namespace Arc;
 public static partial class Compiler
@@ -395,8 +396,7 @@ public static partial class Compiler
     }
     public static Walker Declare(Walker g)
     {
-        return (string)g.Current switch
-        {
+        return (string)g.Current switch {
             "province" => Province.Call(g),
             "area" => Area.Call(g),
             "region" => Region.Call(g),
@@ -433,7 +433,6 @@ public static partial class Compiler
             "unit" => Unit.Call(g),
             "great_project" => GreatProject.Call(g),
             "localisation" => DefineLoc(g),
-            //"mercenary_company" => MercenaryCompany.Call(g),
             "advisor" => Advisor.Call(g),
             "age" => Age.Call(g),
             "decision" => Decision.Call(g),
@@ -458,7 +457,6 @@ public static partial class Compiler
             "named_trigger" => NamedBlock(g, ArcTrigger.Constructor),
             "named_modifier" => NamedBlock(g, ArcModifier.Constructor),
             "named_block" => NamedBlock(g, ArcCode.Constructor),
-            "named_int" => NamedInt(g),
             "custom_button" => CustomButton.Call(g),
             "custom_icon" => CustomIcon.Call(g),
             "interface_file" => InterfaceNode.Call(g),
@@ -487,18 +485,6 @@ public static partial class Compiler
         }
 
         throw ArcException.Create($"Unknown Object Type {i.Current} in object declaration", i);
-    }
-    static Walker NamedInt(Walker i)
-    {
-        i.ForceMoveNext();
-
-        string id = GetId(i.Current);
-
-        i = Args.GetArgs(i, out Args args);
-
-        global.Add(id, new ArcInt(args.block));
-
-        return i;
     }
     static Walker NamedBlock(Walker i, Func<Block, IVariable> constructor)
     {
