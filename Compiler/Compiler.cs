@@ -567,7 +567,7 @@ public static partial class Compiler
             {
                 g = Args.GetArgs(g, out Args args);
                 if (args.block == null) throw ArcException.Create("Unknown Error: Null Reference", g, args);
-                Compile(BlockType.Effect, args.block);
+                Compile(CompileType.Effect, args.block);
                 continue;
             }
             if (g.Current == "write_file")
@@ -612,81 +612,6 @@ public static partial class Compiler
             { "precision", args.Get(ArcInt.Constructor, "precision") },
         };
     }
-    public static bool When(Block code)
-    {
-        if (code.Count == 0)
-            return true;
-
-        Walker g = new(code);
-        do
-        {
-            if (g.Current == "NOT")
-            {
-                g = Args.GetArgs(g, out Args args);
-                args.block.RemoveEnclosingBlock();
-                if (When(args.block)) return false;
-            }
-            if (g.Current == "exists")
-            {
-                g = Args.GetArgs(g, out Args args);
-                Word key = args.block.ToWord();
-                if (!TryGetVariable(key, out _)) return false;
-            }
-            else if (g.Current == "force:str:contains")
-            {
-                g = Args.GetArgs(g, out Args args);
-                string str = GetVariable<IVariable>(args.Get("variable").ToWord()).ToString() ?? "";
-                string value = args.Get(ArcString.Constructor, "value").Value;
-                if (!str.Contains(value))
-                {
-                    return false;
-                }
-            }
-            else if (g.Current == "str:contains")
-            {
-                g = Args.GetArgs(g, out Args args);
-                string str = args.Get(ArcString.Constructor, "string").Value;
-                string value = args.Get(ArcString.Constructor, "value").Value;
-                if (!str.Contains(value))
-                {
-                    return false;
-                }
-            }
-            else if (g.Current == "str:equals")
-            {
-                g = Args.GetArgs(g, out Args args);
-                string str = args.Get(ArcString.Constructor, "string").Value;
-                string value = args.Get(ArcString.Constructor, "value").Value;
-                if (str != value)
-                {
-                    return false;
-                }
-            }
-            else if (g.Current == "int:equals")
-            {
-                g = Args.GetArgs(g, out Args args);
-                int nt = args.Get(ArcInt.Constructor, "int").Value;
-                int value = args.Get(ArcInt.Constructor, "value").Value;
-                if (nt != value)
-                {
-                    return false;
-                }
-            }
-            else if (g.Current == "bool:equals")
-            {
-                g = Args.GetArgs(g, out Args args);
-                bool nt = args.Get(ArcBool.Constructor, "bool").Value;
-                bool value = args.Get(ArcBool.Constructor, "value").Value;
-                if (nt != value)
-                {
-                    return false;
-                }
-            }
-        } while (g.MoveNext());
-
-        return true;
-    }
-    
     public static void __new(ref Walker g)
     {
         g.ForceMoveNext();
@@ -711,18 +636,37 @@ public static partial class Compiler
         ArcString key = ArcString.Constructor(args.block);
         global.Delete(key.Value);
     }
-    public static void __when(ref Walker g, ref Block result, BlockType type, ArcObject? bound)
+    public static void __when(ref Walker g, ref Block result, CompileType type, ArcObject? bound, bool previous = false)
     {
         g.ForceMoveNext();
         string trigger = g.Current.Value[1..^1];
         string file = g.Current.GetFile();
 
         g.ForceMoveNext();
-        g = GetScope(g, out Block scope);
+        Block scope = g.GetScope();
+        scope.RemoveEnclosingBlock();
 
-        if (Parser.HasEnclosingBrackets(scope)) scope = RemoveEnclosingBrackets(scope);
+        bool Click = WhenInterpret(trigger);
+        if (Click && !previous) result.Add(Compile(type, scope, bound));
 
-        if (WhenInterpret(trigger)) result.Add(Compile(type, scope, bound));
+        if (!g.MoveNext()) return;
+        if (g == "when_not_if")
+        {
+            __when(ref g, ref result, type, bound, Click);
+        }
+        else if (g == "when_not")
+        {
+            g.ForceMoveNext();
+            scope = g.GetScope();
+            scope.RemoveEnclosingBlock();
+
+            if (!Click) result.Add(Compile(type, scope, bound));
+        }
+        else
+        {
+            g.ForceMoveBack();
+            return;
+        }
 
         bool WhenInterpret(string trigger)
         {
@@ -810,7 +754,7 @@ public static partial class Compiler
             return new string(letters);
         }
     }
-    public static void __foreach(ref Walker g, ref Block result, BlockType type, ArcObject? bound)
+    public static void __foreach(ref Walker g, ref Block result, CompileType type, ArcObject? bound)
     {
         g.ForceMoveNext(); Word varKey = g.Current;
         g.ForceMoveNext(); g.Asssert("in");
@@ -865,7 +809,7 @@ public static partial class Compiler
         }
         else throw new Exception();
     }
-    public static void __for(ref Walker g, ref Block result, BlockType type, ArcObject? bound)
+    public static void __for(ref Walker g, ref Block result, CompileType type, ArcObject? bound)
     {
         g.ForceMoveNext(); Word varKey = g.Current;
         g.ForceMoveNext(); g.Asssert("as");
@@ -912,7 +856,7 @@ public static partial class Compiler
         }
         result.Add("else", "=");
     }
-    public static void __arc_throw(ref Walker g, BlockType type, ArcObject? bound)
+    public static void __arc_throw(ref Walker g, CompileType type, ArcObject? bound)
     {
         g.ForceMoveNext();
         g.Asssert("=");
@@ -924,7 +868,7 @@ public static partial class Compiler
         }
         else throw ArcException.Create(value, g);
     }
-    public static void __arc_log(ref Walker g, BlockType type, ArcObject? bound)
+    public static void __arc_log(ref Walker g, CompileType type, ArcObject? bound)
     {
         g.ForceMoveNext();
         g.Asssert("=");
@@ -1028,7 +972,7 @@ public static partial class Compiler
             return false;
         }
     }
-    public static void __multi_scope(ref Walker g, ref Block result, BlockType type, ArcObject? bound)
+    public static void __multi_scope(ref Walker g, ref Block result, CompileType type, ArcObject? bound)
     {
         string pre = g.Current.Value.Split(':')[0];
         List<string> s = new() { g.Current.Value[..^1] };
@@ -1064,7 +1008,7 @@ public static partial class Compiler
                     {
                         "=", "{",
                             "limit", "=", "{",
-                                StringCompile(trigger, file, BlockType.Trigger, bound),
+                                StringCompile(trigger, file, CompileType.Trigger, bound),
                             "}",
                             Compile(type, scope, bound),
                         "}"
@@ -1098,7 +1042,7 @@ public static partial class Compiler
         }
         else throw ArcException.Create("Unknown Error", g);
     }
-    public static void __quick_limit(ref Walker g, ref Block result, BlockType type, ArcObject? bound)
+    public static void __quick_limit(ref Walker g, ref Block result, CompileType type, ArcObject? bound)
     {
         string trigger = g.Current.Value[1..^1];
         string file = g.Current.GetFile();
@@ -1113,7 +1057,7 @@ public static partial class Compiler
         result.Add(
             "{",
                 "limit", "=", "{",
-                    StringCompile(trigger, file, BlockType.Trigger, bound),
+                    StringCompile(trigger, file, CompileType.Trigger, bound),
                 "}",
                 Compile(type, scope, bound),
             "}"
@@ -1254,7 +1198,7 @@ public static partial class Compiler
 
         QuickEventModifiers++;
     }
-    public static string TranspiledString(string newValue, BlockType type, ArcObject? bound, string fileName)
+    public static string TranspiledString(string newValue, CompileType type, ArcObject? bound, string fileName)
     {
         StringBuilder s = new();
         StringBuilder nc = new();
@@ -1312,7 +1256,7 @@ public static partial class Compiler
 
         return s.ToString();
     }
-    public static bool TranspiledString(string str, char ch, out string? newValue, BlockType type, ArcObject? bound, string fileName)
+    public static bool TranspiledString(string str, char ch, out string? newValue, CompileType type, ArcObject? bound, string fileName)
     {
         if (TryTrimOne(str, ch, out newValue) && newValue != null)
         {
@@ -1324,7 +1268,7 @@ public static partial class Compiler
     public static bool IsBaseScope(string v) => v == "ROOT" || v == "PREV" || v == "THIS" || v == "FROM";
     public static bool IsLogicalScope(string v) => v == "NOT" || v == "AND" || v == "OR";
     public static bool IsDefaultScope(string v) => v == "REB" || v == "NAT" || v == "PIR";
-    public static string StringCompile(string file, string fileName, BlockType type, ArcObject? bound, bool preprocessor = false)
+    public static string StringCompile(string file, string fileName, CompileType type, ArcObject? bound, bool preprocessor = false)
     {
         if (preprocessor)
             file = Parser.Preprocessor(file);

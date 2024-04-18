@@ -142,6 +142,8 @@ internal class Program
                 Console.WriteLine($"{$"Finished Loading Cached {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
             }
 
+            ArcBlock.PastDefineStep = true;
+            
             TimeSpan tstart = timer.Elapsed;
             var vList = (from c in ArcBlock.CompileList where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
             int ti = 0;
@@ -168,6 +170,7 @@ internal class Program
             TimeSpan tend = timer.Elapsed;
             Console.WriteLine($"{$"Finished Compiling Code".PadRight(50).Pastel(ConsoleColor.Magenta)}{$"{(tend - tstart).TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Magenta)}");
         }
+
 
         (string, string, Func<string>)[] Transpilers =
         {
@@ -846,6 +849,7 @@ internal class Program
 
         foreach (KeyValuePair<string, ArcEffect> OnAction in OnActions)
         {
+            if (OnAction.Key == "on_monthly_pulse") Debugger.Break();
             string s = $"{OnAction.Key} = {{ {OnAction.Value.Compile()}}} ";
             OverwriteFile($"{TranspileTarget}/common/on_actions/{OnAction.Key}.txt", s);
         }

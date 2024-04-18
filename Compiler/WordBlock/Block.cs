@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.Design;
 using System.Text;
+using static System.Formats.Asn1.AsnWriter;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Arc;
@@ -100,6 +101,23 @@ public class Walker
     public bool EndsWith(char w) => Current.EndsWith(w);
     public bool EnclosedBy(string left, char right) => Current.StartsWith(left) && Current.EndsWith(right);
     public bool EnclosedBy(char left, char right) => Current.StartsWith(left) && Current.EndsWith(right);
+    public Block GetScope()
+    {
+        Block scope = new();
+
+        int indent = 0;
+        do
+        {
+            if (Parser.open.IsMatch(Current))
+                indent++;
+            if (Parser.close.IsMatch(Current))
+                indent--;
+            scope.AddLast(Current);
+            if (indent > 0)
+                MoveNext();
+        } while (indent > 0);
+        return scope;
+    }
     public Walker(Block code)
     {
         if (code.First == null)

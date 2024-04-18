@@ -31,7 +31,43 @@ public class ArcFloat : IArcNumber, IValue
     {
         return Value.ToString();
     }
+    public bool LogicalCall(ref Walker i)
+    {
+        i.ForceMoveNext();
+        string oper = i;
 
+        i.ForceMoveNext();
+        Word w = i.Current;
+
+        if (Compiler.TryGetVariable(w, out var v) && v != null)
+        {
+            if (v is IArcNumber vi) return oper switch
+            {
+                "==" => Value == vi.GetNum(),
+                "!=" => Value != vi.GetNum(),
+                "<=" => Value <= vi.GetNum(),
+                "<" => Value < vi.GetNum(),
+                ">=" => Value >= vi.GetNum(),
+                ">" => Value > vi.GetNum(),
+                _ => throw new Exception(oper)
+            };
+            return false;
+        }
+        else
+        {
+            ArcFloat right = new(w);
+            return oper switch
+            {
+                "==" => Value == right.GetNum(),
+                "!=" => Value != right.GetNum(),
+                "<=" => Value <= right.GetNum(),
+                "<" => Value < right.GetNum(),
+                ">=" => Value >= right.GetNum(),
+                ">" => Value > right.GetNum(),
+                _ => throw new Exception(oper)
+            };
+        }
+    }
     public Walker Call(Walker i, ref Block result)
     {
         if (i.MoveNext())

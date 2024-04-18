@@ -1,6 +1,7 @@
 ﻿namespace Arc;
 public class ArcBlock : IValue
 {
+    public static bool PastDefineStep = false;
     public static List<ArcBlock> CompileList = new();
     public string? Compiled;
     public bool ShouldBeCompiled = true;

@@ -28,13 +28,13 @@ public class ArcCode : ArcBlock
     }
     public override string Compile()
     {
-        if (!ShouldBeCompiled) return Compiler.Compile(BlockType.Block, Value);
-        Compiled ??= Compiler.Compile(BlockType.Block, Value);
+        if (!ShouldBeCompiled) return Compiler.Compile(CompileType.Block, Value);
+        Compiled ??= Compiler.Compile(CompileType.Block, Value);
         return Compiled;
     }
     public override string Compile(Block b)
     {
-        return Compiler.Compile(BlockType.Block, b);
+        return Compiler.Compile(CompileType.Block, b);
     }
     internal static ArcCode Constructor(Block block) => new(block);
     internal static ArcCode NamelessConstructor(Block block) => new(block) { ShouldBeCompiled = false };

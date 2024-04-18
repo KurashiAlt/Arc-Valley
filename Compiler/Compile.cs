@@ -3,17 +3,10 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Arc;
-public enum BlockType
-{
-    Effect,
-    Trigger,
-    Modifier,
-    Block,
-}
 public static partial class Compiler
 {
     public static string Compile(
-        BlockType type,
+        CompileType type,
         Block code,
         ArcObject? bound = null
     )
@@ -51,14 +44,14 @@ public static partial class Compiler
             else if (bound != null && bound.TryGetVariable(g, out IVariable? boundVar) && boundVar != null) g = boundVar.Call(g, ref result);
             else if (TryGetVariable(g.Current, out IVariable? var) && var != null) g = var.Call(g, ref result);
             //Effects
-            else if (type == BlockType.Effect && NewFunctions(g, ref result, NewEffects)) continue;
-            else if (type == BlockType.Effect && g == "float_random") __float_random(ref g, ref result);
-            else if (type == BlockType.Effect && g == "quick_province_modifier") __quick_province_modifier(ref g, ref result);
-            else if (type == BlockType.Effect && g == "quick_country_modifier") __quick_country_modifier(ref g, ref result);
+            else if (type == CompileType.Effect && NewFunctions(g, ref result, NewEffects)) continue;
+            else if (type == CompileType.Effect && g == "float_random") __float_random(ref g, ref result);
+            else if (type == CompileType.Effect && g == "quick_province_modifier") __quick_province_modifier(ref g, ref result);
+            else if (type == CompileType.Effect && g == "quick_country_modifier") __quick_country_modifier(ref g, ref result);
             //Triggers
-            else if (type == BlockType.Trigger && NewFunctions(g, ref result, NewTriggers)) continue;
+            else if (type == CompileType.Trigger && NewFunctions(g, ref result, NewTriggers)) continue;
             //Modifiers
-            else if (type == BlockType.Modifier && NewFunctions(g, ref result, NewModifiers)) continue;
+            else if (type == CompileType.Modifier && NewFunctions(g, ref result, NewModifiers)) continue;
             //None
             else result.Add(g.Current);
         } while (g.MoveNext());
