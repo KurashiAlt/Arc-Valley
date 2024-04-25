@@ -27,6 +27,11 @@ public class ArcException : Exception
                         }
                     }
                 }
+                else if (arg is Exception ex)
+                {
+                    exp.Add(ex.Message);
+                    exp.Add(ex.StackTrace ?? "No Stack Trace Found");
+                }
                 else
                 {
                     exp.Add(arg.ToString() ?? "");

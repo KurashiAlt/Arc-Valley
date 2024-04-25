@@ -2,6 +2,7 @@
 using Pastel;
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
+using System.Diagnostics;
 using System.Text;
 using System.Xml.Linq;
 
@@ -49,6 +50,7 @@ public class Mission : IArcObject
         Missions.Add(key, this);
     }
 
+    public Walker Call(Walker i, ref Block result) => Id.Call(i, ref result);
     public bool CanGet(string indexer) => keyValuePairs.CanGet(indexer);
     public IVariable? Get(string indexer) => keyValuePairs.Get(indexer);
     public override string ToString() => Name.Value;
@@ -84,9 +86,24 @@ public class Mission : IArcObject
 }
 public class MissionTree : ArcObject
 {
+    public override IEnumerator<IVariable> GetArcEnumerator()
+    {
+        IEnumerable<Mission> missions = Serieses[0].Missions.Values()
+            .Concat(Serieses[1].Missions.Values())
+            .Concat(Serieses[2].Missions.Values())
+            .Concat(Serieses[3].Missions.Values())
+            .Concat(Serieses[4].Missions.Values())
+            .Concat(Serieses[5].Missions.Values())
+            .Concat(Serieses[6].Missions.Values())
+            .Concat(Serieses[7].Missions.Values())
+            .Concat(Serieses[8].Missions.Values())
+            .Concat(Serieses[9].Missions.Values());
+
+        return missions.GetEnumerator();
+    }
     public static Dict<MissionTree> MissionTrees = new();
     public static new Walker Call(Walker i) => Call(i, Constructor);
-    public MissionSeries?[] Serieses { get; set; }
+    public MissionSeries[] Serieses { get; set; }
     string Id { get; set; }
     ArcBool Generic { get; set; }
     ArcBool Ai { get; set; }

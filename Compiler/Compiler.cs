@@ -297,7 +297,6 @@ public static partial class Compiler
         { "bookmarks", Bookmark.Bookmarks },
         { "buildings", Building.Buildings },
         { "building_lines", BuildingLine.BuildingLines },
-        { "great_projects", GreatProject.GreatProjects },
         { "church_aspects", ChurchAspect.ChurchAspects },
         { "countries", Country.Countries },
         { "culture_groups", CultureGroup.CultureGroups },
@@ -314,7 +313,6 @@ public static partial class Compiler
         { "terrains", Terrain.Terrains },
         { "governments", Government.Governments },
         { "government_reforms", GovernmentReform.GovernmentReforms },
-        { "trade_goods", TradeGood.TradeGoods },
         { "trade_nodes", TradeNode.TradeNodes },
         { "province_triggered_modifiers", ProvinceTriggeredModifier.ProvinceTriggeredModifiers },
         { "casus_bellies", CasusBelli.CasusBellies },
@@ -401,7 +399,6 @@ public static partial class Compiler
             "area" => Area.Call(g),
             "region" => Region.Call(g),
             "superregion" => Superregion.Call(g),
-            "tradegood" => TradeGood.Call(g),
             "terrain" => Terrain.Call(g),
             "blessing" => Blessing.Call(g),
             "church_aspect" => ChurchAspect.Call(g),
@@ -431,7 +428,6 @@ public static partial class Compiler
             "province_event" => Event.Call(g, true),
             "incident" => Incident.Call(g),
             "unit" => Unit.Call(g),
-            "great_project" => GreatProject.Call(g),
             "localisation" => DefineLoc(g),
             "advisor" => Advisor.Call(g),
             "age" => Age.Call(g),
@@ -537,12 +533,16 @@ public static partial class Compiler
         Walker g = new(code);
         do
         {
-            if (g.Current == "breakpoint")
+            if (g.Current == "@arc_exit_file")
+            {
+                return;
+            }
+            else if (g.Current == "breakpoint")
             {
                 Debugger.Break();
                 continue;
             }
-            if (g.Current == "new")
+            else if (g.Current == "new")
             {
                 g.ForceMoveNext();
                 g = Declare(g);
@@ -555,7 +555,7 @@ public static partial class Compiler
                 Compile(CompileType.Effect, args.block);
                 continue;
             }
-            if (g.Current == "write_file")
+            else if (g.Current == "write_file")
             {
                 g.ForceMoveNext();
                 string file = GetId(g.Current);
@@ -606,13 +606,12 @@ public static partial class Compiler
     {
         Console.WriteLine(Parser.FormatCode(result.ToString()));
     }
-    public static void __write_file(ref Walker g)
+    public static void __write_file(ref Walker g, CompileType type)
     {
         g.ForceMoveNext();
         string file = GetId(g.Current);
         g = Args.GetArgs(g, out Args args);
-        ArcCode blo = ArcCode.NamelessConstructor(args.block);
-        Program.OverwriteFile($"{Program.TranspileTarget}/{file}", blo.Compile());
+        Program.OverwriteFile($"{Program.TranspileTarget}/{file}", Compile(type, args.block));
     }
     public static void __delete(ref Walker g)
     {
@@ -1157,6 +1156,7 @@ public static partial class Compiler
         if (years == null) duration = args.Get(ArcInt.Constructor, "duration", new(-1));
         else duration = args.Get(ArcInt.Constructor, "duration", new(years.Value * 365));
         ArcString desc = args.Get(ArcString.Constructor, "desc", new(""));
+        ArcString tooltip = args.Get(ArcString.Constructor, "tooltip", new(""));
         ArcBool hidden = args.Get(ArcBool.Constructor, "hidden", new(false));
         ArcModifier modifier = args.Get(ArcModifier.Constructor, "modifier");
 
@@ -1164,19 +1164,20 @@ public static partial class Compiler
             id.Value,
             new ArcObject()
             {
-                        { "id", id },
-                        { "name", name },
-                        { "modifier", modifier }
+                { "id", id },
+                { "name", name },
+                { "desc", desc },
+                { "modifier", modifier }
             }
         );
 
         result.Add("add_country_modifier", "=", "{");
         result.Add("name", "=", $"{id}");
         result.Add("duration", "=", duration.Value);
-        if (desc.Value.Count() != 0)
+        if (tooltip.Value.Length != 0)
         {
-            result.Add("desc", "=", $"{id}_desc ");
-            Program.Localisation.Add($"{id}_desc", desc.Value);
+            result.Add("desc", "=", $"{id}_modifier_tt");
+            Program.Localisation.Add($"{id}_modifier_tt", tooltip.Value);
         }
         if (hidden.Value) result.Add("hidden", "=", "yes");
         result.Add("}");

@@ -78,9 +78,18 @@ public class ArcFloat : IArcNumber, IValue
                     {
                         i.ForceMoveNext();
 
-                        string k = i.Current;
+                        Block k = i.GetScope();
 
-                        Value += double.Parse(k);
+                        Value += Constructor(k).Value;
+                    }
+                    break;
+                case "-=":
+                    {
+                        i.ForceMoveNext();
+
+                        Block k = i.GetScope();
+
+                        Value -= Constructor(k).Value;
                     }
                     break;
                 case ":=":

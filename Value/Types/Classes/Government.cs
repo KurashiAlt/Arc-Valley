@@ -113,13 +113,13 @@ public class GovernmentNames : ArcObject
     public static GovernmentNames Constructor(string id, Args args) => new(id)
     {
         { "id", new ArcString(id) },
-        { "rank", args.Get(Dict<ArcString>.Constructor(ArcString.Constructor), "rank", new()) },
-        { "ruler_male", args.Get(Dict<ArcString>.Constructor(ArcString.Constructor), "ruler_male", new()) },
-        { "ruler_female", args.Get(Dict<ArcString>.Constructor(ArcString.Constructor), "ruler_female", new()) },
-        { "consort_male", args.Get(Dict<ArcString>.Constructor(ArcString.Constructor), "consort_male", new()) },
-        { "consort_female", args.Get(Dict<ArcString>.Constructor(ArcString.Constructor), "consort_female", new()) },
-        { "heir_male", args.Get(Dict<ArcString>.Constructor(ArcString.Constructor), "heir_male", new()) },
-        { "heir_female", args.Get(Dict<ArcString>.Constructor(ArcString.Constructor), "heir_female", new()) },
+        { "rank", args.Get(Dict<ArcString>.Constructor(ArcString.Constructor), "rank") },
+        { "ruler_male", args.Get(Dict<ArcString>.Constructor(ArcString.Constructor), "ruler_male") },
+        { "ruler_female", args.Get(Dict<ArcString>.Constructor(ArcString.Constructor), "ruler_female") },
+        { "consort_male", args.Get(Dict<ArcString>.Constructor(ArcString.Constructor), "consort_male") },
+        { "consort_female", args.Get(Dict<ArcString>.Constructor(ArcString.Constructor), "consort_female") },
+        { "heir_male", args.Get(Dict<ArcString>.Constructor(ArcString.Constructor), "heir_male") },
+        { "heir_female", args.Get(Dict<ArcString>.Constructor(ArcString.Constructor), "heir_female") },
         { "trigger", args.Get(ArcTrigger.Constructor, "trigger") }
     };
     public void Transpile(ref Block a)
@@ -138,8 +138,10 @@ public class GovernmentNames : ArcObject
 
         void v(ref Block a, string type)
         {
+            Dict<ArcString> lst = Get<Dict<ArcString>>(type);
+            if (lst.Count == 0) return;
             a.Add(type, "=", "{");
-            foreach (KeyValuePair<string, ArcString> kvp in Get<Dict<ArcString>>(type))
+            foreach (KeyValuePair<string, ArcString> kvp in lst)
             {
                 string locKey = $"{id}_{type}_{kvp.Key}";
                 a.Add(kvp.Key, "=", locKey);

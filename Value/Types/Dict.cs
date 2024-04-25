@@ -125,7 +125,7 @@ public class Dict<Type> : IArcObject, ArcEnumerable, IEnumerable<KeyValuePair<st
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-    public IEnumerator<IVariable> GetArcEnumerator()
+    public virtual IEnumerator<IVariable> GetArcEnumerator()
     {
         IEnumerable<IVariable> l = (from v in Kvps select (IVariable)v.Value.Value);
         return l.GetEnumerator();

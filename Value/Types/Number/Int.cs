@@ -74,9 +74,18 @@ public class ArcInt : IArcNumber, IValue
                     {
                         i.ForceMoveNext();
 
-                        i = Compiler.GetScope(i, out Block k);
+                        Block k = i.GetScope();
 
                         Value += Constructor(k).Value;
+                    }
+                    break;
+                case "-=":
+                    {
+                        i.ForceMoveNext();
+
+                        Block k = i.GetScope();
+
+                        Value -= Constructor(k).Value;
                     }
                     break;
                 case ":=":

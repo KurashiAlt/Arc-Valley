@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
@@ -10,6 +11,7 @@ public class ArgsObject : IArcObject
     { 
         this.args = args; 
     }
+    public static ArgsObject Constructor(Block b) => new ArgsObject(Args.GetArgs(b));
     public bool CanGet(string indexer)
     {
         if (args.keyValuePairs == null) throw new Exception();
@@ -162,7 +164,10 @@ public class Args
     }
     public void Inherit(Args args)
     {
-        if (keyValuePairs == null) throw ArcException.Create(args);
+        if (keyValuePairs == null) return;
+        if (block == null) return;
+        if (args.keyValuePairs == null) return;
+        if (args.block == null) return;
         foreach (Word w in args.block.Reverse())
         {
             block.AddFirst(w);
@@ -184,8 +189,6 @@ public class Args
             sea = yes
         } 
          */
-        args = new();
-
         if(StartOffset < 1)
         {
             i.ForceMoveNext(); //western_sea_of_thule
@@ -209,7 +212,10 @@ public class Args
         if (Parser.HasEnclosingBrackets(scope))
             scope = Compiler.RemoveEnclosingBrackets(scope);
 
-        args.block = scope;
+        args = new()
+        {
+            block = scope
+        };
         if (scope.Count == 1)
         {
             return i;

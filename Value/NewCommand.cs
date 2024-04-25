@@ -104,10 +104,10 @@ public class ArcType : IValue
         { "area", new(Area.Areas.Get) },
         { "region", new(Region.Regions.Get) },
         { "superregion", new(Superregion.Superregions.Get) },
-        { "tradegood", new(TradeGood.TradeGoods.Get) },
         { "terrain", new(Terrain.Terrains.Get) },
         { "blessing", new(Blessing.Blessings.Get) },
         { "church_aspect", new(ChurchAspect.ChurchAspects.Get) },
+        { "personality_trait", new(RulerPersonality.RulerPersonalities.Get) },
         { "country", new(Country.Countries.Get) },
         { "adjacency", new(Adjacency.Adjacencies.Get) },
         { "building", new(Building.Buildings.Get) },
@@ -135,7 +135,6 @@ public class ArcType : IValue
         { "event", new(Event.Events.Get) },
         { "incident", new(Incident.Incidents.Get) },
         { "unit", new(Unit.Units.Get) },
-        { "great_project", new(GreatProject.GreatProjects.Get) },
         //{ "mercenary_company", new(MercenaryCompany.Companies.Get) },
         { "advisor", new(Advisor.Advisors.Get) },
         { "age", new(Age.Ages.Get) },
@@ -262,7 +261,8 @@ public enum CompileType
     Effect,
     Trigger,
     Modifier,
-    Block
+    Block,
+    Interface
 }
 public class CommandCall : IVariable
 {
@@ -301,13 +301,15 @@ public class NewCommand : ArcObject
         {
             return typ.ThisConstructor(args.block);
         }
-        catch
+        catch (Exception e)
         {
-            throw ArcException.Create(args, b);
+            throw ArcException.Create(args, b, e);
         }
     }
     public void Call(Args args, ref Block result)
     {
+        args.Inherit(Get<ArgsObject>("default").args);
+
         IVariable a;
         if (Get("args") is Dict<ArcType>) a = FromArgs(args, this);
         else a = QFromArgs(args, this);
@@ -327,8 +329,10 @@ public class NewCommand : ArcObject
     public CompileType CommandType;
     public NewCommand(string id, Args args, CompileType commandType)
     {
+        ArgsObject def = args.Get(ArgsObject.Constructor, "default", new(new()));
         ArcType type = args.Get(ArcType.Constructor, "args");
         Add("args", type);
+        Add("default", def);
 
         Block? block = args.GetNullable("transpile");
         ArcBlock transpile = commandType switch

@@ -22,7 +22,7 @@ public static partial class Compiler
             if (g == "new") __new(ref g);
             else if (g == "LOG_CURRENT_COMPILE") __LOG_CURRENT_COMPILE(result);
             else if (g == "DEFINE_MODIFIER") __DEFINE_MODIFIER(ref g);
-            else if (g == "write_file") __write_file(ref g);
+            else if (g == "write_file") __write_file(ref g, type);
             else if (g == "delete") __delete(ref g);
             else if (g == "when") __when(ref g, ref result, type, bound);
             else if (g == "modifier_to_string") __modifier_to_string(ref g, ref result);
@@ -43,6 +43,7 @@ public static partial class Compiler
             else if (g.EnclosedBy('(', ')')) __quick_math(ref g, ref result);
             else if (bound != null && bound.TryGetVariable(g, out IVariable? boundVar) && boundVar != null) g = boundVar.Call(g, ref result);
             else if (TryGetVariable(g.Current, out IVariable? var) && var != null) g = var.Call(g, ref result);
+            else if (type != CompileType.Interface && g.Current.Value.Contains(':') && !(g.Current.Value.StartsWith("trigger_value:", "event_target:", "modifier:"))) Console.WriteLine(ArcException.CreateMessage("Unknown word contains ':', meaning it's possibly a mispelled variable.", g, result));
             //Effects
             else if (type == CompileType.Effect && NewFunctions(g, ref result, NewEffects)) continue;
             else if (type == CompileType.Effect && g == "float_random") __float_random(ref g, ref result);

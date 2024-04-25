@@ -32,6 +32,10 @@ public static class ArcDirectory
             ExtraFiles.Add(aPath);
         }
     }
+    public static void TryDelete(string path)
+    {
+        if (File.Exists(Path.Combine(directory, path))) File.Delete(Path.Combine(directory, path));
+    }
     public static void VDirPopulate(string[] args)
     {
         string[] VDirCache;

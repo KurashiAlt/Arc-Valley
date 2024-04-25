@@ -142,6 +142,7 @@ public class IdeaGroup : IArcObject
         keyValuePairs = new()
         {
             { "name", Name },
+            { "id", Id },
             { "priority", Priority },
             { "category", Category },
             { "start", Start },

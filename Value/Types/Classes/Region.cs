@@ -5,8 +5,6 @@ namespace Arc;
 public class Region : IArcObject
 {
 	public static readonly Dict<Region> Regions = new();
-	public bool IsObject() => true;
-	public string Class => "Region";
 	public ArcString Name { get; set; }
 	public ArcString Adj { get; set; }
 	public ArcString Id { get; set; }

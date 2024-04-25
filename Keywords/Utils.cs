@@ -44,7 +44,7 @@ public partial class Compiler
     }
     public static bool TryGetVariable(string locator, out IVariable? var, Func<string, IVariable?> Get, Func<string, bool> CanGet)
     {
-        if (locator.StartsWith("trigger_value", "event_target") || locator.Contains(' ') || locator.EnclosedBy('`'))
+        if (locator.StartsWith("trigger_value:", "event_target:", "modifier:") || locator.Contains(' ') || locator.EnclosedBy('`'))
         {
             var = null;
             return false;
@@ -60,13 +60,18 @@ public partial class Compiler
                 currentKey = KeyLocator[f];
                 if (KeyLocator.Length > f + 1)
                 {
-                    IVariable v = Get(currentKey);
-                    if (v == null) throw ArcException.Create(locator, Get, CanGet);
-                    if (v is IArcObject)
+                    try
                     {
-                        IArcObject n = (IArcObject)v;
-                        Get = n.Get;
-                        CanGet = n.CanGet;
+                        IVariable? v = Get(currentKey) ?? throw ArcException.Create(currentKey, locator, Get, CanGet);
+                        if (v is IArcObject n)
+                        {
+                            Get = n.Get;
+                            CanGet = n.CanGet;
+                        }
+                    }
+                    catch
+                    {
+                        throw ArcException.Create(currentKey, locator, Get, CanGet);
                     }
                 }
                 else

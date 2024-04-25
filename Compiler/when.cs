@@ -48,13 +48,15 @@ public static partial class Compiler
                 g = Args.GetArgs(g, out Args args);
                 Word key = args.block.ToWord();
 
-                if (TryGetVariable(key, out _)) Hits++;
+                if (TryGetVariable(key, out IVariable? v) && v != null) Hits++;
             }
             else if (TryGetVariable(g, out IVariable? var) && var != null)
             {
                 if (var.LogicalCall(ref g)) Hits++;
             }
             else throw ArcException.Create(code, scope, Questions, Hits, g);
+
+            if (scope == LogicalScope.AND && Hits < Questions) return false;
         } while (g.MoveNext());
 
         return scope switch

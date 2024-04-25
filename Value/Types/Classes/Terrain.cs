@@ -45,6 +45,7 @@ public class Terrain : IArcObject
             { "defence", Defence },
             { "modifier", Modifier },
             { "id", Id },
+            { "base_development", BaseDevelopment},
         };
         if (Type != null)
             KeyValuePairs.Add("type", Type);

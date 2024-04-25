@@ -14,10 +14,11 @@ public class ArcStruct : ArcObject
         Block thisArgs = args.Get("args");
 
         ArcType.Types.Add(id, new(
-            (Block b) =>
-            {
+            (Block b) => {
+                Args rs = Args.GetArgs(b);
+                rs.Inherit(Default);
                 ArcType type = ArcType.Constructor(thisArgs);
-                return type.ThisConstructor(b);
+                return type.ThisConstructor(rs.block);
             }
         ));
 
@@ -31,10 +32,10 @@ public class ArcStruct : ArcObject
 }
 public static partial class Transpiler
 {
-    public static List<ArcCode> SimpleTranspilers = new();
+    public static List<ArcEffect> SimpleTranspilers = new();
     public static string TranspileSimples()
     {
-        foreach (ArcCode obj in SimpleTranspilers)
+        foreach (ArcEffect obj in SimpleTranspilers)
         {
             obj.Compile();
         }
@@ -52,7 +53,7 @@ public class ArcClass : ArcObject
     public void InitSimpleTranspiles(Args args)
     {
         Block? simpleTranspile = args.GetNullable("simple_transpile");
-        if (simpleTranspile != null) Transpiler.SimpleTranspilers.Add(ArcCode.NamelessConstructor(simpleTranspile));
+        if (simpleTranspile != null) Transpiler.SimpleTranspilers.Add(ArcEffect.NamelessConstructor(simpleTranspile));
     }
     public T ClassGetConstrutor<T>(Block b) where T : IVariable
     {

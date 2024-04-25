@@ -3,10 +3,50 @@ using System.Security.Principal;
 using System.Text;
 
 namespace Arc;
+public class ArcInterfaceBlock : ArcBlock
+{
+    public ArcInterfaceBlock()
+    {
+        Value = new();
+        Id = CompileList.Count;
+        CompileList.Add(this);
+    }
+    public ArcInterfaceBlock(params string[] s)
+    {
+        Value = new()
+        {
+            s
+        };
+        Id = CompileList.Count;
+        CompileList.Add(this);
+    }
+    public ArcInterfaceBlock(Block value, bool t = false)
+    {
+        if (!t)
+            if (Parser.HasEnclosingBrackets(value))
+                value = Compiler.RemoveEnclosingBrackets(value);
+        Value = value;
+        Id = CompileList.Count;
+        CompileList.Add(this);
+    }
+    public override string Compile()
+    {
+        if (!ShouldBeCompiled) return Compiler.Compile(CompileType.Interface, Value);
+        Compiled ??= Compiler.Compile(CompileType.Interface, Value);
+        return Compiled;
+    }
+    public override string Compile(Block b)
+    {
+        return Compiler.Compile(CompileType.Interface, b);
+    }
+    internal static ArcInterfaceBlock Constructor(Block block) => new(block);
+    internal static ArcInterfaceBlock NamelessConstructor(Block block) => new(block) { ShouldBeCompiled = false };
+}
+
 public class InterfaceNode : IArcObject
 {
     public ArcString type;
-    public ArcCode block;
+    public ArcInterfaceBlock block;
     public List<InterfaceNode> children;
     public static Dict<InterfaceNode> Files = new();
     public override string ToString()
@@ -27,7 +67,7 @@ public class InterfaceNode : IArcObject
         }
         return b.ToString();
     }
-    public InterfaceNode(ArcCode block, List<InterfaceNode> children, ArcString type)
+    public InterfaceNode(ArcInterfaceBlock block, List<InterfaceNode> children, ArcString type)
     {
         this.block = block;
         this.children = children;
@@ -107,7 +147,7 @@ public class InterfaceNode : IArcObject
             i.Asssert("=");
             i.ForceMoveNext(); 
             i = Compiler.GetScope(i, out Block nScope);
-            children.Add(Constructor(nid, Parser.ParseCode(new ArcCode(nScope).Compile(), i.Current.GetFile())));
+            children.Add(Constructor(nid, Parser.ParseCode(Compiler.Compile(CompileType.Interface, nScope), i.Current.GetFile())));
         } while (i.MoveNext());
     }
     public Walker Call(Walker i, ref Block result)

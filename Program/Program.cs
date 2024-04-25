@@ -45,10 +45,11 @@ internal class Program
             if (response == "y") args = new string[] { "all" };
         }
         if (
-            !File.Exists(Path.Combine(directory, ".arc/script.vdir")) ||
+            !args.Contains("no-vdir") &&
+            (!File.Exists(Path.Combine(directory, ".arc/script.vdir")) ||
             !File.Exists(Path.Combine(directory, ".arc/unsorted.vdir")) ||
             !File.Exists(Path.Combine(directory, ".arc/map.vdir")) ||
-            !File.Exists(Path.Combine(directory, ".arc/gfx.vdir"))
+            !File.Exists(Path.Combine(directory, ".arc/gfx.vdir")))
         ) {
             Console.WriteLine("One of the virtual directory caches was missing, arguments have been edited to transpile all");
             Array.Resize(ref args, args.Length + 1);
@@ -146,7 +147,14 @@ internal class Program
                     List<Province?> list = new();
                     foreach (Word w in Parser.ParseFile(file))
                     {
-                        list.Add(Province.Provinces[w]);
+                        try
+                        {
+                            list.Add(Province.Provinces[w]);
+                        }
+                        catch
+                        {
+                            Console.WriteLine($"Tried to add province to selector province group: '{file}' selector in question, '{w}' unknown province identifier in question.");
+                        }
                     }
 
                     ProvinceGroup.ProvinceGroups[name].Get<ArcList<Province>>("provinces").Values = list;
@@ -198,7 +206,6 @@ internal class Program
         ("script", "", Region.Transpile),
         ("script", "", Superregion.Transpile),
         ("script", "", Province.Transpile),
-        ("script", "", TradeGood.Transpile),
         ("script", "", Terrain.Transpile),
         ("script", "", Blessing.Transpile),
         ("script", "", Building.Transpile),
@@ -217,7 +224,6 @@ internal class Program
         ("script", "", GovernmentReform.Transpile),
         ("script", "", GovernmentMechanic.Transpile),
         ("script", "", Unit.Transpile),
-        ("script", "", GreatProject.Transpile),
         ("script", "", Advisor.Transpile),
         ("script", "", Age.Transpile),
         ("script", "", DiplomaticAction.Transpile),
@@ -260,6 +266,7 @@ internal class Program
             Console.WriteLine($"{$"Finished Transpiling{transpiler.Item2} {type}".PadRight(50).Pastel(ConsoleColor.Cyan)}{$"{start.TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
         }
 
+        if (!args.Contains("no-vdir")) 
         {
             TimeSpan start = timer.Elapsed;
             ArcDirectory.VDirPopulate(args);
@@ -281,7 +288,7 @@ internal class Program
 
         ArcDirectory.CheckFolder(TranspileTarget);
         if (ArcDirectory.ExtraFiles.Count == 0) Console.WriteLine("All files recognized");
-        else
+        else if (!args.Contains("no-vdir"))
         {
             Console.WriteLine($"{ArcDirectory.ExtraFiles.Count} unknown files found in {TranspileTarget}");
             foreach (string extraFile in ArcDirectory.ExtraFiles)
@@ -289,16 +296,31 @@ internal class Program
                 Console.WriteLine($"\t{extraFile}".Pastel(ConsoleColor.Gray));
             }
             Console.WriteLine($"Would you like to delete these files? y/n");
-            string? response = Console.ReadLine();
-            if (response == "y")
+            if (args.Contains("-Y"))
             {
                 foreach (string extraFile in ArcDirectory.ExtraFiles)
                 {
-                    File.Delete(Path.Combine(directory, extraFile));
+                    ArcDirectory.TryDelete(Path.Combine(directory, extraFile));
                 }
                 Console.WriteLine("Deleted all unrecognized files");
             }
-            else Console.WriteLine("Did not delete unrecognized files");
+            else if (args.Contains("-N"))
+            {
+                Console.WriteLine("Did not delete unrecognized files");
+            }
+            else
+            {
+                string? response = Console.ReadLine();
+                if (response == "y")
+                {
+                    foreach (string extraFile in ArcDirectory.ExtraFiles)
+                    {
+                        ArcDirectory.TryDelete(Path.Combine(directory, extraFile));
+                    }
+                    Console.WriteLine("Deleted all unrecognized files");
+                }
+                else Console.WriteLine("Did not delete unrecognized files");
+            }
         }
 
         return 0;
@@ -410,7 +432,7 @@ internal class Program
         void frw(string cfile, string tfile)
         {
             ArcDirectory.MapVDir.Add(tfile);
-            if (File.Exists(tfile)) File.Delete(tfile);
+            ArcDirectory.TryDelete(tfile);
             File.Copy(cfile, tfile);
         }
 
@@ -433,7 +455,7 @@ internal class Program
             );
 
             ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/interface/ideas_EU4/{s}");
-            File.Delete($"{TranspileTarget}/gfx/interface/ideas_EU4/{s}");
+            ArcDirectory.TryDelete($"{TranspileTarget}/gfx/interface/ideas_EU4/{s}");
             File.Copy(c, $"{TranspileTarget}/gfx/interface/ideas_EU4/{s}");
         }
         foreach (string c in ArcDirectory.GetFile($"{GfxFolder}/modifiers/files.txt"))
@@ -455,7 +477,7 @@ internal class Program
             string s = c.Split('\\').Last();
 
             ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/special/{s}");
-            if (File.Exists($"{TranspileTarget}/gfx/special/{s}")) File.Delete($"{TranspileTarget}/gfx/special/{s}");
+            ArcDirectory.TryDelete($"{TranspileTarget}/gfx/special/{s}");
             File.Copy(c, $"{TranspileTarget}/gfx/special/{s}");
         }
 
@@ -472,7 +494,7 @@ internal class Program
             );
 
             ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/loose/{s}");
-            File.Delete($"{TranspileTarget}/gfx/loose/{s}");
+            ArcDirectory.TryDelete($"{TranspileTarget}/gfx/loose/{s}");
             File.Copy(c, $"{TranspileTarget}/gfx/loose/{s}");
         }
 
@@ -489,7 +511,7 @@ internal class Program
             );
 
             ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/event_pictures/arc/{s}");
-            File.Delete($"{TranspileTarget}/gfx/event_pictures/arc/{s}");
+            ArcDirectory.TryDelete($"{TranspileTarget}/gfx/event_pictures/arc/{s}");
             File.Copy(c, $"{TranspileTarget}/gfx/event_pictures/arc/{s}");
         }
 
@@ -506,7 +528,7 @@ internal class Program
             );
 
             ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/interface/missions/{s}");
-            File.Delete($"{TranspileTarget}/gfx/interface/missions/{s}");
+            ArcDirectory.TryDelete($"{TranspileTarget}/gfx/interface/missions/{s}");
             File.Copy(c, $"{TranspileTarget}/gfx/interface/missions/{s}");
         }
 
@@ -529,7 +551,7 @@ internal class Program
                 string newPath = $"{TranspileTarget}/{v}";
 
                 ArcDirectory.GfxVDir.Add(newPath);
-                File.Delete(newPath);
+                ArcDirectory.TryDelete(newPath);
                 File.Copy(oldPath, newPath);
             }
         }
@@ -550,7 +572,7 @@ internal class Program
             );
 
             ArcDirectory.GfxVDir.Add(newPath);
-            File.Delete(newPath);
+            ArcDirectory.TryDelete(newPath);
             File.Copy(oldPath, newPath);
         }
 
@@ -569,7 +591,7 @@ internal class Program
             );
 
             ArcDirectory.GfxVDir.Add(newPath);
-            File.Delete(newPath);
+            ArcDirectory.TryDelete(newPath);
             File.Copy(oldPath, newPath);
         }
 
@@ -588,7 +610,7 @@ internal class Program
             );
 
             ArcDirectory.GfxVDir.Add(newPath);
-            File.Delete(newPath);
+            ArcDirectory.TryDelete(newPath);
             File.Copy(oldPath, newPath);
         }
 
@@ -608,7 +630,7 @@ internal class Program
             );
 
             ArcDirectory.GfxVDir.Add(newPath);
-            File.Delete(newPath);
+            ArcDirectory.TryDelete(newPath);
             File.Copy(oldPath, newPath);
         }
 
@@ -627,7 +649,7 @@ internal class Program
             );
 
             ArcDirectory.GfxVDir.Add(newPath);
-            File.Delete(newPath);
+            ArcDirectory.TryDelete(newPath);
             File.Copy(oldPath, newPath);
         }
 
@@ -639,7 +661,7 @@ internal class Program
             string newPath = $"{TranspileTarget}/gfx/flags/{Country.Countries[s.Split('.')[0]].Tag}.tga";
 
             ArcDirectory.GfxVDir.Add(newPath);
-            File.Delete(newPath);
+            ArcDirectory.TryDelete(newPath);
             File.Copy(oldPath, newPath);
         }
 
@@ -680,7 +702,7 @@ internal class Program
         string cfile = Path.GetRelativePath(directory, file).Replace('\\', '/');
         string tfile = $"{TranspileTarget}\\{Path.GetRelativePath($"{directory}/{UnsortedFolder}", file)}".Replace('\\', '/');
         ArcDirectory.UnsortedVDir.Add(TranspileTarget + "/" + Path.GetRelativePath($"{directory}/{UnsortedFolder}", file).Replace('\\', '/'));
-        File.Delete(tfile);
+        ArcDirectory.TryDelete(tfile);
         File.Copy(cfile, tfile);
     }
     public static string SpecialUnitTranspile()
@@ -880,7 +902,6 @@ internal class Program
 
         foreach (KeyValuePair<string, ArcEffect> OnAction in OnActions)
         {
-            if (OnAction.Key == "on_monthly_pulse") Debugger.Break();
             string s = $"{OnAction.Key} = {{ {OnAction.Value.Compile()}}} ";
             OverwriteFile($"{TranspileTarget}/common/on_actions/{OnAction.Key}.txt", s);
         }

@@ -60,6 +60,7 @@ public class Province : IArcObject
             { "history", this.History },
             { "sea", this.Sea },
             { "lake", this.Lake },
+            { "base_development", BaseDevelopment },
             { "impassible", this.Impassible },
             { "area", this.Area },
             { "id", this.Id },
@@ -88,7 +89,7 @@ public class Province : IArcObject
             args.GetDefault(ArcBool.Constructor, "impassible", new(false)),
             args.GetFromListNullable(Area.Areas, "area"),
             terrain,
-            args.GetDefault(ArcInt.Constructor, "base_development", terrain.BaseDevelopment),
+            args.GetDefault(ArcInt.Constructor, "base_development", new ArcInt(terrain.BaseDevelopment.Value)),
             args.Get(ArcCode.Constructor, "position"),
             args.Get(ArcCode.Constructor, "rotation"),
             args.Get(ArcCode.Constructor, "height")
