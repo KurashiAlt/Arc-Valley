@@ -248,7 +248,6 @@ internal partial class Program
         ("script", "", InterfaceNode.Transpile),
         ("script", "", Transpiler.TranspileSimples),
         ("script", "", TechnologyGroups),
-        ("script", "", TranspileOnActions),
         ("script", "", TranspileDefines),
         ("script", "", TranspileLocalisations),
         ("gfx", "", Gfx),

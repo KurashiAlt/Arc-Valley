@@ -116,6 +116,12 @@ public class ArcClass : ArcObject
                 ob.functions = functions;
                 ArgList.Drop("this");
             }
+            if (v is ArcBlock co)
+            {
+                ArgList.Add("this", new ArgsObject(s));
+                co.InjectedName = new ArcString(idConst);
+                ArgList.Drop("this");
+            }
             List[obj] = v;
 
             ArgList.Add("this", v);

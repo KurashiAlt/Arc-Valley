@@ -1,11 +1,12 @@
 ﻿namespace Arc;
-public class ArcBlock : IValue
+public class ArcBlock : IValue, IArcObject
 {
     public static bool PastDefineStep = false;
     public static List<ArcBlock> CompileList = new();
     public string? Compiled;
     public bool ShouldBeCompiled = true;
     public int Id;
+    public ArcString? InjectedName;
     public Block Value { get; set; }
     public ArcBlock()
     {
@@ -132,4 +133,16 @@ public class ArcBlock : IValue
         throw ArcException.Create(this);
     }
     internal int Count() => Value.Count;
+
+    public IVariable? Get(string indexer) => indexer switch
+    {
+        "id" => InjectedName ?? new ArcString("unnamed_block"),
+        _ => throw new Exception()
+    };
+
+    public bool CanGet(string indexer) => indexer switch
+    {
+        "id" => true,
+        _ => false
+    };
 }
