@@ -22,7 +22,8 @@ public static partial class Compiler
             if (g == "new") __new(ref g);
             else if (g == "LOG_CURRENT_COMPILE") __LOG_CURRENT_COMPILE(result);
             else if (g == "DEFINE_MODIFIER") __DEFINE_MODIFIER(ref g);
-            else if (g == "write_file") __write_file(ref g, type);
+            else if (g == "write_file") __write_file(ref g, type, true);
+            else if (g == "write_unformatted_file") __write_file(ref g, type, false);
             else if (g == "delete") __delete(ref g);
             else if (g == "when") __when(ref g, ref result, type, bound);
             else if (g == "modifier_to_string") __modifier_to_string(ref g, ref result);

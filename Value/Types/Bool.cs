@@ -34,7 +34,6 @@ public class ArcBool : IValue
             throw ArcException.Create(value);
         Value = new ArcBool(value.First.Value).Value;
     }
-    public bool IsBool() => true;
     public override string ToString()
     {
         return Value?"yes":"no";

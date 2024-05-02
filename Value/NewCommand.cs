@@ -46,6 +46,7 @@ public class ArgList : IArcObject, IArcNumber
         throw ArcException.Create(indexer, arg, "args isn't of type [Arc Object]");
     }
     public IVariable Get() => list.First();
+    public bool LogicalCall(ref Walker i) => list.First().LogicalCall(ref i);
     public Walker Call(Walker w, ref Block result)
     {
         IVariable arg = list.First();

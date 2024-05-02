@@ -117,7 +117,7 @@ public class IdeaGroup : IArcObject
     public ArcModifier Start { get; set; } 
     public ArcModifier Bonus { get; set; } 
     public ArcTrigger Trigger { get; set; }
-    public ArcCode AiWillDo { get; set; }
+    public ArcTrigger AiWillDo { get; set; }
     public Dict<IVariable> keyValuePairs { get; set; }
     public IdeaGroup(
         string id, 
@@ -128,7 +128,7 @@ public class IdeaGroup : IArcObject
         ArcModifier start, 
         ArcModifier bonus, 
         ArcTrigger trigger, 
-        ArcCode aiWillDo
+        ArcTrigger aiWillDo
     ) {
         Id = new(id);
         Priority = priority;
@@ -173,7 +173,7 @@ public class IdeaGroup : IArcObject
                 args.Get(ArcModifier.Constructor, "start", new()),
                 args.Get(ArcModifier.Constructor, "bonus"),
                 args.Get(ArcTrigger.Constructor, "trigger", new()),
-                args.Get(ArcCode.Constructor, "ai_will_do", new())
+                args.Get(ArcTrigger.Constructor, "ai_will_do", new())
             ));
             return i;
         }   

@@ -79,18 +79,18 @@ public class EstateAgenda : IArcObject
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "desc"),
             args.Get(ArcFloat.Constructor, "max_days_active", null),
-            args.Get(ArcTrigger.Constructor, "can_select"),
-            args.Get(ArcTrigger.Constructor, "provinces_to_highlight"),
-            args.Get(ArcCode.Constructor, "selection_weight"),
-            args.Get(ArcEffect.Constructor, "pre_effect"),
-            args.Get(ArcEffect.Constructor, "immediate_effect"),
-            args.Get(ArcTrigger.Constructor, "task_requirements"),
-            args.Get(ArcEffect.Constructor, "task_completed_effect"),
-            args.Get(ArcEffect.Constructor, "failing_effect"),
-            args.Get(ArcTrigger.Constructor, "fail_if"),
-            args.Get(ArcEffect.Constructor, "on_invalid"),
-            args.Get(ArcTrigger.Constructor, "invalid_trigger"),
-            args.Get(ArcModifier.Constructor, "modifier")
+            args.Get(ArcTrigger.Constructor, "can_select", new()),
+            args.Get(ArcTrigger.Constructor, "provinces_to_highlight", new()),
+            args.Get(ArcCode.Constructor, "selection_weight", new("factor", "=", "1")),
+            args.Get(ArcEffect.Constructor, "pre_effect", new()),
+            args.Get(ArcEffect.Constructor, "immediate_effect", new()),
+            args.Get(ArcTrigger.Constructor, "task_requirements", new()),
+            args.Get(ArcEffect.Constructor, "task_completed_effect", new()),
+            args.Get(ArcEffect.Constructor, "failing_effect", new()),
+            args.Get(ArcTrigger.Constructor, "fail_if", new()),
+            args.Get(ArcEffect.Constructor, "on_invalid", new()),
+            args.Get(ArcTrigger.Constructor, "invalid_trigger", new()),
+            args.Get(ArcModifier.Constructor, "modifier", new())
         );
 
         return i;
@@ -453,7 +453,7 @@ public class Estate : IArcObject
             args.Get((Block s) => new ArcList<ArcCode>(s, (Block s) => ArcCode.Constructor(s)), "custom_names", new()),
             args.Get(ArcBool.Constructor, "contributes_to_curia_treasury", new(false)),
             args.Get((Block s) => new PrivilegeList(s, (string key, Args s) => EstatePrivilege.Constructor(key, s), EstatePrivilege.EstatePrivileges), "privileges", new()),
-            args.Get((Block s) => new ArcList<EstateAgenda>(s, EstateAgenda.EstateAgendas), "agendas", new()),
+            args.Get((Block s) => new ArcList<EstateAgenda>(s, EstateAgenda.EstateAgendas), "agendas", new(EstateAgenda.EstateAgendas)),
             args.Get(ArcFloat.Constructor, "influence_from_dev_modifier", new(1))
         );
 
@@ -642,7 +642,7 @@ public class Estate : IArcObject
         )));
         return "Estates";
     }
-    public override string ToString() => Name.Value;
+    public override string ToString() => Id.Value;
     public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }
 public class PrivilegeList : ArcList<EstatePrivilege>

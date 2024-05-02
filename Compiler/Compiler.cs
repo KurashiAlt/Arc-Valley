@@ -606,12 +606,12 @@ public static partial class Compiler
     {
         Console.WriteLine(Parser.FormatCode(result.ToString()));
     }
-    public static void __write_file(ref Walker g, CompileType type)
+    public static void __write_file(ref Walker g, CompileType type, bool format)
     {
         g.ForceMoveNext();
         string file = GetId(g.Current);
         g = Args.GetArgs(g, out Args args);
-        Program.OverwriteFile($"{Program.TranspileTarget}/{file}", Compile(type, args.block));
+        Program.OverwriteFile($"{Program.TranspileTarget}/{file}", Compile(type, args.Get()), AllowFormatting: format);
     }
     public static void __delete(ref Walker g)
     {
@@ -670,7 +670,7 @@ public static partial class Compiler
     public static void __modifier_to_string(ref Walker g, ref Block result)
     {
         g = Args.GetArgs(g, out Args args);
-        if (args.block != null && TryGetVariable(args.block.ToWord(), out IVariable? vr))
+        if (TryGetVariable(args.Get().ToWord(), out IVariable? vr))
         {
             if (vr == null) throw ArcException.Create("Unknown Error: Null Reference", g);
             if (vr is not ArcModifier) throw ArcException.Create($"{string.Join(' ', args.block)} is not ArcModifier in modifier_to_string function", g);
@@ -683,7 +683,6 @@ public static partial class Compiler
 
             args = Args.GetArgs(c);
         }
-        if (args.keyValuePairs == null) throw ArcException.Create("Unknown Error: Null Reference", g);
         string str = "";
         foreach (KeyValuePair<string, Block> b in args.keyValuePairs)
         {

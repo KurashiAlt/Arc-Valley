@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Text.RegularExpressions;
-internal class Program
+internal partial class Program
 {
     public static Stopwatch timer = Stopwatch.StartNew();
     public static string directory = ArcDirectory.directory;
@@ -818,6 +818,7 @@ internal class Program
 
         CreateTillFolder(pathOrg);
 
+        text = text.Replace("__ARC.FORCE_END_LINE__", "\n");
         if (File.Exists(path))
         {
             string old = File.ReadAllText(path);
@@ -830,10 +831,10 @@ internal class Program
 
         string ReplaceBlocks(string text)
         {
-            Regex blockSpot = new("__ARC\\.BLOCK__ = (\\d+)");
+            Regex blockSpot = ArcBlocks();
             while (text.Contains("__ARC.BLOCK__"))
             {
-                text = blockSpot.Replace(text, new MatchEvaluator((Match m) =>
+                text = blockSpot.Replace(text, new MatchEvaluator((m) =>
                 {
                     int id = int.Parse(m.Groups[1].Value);
                     return ArcBlock.CompileList[id].Compiled;
@@ -864,7 +865,7 @@ internal class Program
 
             sb.Append($" {loc.Key}: \"{value}\"\n");
         }
-        OverwriteFile($"{TranspileTarget}/localisation/replace/z_arc_valley_l_english.yml", (sb.ToString()), false, true);
+        OverwriteFile($"{TranspileTarget}/localisation/replace/z_arc_valley_l_english.yml", sb.ToString(), false, true);
         return "Localisations";
     }
     private static string TranspileOnActions()
@@ -939,4 +940,7 @@ internal class Program
             Compiler.ObjectDeclare(file + headers, fileLocation, true);
         }
     }
+
+    [GeneratedRegex("__ARC\\.BLOCK__ = (\\d+)")]
+    private static partial Regex ArcBlocks();
 }

@@ -175,7 +175,8 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
         else
         {
             if (dict == null) throw ArcException.Create(i);
-            Values.Add(dict[i.Current]);
+            string s = Compiler.GetId(i.Current);
+            Values.Add((T?)dict.Get(s));
         }
         return i;
     }
