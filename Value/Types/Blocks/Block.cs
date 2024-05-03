@@ -52,12 +52,14 @@ public class ArcBlock : IValue, IArcObject
 
                         if (Parser.HasEnclosingBrackets(newbv)) newbv = Compiler.RemoveEnclosingBrackets(newbv);
 
-                        foreach (string s in newbv)
-                        {
-                            Value.Add(s);
-                        }
+                        Value.Add(newbv);
 
-                        Compiled = null;
+                        if (Compiled != null)
+                        {
+                            string compile = Compile(newbv);
+                            Compiled += " ";
+                            Compiled += compile;
+                        }
                     }
                     break;
                 case ":=":
