@@ -85,6 +85,16 @@ public class Args
         }
         return defaultValue;
     }
+    public T NewGet<T>(Func<Block,T> Constructor, string key, T defaultValue) where T : IVariable?
+    {
+        if (keyValuePairs == null) throw ArcException.Create(this);
+        if (keyValuePairs.TryGetValue(key, out Block? value))
+        {
+            if (Compiler.TryGetVariable(value.ToWord(), out IVariable? var) && var is T vr) return vr;
+            else return Constructor(value);
+        }
+        return defaultValue;
+    }
     public LazyPointer<T> GetLazyFromList<T>(Dict<T> List, string key) where T : IVariable
     {
         LazyPointer<T>? Item = GetLazyFromListNullable(List, key);

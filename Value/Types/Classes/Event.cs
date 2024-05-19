@@ -65,7 +65,7 @@ public class Option : IArcObject
             args.Get(ArcBool.Constructor, "highlight", new(false)),
             args.GetFromListNullable(Province.Provinces, "goto"),
             args.Get(ArcTrigger.Constructor, "trigger", null),
-            args.Get(ArcEffect.Constructor, "effect", new())
+            args.NewGet(ArcEffect.Constructor, "effect", new())
         );
     }
 }

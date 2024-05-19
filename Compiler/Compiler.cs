@@ -9,6 +9,7 @@ using Pastel;
 namespace Arc;
 public static partial class Compiler
 {
+    public static int CompileRightAway = 0;
     public static int QuickEventModifiers = 0;
     public static readonly Dict<IVariable> global = new()
     {

@@ -164,9 +164,10 @@ internal partial class Program
             }
 
             ArcBlock.PastDefineStep = true;
+            Compiler.CompileRightAway += 1;
             
             TimeSpan tstart = timer.Elapsed;
-            var vList = (from c in ArcBlock.CompileList where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
+            var vList = (from c in CompileList.list where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
             int ti = 0;
             while (vList.Any())
             {
@@ -186,7 +187,7 @@ internal partial class Program
                     if (ti % 1000 == 0) Console.WriteLine($"Has finished compiling {ti} blocks".Pastel(ConsoleColor.Magenta));
                 }
 
-                vList = (from c in ArcBlock.CompileList where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
+                vList = (from c in CompileList.list where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
             }
             TimeSpan tend = timer.Elapsed;
             Console.WriteLine($"{$"Finished Compiling Code".PadRight(50).Pastel(ConsoleColor.Magenta)}{$"{(tend - tstart).TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Magenta)}");
@@ -823,7 +824,7 @@ internal partial class Program
                 text = blockSpot.Replace(text, new MatchEvaluator((m) =>
                 {
                     int id = int.Parse(m.Groups[1].Value);
-                    return ArcBlock.CompileList[id].Compiled;
+                    return CompileList.list[id].Compiled;
                 }));
             }
             return text;

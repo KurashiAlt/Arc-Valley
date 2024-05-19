@@ -1,8 +1,17 @@
 ﻿namespace Arc;
+public static class CompileList
+{
+    public static List<ArcBlock> list = new();
+    public static int Count => list.Count;
+    public static void Add(ArcBlock t)
+    {
+        list.Add(t);
+        if (Compiler.CompileRightAway != 0) t.Compile();
+    }
+}
 public class ArcBlock : IValue, IArcObject
 {
     public static bool PastDefineStep = false;
-    public static List<ArcBlock> CompileList = new();
     public string? Compiled;
     public bool ShouldBeCompiled = true;
     public int Id;

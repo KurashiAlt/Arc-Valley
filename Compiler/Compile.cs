@@ -20,6 +20,8 @@ public static partial class Compiler
         {
             //All
             if (g == "new") __new(ref g);
+            else if (g == "arc_call_1") CompileRightAway++;
+            else if (g == "arc_call_2") CompileRightAway--;
             else if (g == "LOG_CURRENT_COMPILE") __LOG_CURRENT_COMPILE(result);
             else if (g == "DEFINE_MODIFIER") __DEFINE_MODIFIER(ref g);
             else if (g == "write_file") __write_file(ref g, type);
