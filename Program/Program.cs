@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Text.RegularExpressions;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 internal partial class Program
 {
     public static Stopwatch timer = Stopwatch.StartNew();
@@ -28,11 +29,12 @@ internal partial class Program
     {
         CultureInfo.CurrentCulture = CultureInfo.CreateSpecificCulture("en");
 
-        //if (args.Length > 0 && Path.Exists(args[0]))
-        //{
-        //    directory = args[0];
-        //    if (!directory.EndsWith('\\')) directory += "\\";
-        //}
+        if (args.Length > 0 && Path.Exists(args[0]))
+        {
+            directory = args[0];
+            if (!directory.EndsWith('\\')) directory += "\\";
+            ArcDirectory.directory = directory;
+        }
 
         Args arcDefines = Args.GetArgsFromFile(Path.Combine(directory, "arc.defines"));
         headers = arcDefines.Get(ArcString.Constructor, "headers").Value;
@@ -429,113 +431,107 @@ internal partial class Program
         void frw(string cfile, string tfile)
         {
             ArcDirectory.MapVDir.Add(tfile);
-            ArcDirectory.TryDelete(tfile);
-            File.Copy(cfile, tfile);
+            ArcDirectory.Copy(cfile, tfile);
         }
 
         return "Map";
+    }
+    class ArcFile
+    {
+        string FullFileName;
+        public string File() => Path.GetFileName(FullFileName);
+        public string Name() => Path.GetFileNameWithoutExtension(FullFileName);
+        public string Relative() => Path.GetRelativePath(directory, FullFileName);
+        public string Relative(string s) => Path.GetRelativePath(Path.Combine(directory, s), FullFileName);
+        public string Extension() => Path.GetExtension(FullFileName);
+        public ArcFile(string fullFileName) { FullFileName = fullFileName; }
+        public static implicit operator ArcFile(string s) => new(s);
     }
     static string Gfx()
     {
         Block b = new("spriteTypes", "=", "{");
 
         CreateTillFolder($"{TranspileTarget}/gfx/interface/ideas_EU4");
-        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/modifiers"))
+        foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/modifiers"))
         {
-            string s = c.Split('\\').Last();
-
             b.Add(
                 "spriteType", "=", "{",
-                    "name", "=", $"\"GFX_modifier_{s.Split('.').First()}\"",
-                    "texturefile", "=", $"\"gfx/interface/ideas_EU4/{s}\"",
+                    "name", "=", $"\"GFX_modifier_{file.Name()}\"",
+                    "texturefile", "=", $"\"gfx/interface/ideas_EU4/{file.File()}\"",
                 "}"
             );
 
-            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/interface/ideas_EU4/{s}");
-            ArcDirectory.TryDelete($"{TranspileTarget}/gfx/interface/ideas_EU4/{s}");
-            File.Copy(c, $"{TranspileTarget}/gfx/interface/ideas_EU4/{s}");
+            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/interface/ideas_EU4/{file.File()}");
+            ArcDirectory.Copy(file.Relative(), $"{TranspileTarget}/gfx/interface/ideas_EU4/{file.File()}");
         }
-        foreach (string c in ArcDirectory.GetFile($"{GfxFolder}/modifiers/files.txt"))
-        {
-            string s = c.Split('\\').Last();
 
+        foreach (ArcFile file in ArcDirectory.GetFile($"{GfxFolder}/modifiers/files.txt"))
+        {
             b.Add(
                 "spriteType", "=", "{",
-                    "name", "=", $"\"GFX_modifier_{s.Split('.').First()}\"",
-                    "texturefile", "=", $"\"gfx/interface/ideas_EU4/{s}\"",
+                    "name", "=", $"\"GFX_modifier_{file.Name()}\"",
+                    "texturefile", "=", $"\"gfx/interface/ideas_EU4/{file.File()}\"",
                 "}"
             );
         }
         
 
         CreateTillFolder($"{TranspileTarget}/gfx/special");
-        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/special"))
+        foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/special"))
         {
-            string s = c.Split('\\').Last();
-
-            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/special/{s}");
-            ArcDirectory.TryDelete($"{TranspileTarget}/gfx/special/{s}");
-            File.Copy(c, $"{TranspileTarget}/gfx/special/{s}");
+            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/special/{file.File()}");
+            ArcDirectory.Copy(file.Relative(), $"{TranspileTarget}/gfx/special/{file.File()}");
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/loose");
-        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/loose"))
+        foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/loose"))
         {
-            string s = c.Split('\\').Last();
-
             b.Add(
                 "spriteType", "=", "{",
-                    "name", "=", $"\"{s.Split('.').First()}\"",
-                    "texturefile", "=", $"\"gfx/loose/{s}\"",
+                    "name", "=", $"\"{file.Name()}\"",
+                    "texturefile", "=", $"\"gfx/loose/{file.File()}\"",
                 "}"
             );
 
-            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/loose/{s}");
-            ArcDirectory.TryDelete($"{TranspileTarget}/gfx/loose/{s}");
-            File.Copy(c, $"{TranspileTarget}/gfx/loose/{s}");
+            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/loose/{file.File()}");
+            ArcDirectory.Copy(file.Relative(), $"{TranspileTarget}/gfx/loose/{file.File()}");
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/event_pictures/arc");
-        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/event_pictures"))
+        foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/event_pictures"))
         {
-            string s = c.Split('\\').Last();
-
             b.Add(
                 "spriteType", "=", "{",
-                    "name", "=", $"\"{s.Split('.').First()}\"",
-                    "texturefile", "=", $"\"gfx/event_pictures/arc/{s}\"",
+                    "name", "=", $"\"{file.Name()}\"",
+                    "texturefile", "=", $"\"gfx/event_pictures/arc/{file.File()}\"",
                 "}"
             );
 
-            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/event_pictures/arc/{s}");
-            ArcDirectory.TryDelete($"{TranspileTarget}/gfx/event_pictures/arc/{s}");
-            File.Copy(c, $"{TranspileTarget}/gfx/event_pictures/arc/{s}");
+            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/event_pictures/arc/{file.File()}");
+            ArcDirectory.Copy(file.Relative(), $"{TranspileTarget}/gfx/event_pictures/arc/{file.File()}");
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/interface/missions");
-        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/missions"))
+        foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/missions"))
         {
-            string s = c.Split('\\').Last();
-
             b.Add(
                 "spriteType", "=", "{",
-                    "name", "=", $"\"{s.Split('.').First()}\"",
-                    "texturefile", "=", $"\"gfx/interface/missions/{s}\"",
+                    "name", "=", $"\"{file.Name()}\"",
+                    "texturefile", "=", $"\"gfx/interface/missions/{file.File()}\"",
                 "}"
             );
 
-            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/interface/missions/{s}");
-            ArcDirectory.TryDelete($"{TranspileTarget}/gfx/interface/missions/{s}");
-            File.Copy(c, $"{TranspileTarget}/gfx/interface/missions/{s}");
+            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/interface/missions/{file.File()}");
+            ArcDirectory.Copy(file.Relative(), $"{TranspileTarget}/gfx/interface/missions/{file.File()}");
         }
 
         foreach (string folder in ArcDirectory.GetFolders($"{GfxFolder}/ages"))
         {
             string folderName = folder.Split('\\').Last();
             CreateTillFolder($"{TranspileTarget}/gfx/interface/ages/{folderName}");
-            foreach (string file in ArcDirectory.GetFiles(folder))
+            foreach (ArcFile file in ArcDirectory.GetFiles(folder))
             {
-                string s = file.Split('\\').Last();
+                string s = file.File();
                 string v = $"gfx/interface/ages/{folderName}/{s}";
                 b.Add(
                     "spriteType", "=", "{",
@@ -544,19 +540,18 @@ internal partial class Program
                     "}"
                 );
 
-                string oldPath = Path.GetRelativePath(directory, file);
+                string oldPath = file.Relative();
                 string newPath = $"{TranspileTarget}/{v}";
 
                 ArcDirectory.GfxVDir.Add(newPath);
-                ArcDirectory.TryDelete(newPath);
-                File.Copy(oldPath, newPath);
+                ArcDirectory.Copy(oldPath, newPath);
             }
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/interface/buildings");
-        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/buildings"))
+        foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/buildings"))
         {
-            string s = c.Split('\\').Last();
+            string s = file.File();
             string oldPath = $"{GfxFolder}/buildings/{s}";
             string newPath = $"{TranspileTarget}/gfx/interface/buildings/{s}";
 
@@ -569,14 +564,13 @@ internal partial class Program
             );
 
             ArcDirectory.GfxVDir.Add(newPath);
-            ArcDirectory.TryDelete(newPath);
-            File.Copy(oldPath, newPath);
+            ArcDirectory.Copy(oldPath, newPath);
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/interface/great_projects");
-        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/great_projects"))
+        foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/great_projects"))
         {
-            string s = c.Split('\\').Last();
+            string s = file.File();
             string oldPath = $"{GfxFolder}/great_projects/{s}";
             string newPath = $"{TranspileTarget}/gfx/interface/great_projects/{s}";
 
@@ -588,14 +582,13 @@ internal partial class Program
             );
 
             ArcDirectory.GfxVDir.Add(newPath);
-            ArcDirectory.TryDelete(newPath);
-            File.Copy(oldPath, newPath);
+            ArcDirectory.Copy(oldPath, newPath);
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/interface/privileges");
-        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/privileges"))
+        foreach (ArcFile c in ArcDirectory.GetFiles($"{GfxFolder}/privileges"))
         {
-            string s = c.Split('\\').Last();
+            string s = c.File();
             string oldPath = $"{GfxFolder}/privileges/{s}";
             string newPath = $"{TranspileTarget}/gfx/interface/privileges/{s}";
 
@@ -607,14 +600,13 @@ internal partial class Program
             );
 
             ArcDirectory.GfxVDir.Add(newPath);
-            ArcDirectory.TryDelete(newPath);
-            File.Copy(oldPath, newPath);
+            ArcDirectory.Copy(oldPath, newPath);
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/interface/holy_orders");
-        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/holy_orders"))
+        foreach (ArcFile c in ArcDirectory.GetFiles($"{GfxFolder}/holy_orders"))
         {
-            string s = c.Split('\\').Last();
+            string s = c.File();
             string oldPath = $"{GfxFolder}/holy_orders/{s}";
             string newPath = $"{TranspileTarget}/gfx/interface/holy_orders/{s}";
 
@@ -627,8 +619,7 @@ internal partial class Program
             );
 
             ArcDirectory.GfxVDir.Add(newPath);
-            ArcDirectory.TryDelete(newPath);
-            File.Copy(oldPath, newPath);
+            ArcDirectory.Copy(oldPath, newPath);
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/interface/government_reform_icons");
@@ -646,8 +637,7 @@ internal partial class Program
             );
 
             ArcDirectory.GfxVDir.Add(newPath);
-            ArcDirectory.TryDelete(newPath);
-            File.Copy(oldPath, newPath);
+            ArcDirectory.Copy(oldPath, newPath);
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/flags");
@@ -658,8 +648,7 @@ internal partial class Program
             string newPath = $"{TranspileTarget}/gfx/flags/{Country.Countries[s.Split('.')[0]].Tag}.tga";
 
             ArcDirectory.GfxVDir.Add(newPath);
-            ArcDirectory.TryDelete(newPath);
-            File.Copy(oldPath, newPath);
+            ArcDirectory.Copy(oldPath, newPath);
         }
 
         b.Add("}");
@@ -683,7 +672,7 @@ internal partial class Program
                 RFold(folder);
             }
 
-            string tfold = $"{TranspileTarget}\\{Path.GetRelativePath($"{directory}/{UnsortedFolder}", fold)}".Replace('\\', '/');
+            string tfold = $"{TranspileTarget}\\{Path.GetRelativePath($"{UnsortedFolder}", fold)}".Replace('\\', '/');
             CreateTillFolder(tfold);
             IEnumerable<string> files = ArcDirectory.GetFiles(fold);
             foreach (string file in files)
@@ -694,13 +683,12 @@ internal partial class Program
 
         return "Unsorted Files";
     }
-    static void UnsortedSingleFile(string file)
+    static void UnsortedSingleFile(ArcFile file)
     {
-        string cfile = Path.GetRelativePath(directory, file).Replace('\\', '/');
-        string tfile = $"{TranspileTarget}\\{Path.GetRelativePath($"{directory}/{UnsortedFolder}", file)}".Replace('\\', '/');
-        ArcDirectory.UnsortedVDir.Add(TranspileTarget + "/" + Path.GetRelativePath($"{directory}/{UnsortedFolder}", file).Replace('\\', '/'));
-        ArcDirectory.TryDelete(tfile);
-        File.Copy(cfile, tfile);
+        string cfile = file.Relative();
+        string tfile = $"{TranspileTarget}\\{file.Relative(UnsortedFolder)}";
+        ArcDirectory.UnsortedVDir.Add(tfile);
+        ArcDirectory.Copy(cfile, tfile);
     }
     public static string SpecialUnitTranspile()
     {
@@ -781,7 +769,7 @@ internal partial class Program
             }
         }
     }
-    public static void OverwriteFile(string path, string text, bool AllowFormatting = true, bool BOM = false, List<string>? vdirOverride = null, bool ForceFormatting = false)
+    public static void OverwriteFile(string path, string text, bool AllowFormatting = true, bool BOM = false, VDirType? vdirOverride = null, bool ForceFormatting = false)
     {
         if (vdirOverride == null) ArcDirectory.ScriptVDir.Add(path);
         else vdirOverride.Add(path);

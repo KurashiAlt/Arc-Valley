@@ -1,14 +1,30 @@
 ﻿using Pastel;
+using System.Collections;
+using System.IO;
 
 namespace Arc;
+public class VDirType : IEnumerable<string>
+{
+    List<string> files = new();
+    public void Add(string path)
+    {
+        path = path.Replace("\\", "/");
+        files.Add(path);
+    }
+    public bool Contains(string path) => files.Contains(path);
+    public IEnumerator<string> GetEnumerator() => files.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    public int Count => files.Count;
+
+}
 public static class ArcDirectory
 {
     public static string directory = AppDomain.CurrentDomain.BaseDirectory;
-    public static List<string> ScriptVDir = new();
-    public static List<string> UnsortedVDir = new();
-    public static List<string> MapVDir = new();
-    public static List<string> GfxVDir = new();
-    public static List<string> ExtraFiles = new();
+    public static VDirType ScriptVDir = new();
+    public static VDirType UnsortedVDir = new();
+    public static VDirType MapVDir = new();
+    public static VDirType GfxVDir = new();
+    public static VDirType ExtraFiles = new();
     public static void CheckFolder(string path)
     {
         if (Path.GetRelativePath(directory, path).Replace('\\', '/').StartsWith($"{Program.TranspileTarget}/.")) return;
@@ -35,6 +51,13 @@ public static class ArcDirectory
     public static void TryDelete(string path)
     {
         if (File.Exists(Path.Combine(directory, path))) File.Delete(Path.Combine(directory, path));
+    }
+    public static void Copy(string origin, string destination)
+    {
+        origin = Path.Combine(directory, origin);
+        destination = Path.Combine(directory, destination);
+
+        File.Copy(origin, destination, true);
     }
     public static void VDirPopulate(string[] args)
     {
