@@ -62,17 +62,17 @@ public class Terrain : IArcObject
 
         Terrain Terrain = new(
             args.Get(ArcString.Constructor, "name"),
-            args.GetDefault(ArcString.Constructor, "desc", new("")),
+            args.Get(ArcString.Constructor, "desc", new("")),
             args.Get(ArcCode.Constructor, "color"),
             args.Get(ArcString.Constructor, "sound_type"),
-            args.GetDefault(ArcBool.Constructor, "is_water", new(false)),
-            args.GetDefault(ArcBool.Constructor, "inland_sea", new(false)),
-            args.GetDefault(ArcString.Constructor, "type", null),
-            args.GetDefault(ArcFloat.Constructor, "movement_cost", new(1)),
-            args.GetDefault(ArcInt.Constructor, "defence", new(0)),
-            args.GetDefault(ArcModifier.Constructor, "modifier", new()),
+            args.Get(ArcBool.Constructor, "is_water", new(false)),
+            args.Get(ArcBool.Constructor, "inland_sea", new(false)),
+            args.Get(ArcString.Constructor, "type", null),
+            args.Get(ArcFloat.Constructor, "movement_cost", new(1)),
+            args.Get(ArcInt.Constructor, "defence", new(0)),
+            args.Get(ArcModifier.Constructor, "modifier", new()),
             new(id),
-            args.GetDefault(ArcInt.Constructor, "base_development", new(0))
+            args.Get(ArcInt.Constructor, "base_development", new(0))
         );
 
         Terrains.Add(id, Terrain);

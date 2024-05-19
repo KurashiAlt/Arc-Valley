@@ -348,12 +348,12 @@ public static partial class Compiler
     {
         Console.WriteLine(Parser.FormatCode(result.ToString()));
     }
-    public static void __write_file(ref Walker g, CompileType type, bool format)
+    public static void __write_file(ref Walker g, CompileType type, bool allowFormat = true, bool forceFormat = false)
     {
         g.ForceMoveNext();
         string file = GetId(g.Current);
         g = Args.GetArgs(g, out Args args);
-        Program.OverwriteFile($"{Program.TranspileTarget}/{file}", Compile(type, args.Get()), AllowFormatting: format);
+        Program.OverwriteFile($"{Program.TranspileTarget}/{file}", Compile(type, args.Get()), AllowFormatting: allowFormat, ForceFormatting: forceFormat);
     }
     public static void __delete(ref Walker g)
     {

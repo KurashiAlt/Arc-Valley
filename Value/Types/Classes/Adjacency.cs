@@ -18,10 +18,10 @@ public class Adjacency : ArcObject
         { "to", args.GetFromList(Province.Provinces, "to") },
         { "type", args.Get(ArcString.Constructor, "type") },
         { "through", args.GetFromList(Province.Provinces, "through") },
-        { "start_x", args.GetDefault(ArcInt.Constructor, "start_x", new(-1)) },
-        { "start_y", args.GetDefault(ArcInt.Constructor, "start_y", new(-1)) },
-        { "stop_x", args.GetDefault(ArcInt.Constructor, "stop_x", new(-1)) },
-        { "stop_y", args.GetDefault(ArcInt.Constructor, "stop_y", new(-1)) },
+        { "start_x", args.Get(ArcInt.Constructor, "start_x", new(-1)) },
+        { "start_y", args.Get(ArcInt.Constructor, "start_y", new(-1)) },
+        { "stop_x", args.Get(ArcInt.Constructor, "stop_x", new(-1)) },
+        { "stop_y", args.Get(ArcInt.Constructor, "stop_y", new(-1)) },
         { "comment", args.Get(ArcString.Constructor, "comment", new(id)) }
     };
     public void Transpile(ref StringBuilder sb)

@@ -39,7 +39,7 @@ public class Region : IArcObject
 			args.Get(ArcString.Constructor, "name"),
 			args.GetFromList(Superregion.Superregions, "superregion"),
 			new($"{id}_region"),
-			args.GetDefault(ArcString.Constructor, "adj", args.Get(ArcString.Constructor, "name"))
+			args.Get(ArcString.Constructor, "adj", args.Get(ArcString.Constructor, "name"))
 		);
 
 		Regions.Add(id, Region);

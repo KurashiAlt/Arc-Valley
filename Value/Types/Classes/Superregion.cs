@@ -45,7 +45,7 @@ public class Superregion : IArcObject
         Superregion Superregion = new(
             args.Get(ArcString.Constructor, "name"),
             new($"{id}_superregion"),
-            args.GetDefault(ArcString.Constructor, "adj", args.Get(ArcString.Constructor, "name"))
+            args.Get(ArcString.Constructor, "adj", args.Get(ArcString.Constructor, "name"))
         );
 
         Superregions.Add(id, Superregion);

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
@@ -75,11 +76,13 @@ public class Args
         }
         return Constructor(keyValuePairs[key]);
     }
-    public T Get<T>(Func<Block,T> Constructor, string key, T defaultValue) where T : IVariable? => GetDefault(Constructor, key, defaultValue);
-    public T GetDefault<T>(Func<Block, T> Constructor, string key, T defaultValue) where T : IVariable?
+    public T Get<T>(Func<Block,T> Constructor, string key, T defaultValue) where T : IVariable?
     {
         if (keyValuePairs == null) throw ArcException.Create(this);
-        if (keyValuePairs.ContainsKey(key)) return Constructor(keyValuePairs[key]);
+        if (keyValuePairs.TryGetValue(key, out Block? value))
+        {
+            return Constructor(value);
+        }
         return defaultValue;
     }
     public LazyPointer<T> GetLazyFromList<T>(Dict<T> List, string key) where T : IVariable

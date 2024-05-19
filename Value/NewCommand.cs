@@ -1,4 +1,5 @@
 ﻿using Arc;
+using System;
 using System.Numerics;
 
 public class ArgList : IArcObject, IArcNumber
@@ -136,7 +137,6 @@ public class ArcType : IValue
         { "event", new(Event.Events.Get) },
         { "incident", new(Incident.Incidents.Get) },
         { "unit", new(Unit.Units.Get) },
-        //{ "mercenary_company", new(MercenaryCompany.Companies.Get) },
         { "advisor", new(Advisor.Advisors.Get) },
         { "age", new(Age.Ages.Get) },
         { "decision", new(Decision.Decisions.Get) },
@@ -169,6 +169,11 @@ public class ArcType : IValue
             if (!c.ProvinceEvent.Value) throw ArcException.Create(b, id, $"{id} is not a country_event");
             return c;
         }) },
+        { "ui_node", new((Block b) => {
+            string id = Compiler.GetId(b.ToString());
+            InterfaceNode c = Compiler.GetVariable<InterfaceNode>(new(id, b.ToWord()));
+            return c;
+        }) }
     };
     public void Set(Block b) => throw new NotImplementedException();
     public Func<Block, IVariable> ThisConstructor { get; set; }

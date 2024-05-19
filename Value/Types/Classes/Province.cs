@@ -76,7 +76,7 @@ public class Province : IArcObject
         string id = Compiler.GetId(i.Current);
 
         i = Args.GetArgs(i, out Args args);
-        ArcBool isSea = args.GetDefault(ArcBool.Constructor, "sea", new(false));
+        ArcBool isSea = args.Get(ArcBool.Constructor, "sea", new(false));
         Terrain? terrain = args.GetFromListNullable(Terrain.Terrains, "terrain");
         if (terrain == null && isSea) terrain = Terrain.Terrains["ocean"];
         else terrain ??= Terrain.Terrains["grasslands"];
@@ -85,11 +85,11 @@ public class Province : IArcObject
             args.Get(ArcCode.Constructor, "color"),
             args.Get(ArcEffect.Constructor, "history"),
             isSea,
-            args.GetDefault(ArcBool.Constructor, "lake", new(false)),
-            args.GetDefault(ArcBool.Constructor, "impassible", new(false)),
+            args.Get(ArcBool.Constructor, "lake", new(false)),
+            args.Get(ArcBool.Constructor, "impassible", new(false)),
             args.GetFromListNullable(Area.Areas, "area"),
             terrain,
-            args.GetDefault(ArcInt.Constructor, "base_development", new ArcInt(terrain.BaseDevelopment.Value)),
+            args.Get(ArcInt.Constructor, "base_development", new ArcInt(terrain.BaseDevelopment.Value)),
             args.Get(ArcCode.Constructor, "position"),
             args.Get(ArcCode.Constructor, "rotation"),
             args.Get(ArcCode.Constructor, "height")
@@ -206,8 +206,8 @@ severe_monsoon = {{
 
 equator_y_on_province_image = 224");
         Program.OverwriteFile($"{Program.TranspileTarget}/map/default.map", $@"
-width = 4096
-height = 2816
+width = {Compiler.global.Get("MAP_WIDTH")}
+height = {Compiler.global.Get("MAP_HEIGHT")}
 
 max_provinces = {Provinces.Count + 1}
 sea_starts = {{ 

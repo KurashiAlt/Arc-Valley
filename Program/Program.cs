@@ -28,6 +28,12 @@ internal partial class Program
     {
         CultureInfo.CurrentCulture = CultureInfo.CreateSpecificCulture("en");
 
+        //if (args.Length > 0 && Path.Exists(args[0]))
+        //{
+        //    directory = args[0];
+        //    if (!directory.EndsWith('\\')) directory += "\\";
+        //}
+
         Args arcDefines = Args.GetArgsFromFile(Path.Combine(directory, "arc.defines"));
         headers = arcDefines.Get(ArcString.Constructor, "headers").Value;
         UnsortedFolder = arcDefines.Get(ArcString.Constructor, "unsorted_target").Value;
@@ -53,15 +59,7 @@ internal partial class Program
         ) {
             Console.WriteLine("One of the virtual directory caches was missing, arguments have been edited to transpile all");
             Array.Resize(ref args, args.Length + 1);
-            args[args.Length - 1] = "all";
-        }
-
-        if (Debugger.IsAttached)
-        {
-            args = new string[]
-            {
-                "format", "test", "script"
-            };
+            args[^1] = "all";
         }
 
         Format = args.Contains("format");
@@ -783,7 +781,7 @@ internal partial class Program
             }
         }
     }
-    public static void OverwriteFile(string path, string text, bool AllowFormatting = true, bool BOM = false, List<string>? vdirOverride = null)
+    public static void OverwriteFile(string path, string text, bool AllowFormatting = true, bool BOM = false, List<string>? vdirOverride = null, bool ForceFormatting = false)
     {
         if (vdirOverride == null) ArcDirectory.ScriptVDir.Add(path);
         else vdirOverride.Add(path);
@@ -808,6 +806,7 @@ internal partial class Program
         try
         {
             if (AllowFormatting && Format) text = Parser.FormatCode(text);
+            else if (ForceFormatting) text = Parser.FormatCode(text);
         }
         catch (Exception)
         {
@@ -866,46 +865,6 @@ internal partial class Program
         }
         OverwriteFile($"{TranspileTarget}/localisation/replace/z_arc_valley_l_english.yml", sb.ToString(), false, true);
         return "Localisations";
-    }
-    private static string TranspileOnActions()
-    {
-        Dict<ArcEffect> OnActions = (Dict<ArcEffect>)Compiler.global["on_actions"];
-
-        Block BiYearlyEvents = ((ArcBlock)Compiler.global["bi_yearly_events"]).Value;
-
-        int BiYearlySum = 0;
-
-        int? weight = null;
-        foreach (Word w in BiYearlyEvents)
-        {
-            if (w == "=") continue;
-
-            if (weight == null)
-            {
-                weight = int.Parse(w);
-                continue;
-            }
-            else
-            {
-                if (!Event.Events.CanGet(w)) Console.WriteLine($"bi_yearly_events: {w} does not exist".Pastel(ConsoleColor.Magenta));
-                BiYearlySum += (int)weight;
-                weight = null;
-                continue;
-            }
-        }
-
-        BiYearlyEvents.Add(BiYearlySum / 10, "=", "0");
-
-        ArcEffect OnBiYearlyPulse = OnActions["on_bi_yearly_pulse"];
-
-        OnBiYearlyPulse.Compiled += $"random_events = {{ {BiYearlyEvents} }}";
-
-        foreach (KeyValuePair<string, ArcEffect> OnAction in OnActions)
-        {
-            string s = $"{OnAction.Key} = {{ {OnAction.Value.Compile()}}} ";
-            OverwriteFile($"{TranspileTarget}/common/on_actions/{OnAction.Key}.txt", s);
-        }
-        return "On Actions";
     }
     public static void LoadTarget(string path)
     {

@@ -77,6 +77,7 @@ public class Dict<Type> : IArcObject, ArcEnumerable, IEnumerable<KeyValuePair<st
     {
         if (indexer == "first") return Kvps.Values.First().Value;
         if (indexer == "last") return Kvps.Values.Last().Value;
+        if (indexer == "count") return new ArcInt(Kvps.Count);
         return Kvps[indexer].Value;
     }
     public virtual T Get<T>(string indexer)
@@ -94,7 +95,11 @@ public class Dict<Type> : IArcObject, ArcEnumerable, IEnumerable<KeyValuePair<st
         else if (v is T c) return c;
         else throw ArcException.Create($"{indexer} is of wrong type", v);
     }
-    public virtual bool CanGet(string indexer) => Kvps.ContainsKey(indexer);
+    public virtual bool CanGet(string indexer)
+    {
+        if (indexer == "count") return true;
+        return Kvps.ContainsKey(indexer);
+    }
     public Type this[string indexer]
     {
         get { return Kvps[indexer].Value; }

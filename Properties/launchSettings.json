@@ -2,7 +2,7 @@
   "profiles": {
     "Arc-Valley": {
       "commandName": "Project",
-      "commandLineArgs": "all",
+      "commandLineArgs": "\"E:/Ohjelmat/Arc-Valley/bin/Test/net7.0\" script format",
       "hotReloadEnabled": false
     }
   }

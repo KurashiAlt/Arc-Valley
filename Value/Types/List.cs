@@ -202,6 +202,7 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
     }
     public virtual IVariable? Get(string indexer)
     {
+        if (indexer == "count") return new ArcInt(Values.Count);
         if(int.TryParse(indexer, out int res))
         {
             res -= 1;
@@ -212,6 +213,7 @@ public class ArcList<T> : IArcObject, IEnumerable, ArcEnumerable where T : IVari
 
     public virtual bool CanGet(string indexer)
     {
+        if (indexer == "count") return true;
         if (int.TryParse(indexer, out int res))
         {
             res -= 1;

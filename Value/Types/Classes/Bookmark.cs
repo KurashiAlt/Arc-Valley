@@ -56,10 +56,10 @@ public class Bookmark : IArcObject
             args.Get(ArcString.Constructor, "desc"),
             args.Get(ArcString.Constructor, "date"),
             args.GetFromList(Province.Provinces, "center"),
-            args.GetDefault((Block s) => new ArcList<Country>(s, Country.Countries), "countries", new()),
-            args.GetDefault((Block s) => new ArcList<Country>(s, Country.Countries), "easy_countries", new()),
-            args.GetDefault(ArcBool.Constructor, "default", new(false)),
-            args.GetDefault(ArcEffect.Constructor, "effect", new())
+            args.Get((Block s) => new ArcList<Country>(s, Country.Countries), "countries", new()),
+            args.Get((Block s) => new ArcList<Country>(s, Country.Countries), "easy_countries", new()),
+            args.Get(ArcBool.Constructor, "default", new(false)),
+            args.Get(ArcEffect.Constructor, "effect", new())
         );
 
         Bookmarks.Add(id, bookmark);

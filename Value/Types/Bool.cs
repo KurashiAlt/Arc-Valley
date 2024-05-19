@@ -1,5 +1,5 @@
 ﻿namespace Arc;
-public class ArcBool : IValue
+public class ArcBool : IValue, IArcNumber
 {
     public bool Value { get; set; }
 
@@ -96,4 +96,6 @@ public class ArcBool : IValue
         else result.Add(ToString());
         return i;
     }
+
+    public double GetNum() => Value ? 1 : 0;
 }
