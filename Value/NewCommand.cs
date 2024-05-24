@@ -321,9 +321,11 @@ public class NewCommand : ArcObject
         else a = QFromArgs(args, this);
 
         ArgList.Add("args", a);
+        Compiler.CompileRightAway++;
 
         Get<ArcBlock>("transpile").Compile(ref result);
 
+        Compiler.CompileRightAway--;
         ArgList.Drop("args");
     }
     public override Walker Call(Walker i, ref Block result)

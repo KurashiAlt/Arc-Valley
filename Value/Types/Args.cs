@@ -66,14 +66,18 @@ public class Args
     {
         if (keyValuePairs == null) throw ArcException.Create($"Non object type arguments; Trying to get: {key}", key, this);
         if (!keyValuePairs.ContainsKey(key)) throw ArcException.Create($"Arguments do not include {key}", key, this);
-        if (Compiler.TryGetVariable(keyValuePairs[key].ToWord(), out var value))
+        try
         {
-            if(value is T @val) return @val;
-            else if (value is ArgList aList)
+            if (Compiler.TryGetVariable(keyValuePairs[key].ToWord(), out var value))
             {
-                if (aList.list.First.Value is IVariable v && v is T @val2) return @val2;
+                if(value is T @val) return @val;
+                else if (value is ArgList aList)
+                {
+                    if (aList.list.First.Value is IVariable v && v is T @val2) return @val2;
+                }
             }
         }
+        catch(Exception) { }
         return Constructor(keyValuePairs[key]);
     }
     public T Get<T>(Func<Block,T> Constructor, string key, T defaultValue) where T : IVariable?

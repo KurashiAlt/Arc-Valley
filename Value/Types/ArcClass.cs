@@ -49,6 +49,7 @@ public class ArcClass : ArcObject
     public Func<string, IVariable> Define;
     public Func<Args, string, IVariable> Init;
     public ArcCode OnCreate;
+    public ArcCode OnCreateWithCompile;
     public Dict<IVariable> List;
     public void InitSimpleTranspiles(Args args)
     {
@@ -90,6 +91,7 @@ public class ArcClass : ArcObject
             if (pair.Key == "args") continue;
             if (pair.Key == "default") continue;
             if (pair.Key == "on_create") continue;
+            if (pair.Key == "on_create_with_compile") continue;
             if (pair.Key == "simple_transpile") continue;
             functions.Add(pair.Key, new NewCommand(pair.Key, Args.GetArgs(pair.Value), CompileType.Block));
         }
@@ -97,6 +99,7 @@ public class ArcClass : ArcObject
         InitSimpleTranspiles(args);
 
         OnCreate = args.Get(ArcCode.NamelessConstructor, "on_create", new() { ShouldBeCompiled = false });
+        OnCreateWithCompile = args.Get(ArcCode.NamelessConstructor, "on_create_with_compile", new() { ShouldBeCompiled = false });
         Define = (string s) =>
         {
             ArcNull n = new();
@@ -127,6 +130,10 @@ public class ArcClass : ArcObject
             ArgList.Add("this", v);
 
             OnCreate.Compile();
+
+            Compiler.CompileRightAway++;
+            OnCreateWithCompile.Compile();
+            Compiler.CompileRightAway--;
 
             ArgList.Drop("this");
             return v;
