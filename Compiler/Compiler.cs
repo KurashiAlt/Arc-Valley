@@ -632,7 +632,7 @@ public static partial class Compiler
         }
         else Console.WriteLine($"{g.Current.GetFile()} line {g.Current.File}: {value}");
     }
-    public static void __dot_scoping(ref Walker g, ref Block result)
+    public static void __dot_scoping(ref Walker g, ref Block result, CompileType type, ArcObject? bound)
     {
         string left = g.Current;
         g.ForceMoveNext();
@@ -647,9 +647,11 @@ public static partial class Compiler
             result.Add(scopes[i], "=", "{");
         }
 
-        result.Add(scopes[^1]);
-        result.Add(Operator);
-        result.Add(Value);
+        Block scope = new(scopes[^1]);
+        scope.Add(Operator);
+        scope.Add(Value);
+
+        result.Add(Compile(type, scope, bound));
 
         for (int i = 0; i < scopes.Length - 1; i++)
         {
