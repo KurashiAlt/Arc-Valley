@@ -66,6 +66,7 @@ public static partial class Compiler
         { "custom_buttons", CustomButton.CustomButtons },
         { "custom_icons", CustomIcon.CustomIcons },
         { "interface_files", InterfaceNode.Files },
+        { "diplomatic_actions", DiplomaticAction.DiplomaticActions },
         { "units", Unit.Units },
         { "defines", new ArcObject() },
         { "default_reform", new ArcCode() },
@@ -291,6 +292,14 @@ public static partial class Compiler
                 g = Declare(g);
                 continue;
             }
+            else if (g.Current == "force_compile")
+            {
+                g = Args.GetArgs(g, out Args args);
+                if (args.block == null) throw ArcException.Create("Unknown Error: Null Reference", g, args);
+                ArcBlock block = GetVariable<ArcBlock>(args.block.ToWord());
+                block.Compile();
+                continue;
+            }
             else if (g.Current == "run_effect")
             {
                 g = Args.GetArgs(g, out Args args);
@@ -362,6 +371,23 @@ public static partial class Compiler
 
         ArcString key = ArcString.Constructor(args.block);
         global.Delete(key.Value);
+    }
+    public static bool __return_if(ref Walker g, ref Block result, CompileType type, ArcObject? bound)
+    {
+        g.ForceMoveNext();
+        g.Asssert("=");
+        g.ForceMoveNext();
+        string trigger = g.Current.Value[1..^1];
+        string file = g.Current.GetFile();
+
+        return WhenInterpret(trigger);
+
+        bool WhenInterpret(string trigger)
+        {
+            Block b = Parser.ParseCode(trigger, file);
+            if (Parser.HasEnclosingBrackets(b)) b = RemoveEnclosingBrackets(b);
+            return When(b);
+        }
     }
     public static void __when(ref Walker g, ref Block result, CompileType type, ArcObject? bound, bool previous = false)
     {
@@ -608,7 +634,7 @@ public static partial class Compiler
     }
     public static void __variable(ref Walker g, ref Block result)
     {
-        string left = g.Current.Value[1..];
+        string left = GetId(g.Current.Value[1..]);
         if (!VariableExists(left)) Console.WriteLine(ArcException.CreateMessage($"Variable Definition not found for {left}", g));
 
         g.ForceMoveNext();
@@ -635,6 +661,19 @@ public static partial class Compiler
 
         void VariableOperator(string command, ref Block result, bool Invert = false, bool CheckOrEqual = false, bool CheckNotEqual = false, bool BothAreValue = false)
         {
+            if (args.keyValuePairs != null)
+            {
+                result.Add(command, "=", "{");
+                result.Add("which", "=", left);
+                foreach (var keyValuePair in args.keyValuePairs)
+                {
+                    result.Add(keyValuePair.Key, "=", Compile(CompileType.Effect, keyValuePair.Value));
+                }
+                result.Add("}");
+
+                return;
+            }
+
             if (CheckNotEqual) result.Add("AND", "=", "{");
             if (CheckOrEqual) result.Add("OR", "=", "{");
             if (Invert) result.Add("NOT", "=", "{");
@@ -667,14 +706,14 @@ public static partial class Compiler
                 result.Add(
                     command, "=", "{",
                         "which", "=", left,
-                        BothAreValue ? "value" : "which", "=", args.block,
+                        BothAreValue ? "value" : "which", "=", new ArcString(args.block),
                     "}"
                 );
                 if (CheckNotEqual) result.Add(
                     "NOT", "=", "{",
                         "is_variable_equal", "=", "{",
                             "which", "=", left,
-                            "which", "=", args.block,
+                            "which", "=", new ArcString(args.block),
                         "}",
                     "}"
                 );
@@ -682,7 +721,7 @@ public static partial class Compiler
                 if (CheckOrEqual) result.Add(
                     "is_variable_equal", "=", "{",
                         "which", "=", left,
-                        "which", "=", args.block,
+                        "which", "=", new ArcString(args.block),
                     "}"
                 );
                 if (!VariableExists(left)) Console.WriteLine(ArcException.CreateMessage($"Variable Definition not found for {left}", left, Operator, args, command, result));

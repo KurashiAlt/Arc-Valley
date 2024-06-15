@@ -3,19 +3,8 @@ public partial class Compiler
 {
     public static Walker GetScope(Walker i, out Block scope)
     {
-        scope = new();
+        scope = i.GetScope();
 
-        int indent = 0;
-        do
-        {
-            if (Parser.open.IsMatch(i.Current))
-                indent++;
-            if (Parser.close.IsMatch(i.Current))
-                indent--;
-            scope.AddLast(i.Current);
-            if (indent > 0)
-                i.MoveNext();
-        } while (indent > 0);
         return i;
     }
     public static bool TryTrimOne(string value, char s, out string? newValue)

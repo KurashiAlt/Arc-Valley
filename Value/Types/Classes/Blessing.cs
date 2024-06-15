@@ -7,8 +7,6 @@ namespace Arc;
 public class Blessing : IArcObject
 {
     public static readonly Dict<Blessing> Blessings = new();
-    public bool IsObject() => true;
-    public string Class => "Blessing";
     public ArcString Name { get; set; }
     public ArcString Desc { get; set; }
     public ArcTrigger Potential { get; set; }
@@ -16,7 +14,7 @@ public class Blessing : IArcObject
     public ArcEffect Effect { get; set; }
     public ArcCode AiWillDo { get; set; }
     public ArcString Id { get; set; }
-    public Dict<IValue> KeyValuePairs { get; set; }
+    public Dict<IVariable?> KeyValuePairs { get; set; }
     public Blessing(ArcString name, ArcString desc, ArcTrigger potential, ArcModifier modifier, ArcEffect effect, ArcCode aiWillDo, ArcString id)
     {
         Name = name;
@@ -26,7 +24,7 @@ public class Blessing : IArcObject
         Effect = effect;
         AiWillDo = aiWillDo;
         Id = id;
-        KeyValuePairs = new Dict<IValue>()
+        KeyValuePairs = new Dict<IVariable?>()
         {
             { "name", Name },
             { "desc", Desc },

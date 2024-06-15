@@ -9,6 +9,8 @@ public static partial class TranspilerClass
 {
     public static string TranspileCustomTextBoxes()
     {
+        if (!Compiler.global.CanGet("custom_text_boxes")) return "";
+
         Block b = new();
         foreach (ArcObject obj in Compiler.GetVariable<Dict<IVariable>>(new Word("custom_text_boxes")).Values())
         {

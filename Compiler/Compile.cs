@@ -28,6 +28,8 @@ public static partial class Compiler
             else if (g == "write_unformatted_file") __write_file(ref g, type, allowFormat: false);
             else if (g == "write_formatted_file") __write_file(ref g, type, forceFormat: true);
             else if (g == "delete") __delete(ref g);
+            else if (g == "return") break;
+            else if (g == "return_if") { if (__return_if(ref g, ref result, type, bound)) break; }
             else if (g == "when") __when(ref g, ref result, type, bound);
             else if (g == "modifier_to_string") __modifier_to_string(ref g, ref result);
             else if (g == "id_to_name") __id_to_name(ref g, ref result);
@@ -60,7 +62,7 @@ public static partial class Compiler
             //None
             else result.Add(g.Current);
         } while (g.MoveNext());
-
+        exit:
         result.RemoveEnclosingBlock();
 
         return result.ToString();

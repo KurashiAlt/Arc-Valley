@@ -108,14 +108,36 @@ public class Walker
         int indent = 0;
         do
         {
+            if (indent < 1 && Current.EndsWith(','))
+            {
+                do
+                {
+                    Current.Value = Current.Value[..^1];
+                    scope.AddLast(Current);
+
+                    MoveNext();
+
+                    if (Current.EndsWith(',')) continue;
+
+                    scope.AddLast(Current);
+                    break;
+                } while (true);
+
+                break;
+            }
+
             if (Parser.open.IsMatch(Current))
                 indent++;
             if (Parser.close.IsMatch(Current))
                 indent--;
+
             scope.AddLast(Current);
+
             if (indent > 0)
                 MoveNext();
-        } while (indent > 0);
+            else
+                break;
+        } while (true);
         return scope;
     }
     public Walker(Block code)

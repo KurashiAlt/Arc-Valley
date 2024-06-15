@@ -22,6 +22,7 @@ internal partial class Program
     public static string SelectorFolder;
     public static IEnumerable<string> LoadOrder;
     public static string[] PartialMod;
+    public static bool OnlyCustomTranspilers;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     public static List<string> warnings = new();
     public static bool Format = false;
@@ -45,6 +46,7 @@ internal partial class Program
         SelectorFolder = arcDefines.Get(ArcString.Constructor, "selector_folder").Value;
         LoadOrder = from c in arcDefines.Get(ArcCode.Constructor, "load_order").Value select new string(c.Value);
         PartialMod = (from a in arcDefines.Get(ArcCode.Constructor, "partial_mod", new()).Value select a.Value).ToArray();
+        OnlyCustomTranspilers = arcDefines.Get(ArcBool.Constructor, "only_custom_transpilers", new(false)).Value;
 
         if (args.Length == 0)
         {
@@ -259,6 +261,7 @@ internal partial class Program
         foreach ((string, string, Func<string>) transpiler in Transpilers)
         {
             if (!(args.Contains(transpiler.Item1) || transpiler.Item1 == "" || args.Contains("all"))) continue;
+            if (OnlyCustomTranspilers && transpiler.Item3 != Transpiler.TranspileSimples) continue;
 
             TimeSpan start = timer.Elapsed;
             string type = transpiler.Item3();
@@ -327,6 +330,8 @@ internal partial class Program
     }
     static string TechnologyGroups()
     {
+        if (!Compiler.global.CanGet("technology_groups")) return "";
+
         Block b = new("groups", "=", "{");
         foreach (ArcObject obj in Compiler.GetVariable<Dict<IVariable>>(new Word("technology_groups")).Values())
         {
@@ -356,6 +361,8 @@ internal partial class Program
     }
     static string NavalDoctrines()
     {
+        if (!Compiler.global.CanGet("naval_doctrines")) return "";
+
         Block b = new();
         foreach (ArcObject obj in Compiler.GetVariable<Dict<IVariable>>(new Word("naval_doctrines")).Values())
         {

@@ -48,7 +48,7 @@ public class ArcClass : ArcObject
     public static Dict<ArcClass> Classes = new();
     public Func<string, IVariable> Define;
     public Func<Args, string, IVariable> Init;
-    public ArcCode OnCreate;
+    public ArcEffect OnCreate;
     public ArcCode OnCreateWithCompile;
     public Dict<IVariable> List;
     public void InitSimpleTranspiles(Args args)
@@ -98,7 +98,7 @@ public class ArcClass : ArcObject
 
         InitSimpleTranspiles(args);
 
-        OnCreate = args.Get(ArcCode.NamelessConstructor, "on_create", new() { ShouldBeCompiled = false });
+        OnCreate = args.Get(ArcEffect.NamelessConstructor, "on_create", new() { ShouldBeCompiled = false });
         OnCreateWithCompile = args.Get(ArcCode.NamelessConstructor, "on_create_with_compile", new() { ShouldBeCompiled = false });
         Define = (string s) =>
         {

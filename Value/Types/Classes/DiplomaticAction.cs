@@ -96,18 +96,18 @@ public class DiplomaticAction : IArcObject
     public static DiplomaticAction Constructor(string id, Args args) => new(id,
         args.Get(ArcString.Constructor, "name"),
         args.Get(ArcString.Constructor, "title"),
-        args.Get(ArcString.Constructor, "desc"),
-        args.Get(ArcString.Constructor, "tooltip"),
+        args.Get(ArcString.Constructor, "desc", new("")),
+        args.Get(ArcString.Constructor, "tooltip", new("")),
         args.Get(ArcString.Constructor, "category"),
         args.Get(ArcInt.Constructor, "alert_index", null),
         args.Get(ArcString.Constructor, "alert_tooltip", null),
-        args.Get(ArcBool.Constructor, "require_acceptance"),
-        args.Get(ArcTrigger.Constructor, "potential"),
-        args.Get(ArcTrigger.Constructor, "trigger"),
-        args.Get(ArcEffect.Constructor, "on_accept"),
+        args.Get(ArcBool.Constructor, "require_acceptance", new(false)),
+        args.Get(ArcTrigger.Constructor, "potential", new()),
+        args.Get(ArcTrigger.Constructor, "trigger", new()),
+        args.Get(ArcEffect.Constructor, "on_accept", new()),
         args.Get(ArcEffect.Constructor, "on_decline", null),
         args.Get(ArcCode.Constructor, "ai_acceptance", null),
-        args.Get(ArcCode.Constructor, "ai_will_do")
+        args.Get(ArcCode.Constructor, "ai_will_do", new())
     );
     public void Transpile(ref Block b)
     {

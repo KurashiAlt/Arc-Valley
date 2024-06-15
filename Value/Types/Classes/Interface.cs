@@ -79,6 +79,8 @@ public class InterfaceNode : IArcObject
         {
             return children.Count > i;
         }
+        if (indexer == "first") return true;
+        if (indexer == "last") return true;
         foreach (InterfaceNode child in children)
         {
             string name = GetName(child);
@@ -102,6 +104,8 @@ public class InterfaceNode : IArcObject
         {
             return children[i];
         }
+        if (indexer == "first") return children[0];
+        if (indexer == "last") return children[^1];
         foreach (InterfaceNode child in children)
         {
             string name = GetName(child);
