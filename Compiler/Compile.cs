@@ -41,6 +41,7 @@ public static partial class Compiler
             else if (g == "else") __else(ref g, ref result);
             else if (g == "arc_throw") __arc_throw(ref g, type, bound);
             else if (g == "arc_log") __arc_log(ref g, type, bound);
+            else if (g.Contains("->")) __dot_scoping(ref g, ref result);
             else if (g.StartsWith('&')) __variable(ref g, ref result);
             else if (g.EndsWith(',') || g.EndsWith(';')) __multi_scope(ref g, ref result, type, bound);
             else if (TranspiledString(g.Current, '`', out string? newValue, type, bound, g.Current.GetFile()) && newValue != null) result.Add(newValue);

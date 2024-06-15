@@ -95,6 +95,8 @@ public class Walker
     private LinkedListNode<Word> node;
     public static implicit operator string(Walker w) => w.Current;
     public static implicit operator Word(Walker w) => w.Current;
+    public bool Contains(string w) => Current.Contains(w);
+    public bool Contains(char w) => Current.Contains(w);
     public bool StartsWith(string w) => Current.StartsWith(w);
     public bool StartsWith(char w) => Current.StartsWith(w);
     public bool EndsWith(string w) => Current.EndsWith(w);

@@ -632,6 +632,30 @@ public static partial class Compiler
         }
         else Console.WriteLine($"{g.Current.GetFile()} line {g.Current.File}: {value}");
     }
+    public static void __dot_scoping(ref Walker g, ref Block result)
+    {
+        string left = g.Current;
+        g.ForceMoveNext();
+        Block Operator = g.GetScope();
+        g.ForceMoveNext();
+        Block Value = g.GetScope();
+
+        string[] scopes = left.Split("->");
+        
+        for (int i = 0; i < scopes.Length - 1; i++)
+        {
+            result.Add(scopes[i], "=", "{");
+        }
+
+        result.Add(scopes[^1]);
+        result.Add(Operator);
+        result.Add(Value);
+
+        for (int i = 0; i < scopes.Length - 1; i++)
+        {
+            result.Add("}");
+        }
+    }
     public static void __variable(ref Walker g, ref Block result)
     {
         string left = GetId(g.Current.Value[1..]);

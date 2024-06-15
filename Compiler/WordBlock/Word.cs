@@ -8,6 +8,8 @@ public class Word
     {
         "unknown"
     };
+    public bool Contains(char text) => Value.Contains(text);
+    public bool Contains(string text) => Value.Contains(text);
     public bool StartsWith(char text) => Value.StartsWith(text);
     public bool StartsWith(string text) => Value.StartsWith(text);
     public bool EndsWith(char text) => Value.EndsWith(text);
