@@ -479,7 +479,7 @@ internal partial class Program
                     "}"
                 );
 
-                ArcDirectory.GfxVDir.Add($"{TranspileTarget}/{gfxFolder.Get("target")}/{file.Relative($"{GfxFolder}/{gfxFolder.Get("id")}")}");
+                ArcDirectory.ScriptVDir.Add($"{TranspileTarget}/{gfxFolder.Get("target")}/{file.Relative($"{GfxFolder}/{gfxFolder.Get("id")}")}");
                 ArcDirectory.Copy(file.Relative(), $"{TranspileTarget}/{gfxFolder.Get("target")}/{file.Relative($"{GfxFolder}/{gfxFolder.Get("id")}")}");
 
                 ArgList.Drop("this");

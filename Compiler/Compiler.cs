@@ -634,22 +634,24 @@ public static partial class Compiler
     }
     public static void __dot_scoping(ref Walker g, ref Block result, CompileType type, ArcObject? bound)
     {
-        string left = g.Current;
+        Word left = g.Current;
         g.ForceMoveNext();
         Block Operator = g.GetScope();
         g.ForceMoveNext();
         Block Value = g.GetScope();
 
-        string[] scopes = left.Split("->");
+        string[] scopes = left.Value.Split("->");
         
         for (int i = 0; i < scopes.Length - 1; i++)
         {
-            result.Add(scopes[i], "=", "{");
+            result.Add(Compile(type, new(scopes[i]), bound), "=", "{");
         }
 
-        Block scope = new(scopes[^1]);
-        scope.Add(Operator);
-        scope.Add(Value);
+        Block scope = new(scopes[^1])
+        {
+            Operator,
+            Value
+        };
 
         result.Add(Compile(type, scope, bound));
 
