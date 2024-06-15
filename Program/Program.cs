@@ -253,7 +253,7 @@ internal partial class Program
         ("script", "", TechnologyGroups),
         ("script", "", TranspileDefines),
         ("script", "", TranspileLocalisations),
-        ("gfx", "", Gfx),
+        ("script", "", GfxFolders),
         ("map", "", Map),
         ("unsorted", "", Unsorted),
     };
@@ -447,205 +447,63 @@ internal partial class Program
     class ArcFile
     {
         string FullFileName;
-        public string File() => Path.GetFileName(FullFileName);
-        public string Name() => Path.GetFileNameWithoutExtension(FullFileName);
-        public string Relative() => Path.GetRelativePath(directory, FullFileName);
-        public string Relative(string s) => Path.GetRelativePath(Path.Combine(directory, s), FullFileName);
-        public string Extension() => Path.GetExtension(FullFileName);
+        public string File() => Path.GetFileName(FullFileName).Replace('\\', '/');
+        public string Name() => Path.GetFileNameWithoutExtension(FullFileName).Replace('\\', '/');
+        public string Relative() => Path.GetRelativePath(directory, FullFileName).Replace('\\', '/');
+        public string Relative(string s) => Path.GetRelativePath(Path.Combine(directory, s), FullFileName).Replace('\\', '/');
+        public string Extension() => Path.GetExtension(FullFileName).Replace('\\', '/');
         public ArcFile(string fullFileName) { FullFileName = fullFileName; }
         public static implicit operator ArcFile(string s) => new(s);
     }
-    static string Gfx()
+    static string GfxFolders()
     {
         Block b = new("spriteTypes", "=", "{");
 
-        CreateTillFolder($"{TranspileTarget}/gfx/interface/ideas_EU4");
-        foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/modifiers"))
+        foreach (ArcObject gfxFolder in Compiler.GetVariable<Dict<IVariable>>(new("gfx_folders")).Values())
         {
-            b.Add(
-                "spriteType", "=", "{",
-                    "name", "=", $"\"GFX_modifier_{file.Name()}\"",
-                    "texturefile", "=", $"\"gfx/interface/ideas_EU4/{file.File()}\"",
-                "}"
-            );
+            CreateTillFolder($"{TranspileTarget}/{gfxFolder.Get("target")}");
 
-            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/interface/ideas_EU4/{file.File()}");
-            ArcDirectory.Copy(file.Relative(), $"{TranspileTarget}/gfx/interface/ideas_EU4/{file.File()}");
-        }
+            foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/{gfxFolder.Get("id")}", gfxFolder.Get<ArcBool>("include_sub").Value))
+            {
+                if (file.Extension() != $".{gfxFolder.Get("restrict_type")}") continue;
 
-        foreach (ArcFile file in ArcDirectory.GetFile($"{GfxFolder}/modifiers/files.txt"))
-        {
-            b.Add(
-                "spriteType", "=", "{",
-                    "name", "=", $"\"GFX_modifier_{file.Name()}\"",
-                    "texturefile", "=", $"\"gfx/interface/ideas_EU4/{file.File()}\"",
-                "}"
-            );
+                ArgList.Add("this", new ArcString(file.Name()));
+
+                b.Add(
+                    "spriteType", "=", "{",
+                        "name", "=", $"\"{gfxFolder.Get<ArcBlock>("name").Compile()}\"",
+                        "texturefile", "=", $"\"{gfxFolder.Get("target")}/{
+                            Path.ChangeExtension(file.Relative($"{GfxFolder}/{gfxFolder.Get("id")}"), gfxFolder.Get("treat_type").ToString())
+                        }\"",
+                        gfxFolder.Get<ArcBlock>("type_info").Compile(),
+                    "}"
+                );
+
+                ArcDirectory.GfxVDir.Add($"{TranspileTarget}/{gfxFolder.Get("target")}/{file.Relative($"{GfxFolder}/{gfxFolder.Get("id")}")}");
+                ArcDirectory.Copy(file.Relative(), $"{TranspileTarget}/{gfxFolder.Get("target")}/{file.Relative($"{GfxFolder}/{gfxFolder.Get("id")}")}");
+
+                ArgList.Drop("this");
+            }
+
+            if (gfxFolder.Get("id").ToString() == "modifiers")
+            {
+                foreach (ArcFile file in ArcDirectory.GetFile($"{GfxFolder}/modifiers/files.txt"))
+                {
+                    b.Add(
+                        "spriteType", "=", "{",
+                            "name", "=", $"\"GFX_modifier_{file.Name()}\"",
+                            "texturefile", "=", $"\"gfx/interface/ideas_EU4/{file.File()}\"",
+                        "}"
+                    );
+                }
+            }
         }
-        
 
         CreateTillFolder($"{TranspileTarget}/gfx/special");
         foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/special"))
         {
             ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/special/{file.File()}");
             ArcDirectory.Copy(file.Relative(), $"{TranspileTarget}/gfx/special/{file.File()}");
-        }
-
-        CreateTillFolder($"{TranspileTarget}/gfx/loose");
-        foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/loose"))
-        {
-            b.Add(
-                "spriteType", "=", "{",
-                    "name", "=", $"\"{file.Name()}\"",
-                    "texturefile", "=", $"\"gfx/loose/{file.File()}\"",
-                "}"
-            );
-
-            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/loose/{file.File()}");
-            ArcDirectory.Copy(file.Relative(), $"{TranspileTarget}/gfx/loose/{file.File()}");
-        }
-
-        CreateTillFolder($"{TranspileTarget}/gfx/event_pictures/arc");
-        foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/event_pictures"))
-        {
-            b.Add(
-                "spriteType", "=", "{",
-                    "name", "=", $"\"{file.Name()}\"",
-                    "texturefile", "=", $"\"gfx/event_pictures/arc/{file.File()}\"",
-                "}"
-            );
-
-            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/event_pictures/arc/{file.File()}");
-            ArcDirectory.Copy(file.Relative(), $"{TranspileTarget}/gfx/event_pictures/arc/{file.File()}");
-        }
-
-        CreateTillFolder($"{TranspileTarget}/gfx/interface/missions");
-        foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/missions"))
-        {
-            b.Add(
-                "spriteType", "=", "{",
-                    "name", "=", $"\"{file.Name()}\"",
-                    "texturefile", "=", $"\"gfx/interface/missions/{file.File()}\"",
-                "}"
-            );
-
-            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/interface/missions/{file.File()}");
-            ArcDirectory.Copy(file.Relative(), $"{TranspileTarget}/gfx/interface/missions/{file.File()}");
-        }
-
-        foreach (string folder in ArcDirectory.GetFolders($"{GfxFolder}/ages"))
-        {
-            string folderName = folder.Split('\\').Last();
-            CreateTillFolder($"{TranspileTarget}/gfx/interface/ages/{folderName}");
-            foreach (ArcFile file in ArcDirectory.GetFiles(folder))
-            {
-                string s = file.File();
-                string v = $"gfx/interface/ages/{folderName}/{s}";
-                b.Add(
-                    "spriteType", "=", "{",
-                        "name", "=", $"\"GFX_{s.Split('.').First()}\"",
-                        "texturefile", "=", $"\"{v}\"",
-                    "}"
-                );
-
-                string oldPath = file.Relative();
-                string newPath = $"{TranspileTarget}/{v}";
-
-                ArcDirectory.GfxVDir.Add(newPath);
-                ArcDirectory.Copy(oldPath, newPath);
-            }
-        }
-
-        CreateTillFolder($"{TranspileTarget}/gfx/interface/buildings");
-        foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/buildings"))
-        {
-            string s = file.File();
-            string oldPath = $"{GfxFolder}/buildings/{s}";
-            string newPath = $"{TranspileTarget}/gfx/interface/buildings/{s}";
-
-            b.Add(
-                "spriteType", "=", "{",
-                    "name", "=", $"\"GFX_{s.Split('.').First()}\"",
-                    "texturefile", "=", $"\"gfx/interface/buildings/{s.Split('.').First()}.tga\"",
-                    "loadType", "=", "\"INGAME\"",
-                "}"
-            );
-
-            ArcDirectory.GfxVDir.Add(newPath);
-            ArcDirectory.Copy(oldPath, newPath);
-        }
-
-        CreateTillFolder($"{TranspileTarget}/gfx/interface/great_projects");
-        foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/great_projects"))
-        {
-            string s = file.File();
-            string oldPath = $"{GfxFolder}/great_projects/{s}";
-            string newPath = $"{TranspileTarget}/gfx/interface/great_projects/{s}";
-
-            b.Add(
-                "spriteType", "=", "{",
-                    "name", "=", $"\"GFX_great_project_{s.Split('.').First()}\"",
-                    "texturefile", "=", $"\"gfx/interface/great_projects/{s}\"",
-                "}"
-            );
-
-            ArcDirectory.GfxVDir.Add(newPath);
-            ArcDirectory.Copy(oldPath, newPath);
-        }
-
-        CreateTillFolder($"{TranspileTarget}/gfx/interface/privileges");
-        foreach (ArcFile c in ArcDirectory.GetFiles($"{GfxFolder}/privileges"))
-        {
-            string s = c.File();
-            string oldPath = $"{GfxFolder}/privileges/{s}";
-            string newPath = $"{TranspileTarget}/gfx/interface/privileges/{s}";
-
-            b.Add(
-                "spriteType", "=", "{",
-                    "name", "=", $"\"{s.Split('.').First()}\"",
-                    "texturefile", "=", $"\"gfx/interface/privileges/{s}\"",
-                "}"
-            );
-
-            ArcDirectory.GfxVDir.Add(newPath);
-            ArcDirectory.Copy(oldPath, newPath);
-        }
-
-        CreateTillFolder($"{TranspileTarget}/gfx/interface/holy_orders");
-        foreach (ArcFile c in ArcDirectory.GetFiles($"{GfxFolder}/holy_orders"))
-        {
-            string s = c.File();
-            string oldPath = $"{GfxFolder}/holy_orders/{s}";
-            string newPath = $"{TranspileTarget}/gfx/interface/holy_orders/{s}";
-
-            b.Add(
-                "spriteType", "=", "{",
-                    "name", "=", $"\"GFX_holy_order_{s.Split('.').First()}\"",
-                    "texturefile", "=", $"\"gfx/interface/holy_orders/{s}\"",
-                    "noOfFrames", "=", "4",
-                "}"
-            );
-
-            ArcDirectory.GfxVDir.Add(newPath);
-            ArcDirectory.Copy(oldPath, newPath);
-        }
-
-        CreateTillFolder($"{TranspileTarget}/gfx/interface/government_reform_icons");
-        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/government_reforms"))
-        {
-            string s = c.Split('\\').Last();
-            string oldPath = $"{GfxFolder}/government_reforms/{s}";
-            string newPath = $"{TranspileTarget}/gfx/interface/government_reform_icons/{s}";
-
-            b.Add(
-                "spriteType", "=", "{",
-                    "name", "=", $"\"government_reform_{s.Split('.').First()}\"",
-                    "texturefile", "=", $"\"gfx/interface/government_reform_icons/{s}\"",
-                "}"
-            );
-
-            ArcDirectory.GfxVDir.Add(newPath);
-            ArcDirectory.Copy(oldPath, newPath);
         }
 
         CreateTillFolder($"{TranspileTarget}/gfx/flags");
@@ -663,7 +521,7 @@ internal partial class Program
 
         OverwriteFile($"{TranspileTarget}/interface/arc5.gfx", string.Join(' ', b), vdirOverride: ArcDirectory.GfxVDir);
 
-        return "GFX folder";
+        return "Gfx Folders";
     }
     static string Unsorted()
     {

@@ -1,4 +1,5 @@
-﻿using Pastel;
+﻿using Microsoft.VisualBasic.FileIO;
+using Pastel;
 using System.Collections;
 using System.IO;
 
@@ -109,10 +110,12 @@ public static class ArcDirectory
 
         return Directory.GetDirectories(path).OrderBy(d => d).ToArray();
     }
-    public static string[] GetFiles(string path)
+    public static string[] GetFiles(string path, bool includeSubdirectories = false)
     {
         if (!Path.Exists(Path.Combine(directory, path))) return new string[] { };
         if (!path.StartsWith(directory)) path = Path.Combine(directory, path);
+
+        if (includeSubdirectories) return Directory.GetFiles(path, "*.*", System.IO.SearchOption.AllDirectories).OrderBy(d => d).ToArray();
 
         return Directory.GetFiles(path).OrderBy(d => d).ToArray();
     }
