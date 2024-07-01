@@ -164,8 +164,9 @@ public class ArcString : IValue, IArcObject
             "contains" => new ArcPredicate((IVariable right) => {
                 return Value.Contains(right.ToString());
             }, ArcString.Constructor),
+            "to_lower" => new ArcString(Value.ToLower()),
             _ => throw new Exception()
-        };;
+        };;;
     }
 
     public bool CanGet(string indexer)
@@ -173,6 +174,7 @@ public class ArcString : IValue, IArcObject
         return indexer switch
         {
             "contains" => true,
+            "to_lower" => true,
             _ => false
         };
     }

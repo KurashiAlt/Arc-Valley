@@ -471,7 +471,7 @@ public static partial class Compiler
             {
                 bool nValue = new ArcBool(value).Value;
 
-                str += $"{text}: §{(isGood == nValue ? 'G' : 'R')}{value}§!";
+                if (nValue) str += $"{text}";
             }
             else
             {

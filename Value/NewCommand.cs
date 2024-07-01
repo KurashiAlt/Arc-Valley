@@ -102,6 +102,7 @@ public class ArcType : IValue
             if (Compiler.IsDefaultScope(tag) || Compiler.IsBaseScope(tag) || tag.StartsWith("event_target") || tag == "emperor") return ArcString.Constructor(b);
             return Province.Provinces.Get(tag) ?? throw ArcException.Create(b);
         })},
+        { "unknown", new(Compiler.global.Get) },
         { "province", new(Province.Provinces.Get) },
         { "area", new(Area.Areas.Get) },
         { "region", new(Region.Regions.Get) },
