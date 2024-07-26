@@ -1,6 +1,6 @@
 ﻿using Arc;
 
-public class LazyPointer<T> : IVariable where T : IVariable
+public class LazyPointer<T> : IVariable, IArcObject where T : IVariable
 {
     public readonly Func<T> Get;
     public LazyPointer(Func<T> get)
@@ -13,4 +13,6 @@ public class LazyPointer<T> : IVariable where T : IVariable
     }
 
     public Walker Call(Walker i, ref Block result) => Get().Call(i, ref result);
+    public bool CanGet(string indexer) => ((Get() as IArcObject)?.CanGet(indexer)) ?? false;
+    IVariable? IArcObject.Get(string indexer) => (Get() as IArcObject)?.Get(indexer);
 }

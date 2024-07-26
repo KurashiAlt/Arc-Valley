@@ -11,13 +11,11 @@ public class Policy : ArcObject
     public Policy(string id) { Policies.Add(id, this); }
     public static new Walker Call(Walker i) => Call(i, Constructor);
     public static Policy Constructor(string id, Args args) {
-        IdeaGroup? onlyIdeaGroup = args.GetFromListNullable(IdeaGroup.IdeaGroups, "group");
-        
         Policy policy = new(id)
         {
-            { "id", new ArcString($"{id}_policy") },
-            { "name", args.Get(ArcString.Constructor, "name") },
-            { "desc", args.Get(ArcString.Constructor, "desc", new("")) },
+            { "id", new ArcString($"{id}") },
+            { "name", args.Get(ArcString.Constructor, "name", null) },
+            { "desc", args.Get(ArcString.Constructor, "desc", null) },
             { "monarch_power", args.Get(ArcString.Constructor, "monarch_power") },
             { "potential", args.Get(ArcTrigger.Constructor, "potential", new()) },
             { "allow", args.Get(ArcTrigger.Constructor, "allow", new()) },
@@ -27,15 +25,8 @@ public class Policy : ArcObject
             { "ai_will_do", args.Get(ArcTrigger.Constructor, "ai_will_do", new("factor", "=", "1")) },
         };
 
-        if(onlyIdeaGroup == null)
-        {
-            policy.Add("group_1", args.GetFromList(IdeaGroup.IdeaGroups, "group_1"));
-            policy.Add("group_2", args.GetFromList(IdeaGroup.IdeaGroups, "group_2"));
-        }
-        else
-        {
-            policy.Add("group", onlyIdeaGroup);
-        }
+        policy.Add("group_1", args.Get(ArcType.Types["idea_group"].ThisConstructor, "group_1"));
+        policy.Add("group_2", args.Get(ArcType.Types["idea_group"].ThisConstructor, "group_2"));
 
         return policy;
     } 
@@ -44,61 +35,34 @@ public class Policy : ArcObject
     public void Transpile(ref Block s)
     {
         string id = ToString();
-        Program.Localisation.Add($"{id}", Get("name").ToString());
-        Program.Localisation.Add($"desc_{id}", Get("desc").ToString());
+        if (CanGet("name")) Program.Localisation.Add($"{id}", Get("name").ToString());
+        if (CanGet("desc")) Program.Localisation.Add($"desc_{id}", Get("desc").ToString());
 
-        IdeaGroup? i0 = GetNullable<IdeaGroup>("group");
-        IdeaGroup? i1 = GetNullable<IdeaGroup>("group_1");
-        IdeaGroup? i2 = GetNullable<IdeaGroup>("group_2");
+        IVariable i1 = Get<ArcObject>("group_1").Get("id");
+        IVariable i2 = Get<ArcObject>("group_2").Get("id");
 
         s.Add(
             id, "=", "{",
                 "monarch_power", "=", Get("monarch_power"),
                 "potential", "=", "{",
                     Get<ArcTrigger>("potential").Compile());
-        if(i0 == null)
-        {
-            s.Add(
-                "has_idea_group", "=", i1,
-                "has_idea_group", "=", i2
-            );
-        }
-        else
-        {
-            s.Add(
-                "has_idea_group", "=", i0,
-                "hidden_trigger", "=", "{",
-                    "OR", "=", "{",
-                        "has_idea_group", "=", i0,
-                        "has_idea_group", "=", "only_ideas",
-                    "}",
-                "}"
-            );
-        }
+
+        s.Add(
+            "has_idea_group", "=", i1,
+            "has_idea_group", "=", i2
+        );
+
         s.Add(
                 "}",
                 "allow", "=", "{",
                     Get<ArcTrigger>("allow").Compile()
         );
-        if (i0 == null)
-        {
-            s.Add(
-                "full_idea_group", "=", i1,
-                "full_idea_group", "=", i2
-            );
-        }
-        else
-        {
-            s.Add(
-                "full_idea_group", "=", i0,
-                "hidden_trigger", "=", "{",
-                    "OR", "=", "{",
-                        "full_idea_group", "=", i0,
-                        "full_idea_group", "=", "only_ideas",
-                    "}",
-                "}"
-            );
-        }
+
+        s.Add(
+            "full_idea_group", "=", i1,
+            "full_idea_group", "=", i2
+        );
+
         s.Add(
                 "}",
                 Get<ArcModifier>("modifier").Compile(),

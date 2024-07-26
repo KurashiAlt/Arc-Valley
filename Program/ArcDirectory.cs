@@ -58,7 +58,14 @@ public static class ArcDirectory
         origin = Path.Combine(directory, origin);
         destination = Path.Combine(directory, destination);
 
-        File.Copy(origin, destination, true);
+        try
+        {
+            File.Copy(origin, destination, true);
+        }
+        catch (Exception)
+        {
+            throw;
+        }
     }
     public static void VDirPopulate(string[] args)
     {

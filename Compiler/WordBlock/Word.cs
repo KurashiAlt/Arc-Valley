@@ -71,4 +71,8 @@ public class Word
             return "";
         return w.ToString();
     }
+    public static implicit operator Word(string w)
+    {
+        return new Word(w);
+    }
 }

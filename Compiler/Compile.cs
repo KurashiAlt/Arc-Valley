@@ -25,6 +25,7 @@ public static partial class Compiler
             else if (g == "LOG_CURRENT_COMPILE") __LOG_CURRENT_COMPILE(result);
             else if (g == "DEFINE_MODIFIER") __DEFINE_MODIFIER(ref g);
             else if (g == "write_file") __write_file(ref g, type);
+            else if (g == "write_directory_file") __write_file(ref g, type, directory: true);
             else if (g == "write_unformatted_file") __write_file(ref g, type, allowFormat: false);
             else if (g == "write_formatted_file") __write_file(ref g, type, forceFormat: true);
             else if (g == "delete") __delete(ref g);
@@ -41,13 +42,13 @@ public static partial class Compiler
             else if (g == "else") __else(ref g, ref result);
             else if (g == "arc_throw") __arc_throw(ref g, type, bound);
             else if (g == "arc_log") __arc_log(ref g, type, bound);
-            else if (g.Contains("->")) __dot_scoping(ref g, ref result, type, bound);
             else if (g.StartsWith('&')) __variable(ref g, ref result);
             else if (g.EndsWith(',') || g.EndsWith(';')) __multi_scope(ref g, ref result, type, bound);
             else if (TranspiledString(g.Current, '`', out string? newValue, type, bound, g.Current.GetFile()) && newValue != null) result.Add(newValue);
             else if (g.EndsWith('%')) result.Add((double.Parse(g.Current.Value[..^1]) / 100).ToString("0.000"));
             else if (g.EnclosedBy('[', ']')) __quick_limit(ref g, ref result, type, bound);
             else if (g.EnclosedBy('(', ')')) __quick_math(ref g, ref result);
+            else if (g.Contains("->")) __dot_scoping(ref g, ref result, type, bound);
             else if (bound != null && bound.TryGetVariable(g, out IVariable? boundVar) && boundVar != null) g = boundVar.Call(g, ref result);
             else if (TryGetVariable(g.Current, out IVariable? var) && var != null) g = var.Call(g, ref result);
             else if (type != CompileType.Interface && g.Current.Value.Contains(':') && !(g.Current.Value.StartsWith("trigger_value:", "event_target:", "modifier:"))) Console.WriteLine(ArcException.CreateMessage("Unknown word contains ':', meaning it's possibly a mispelled variable.", g, result));

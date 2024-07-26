@@ -64,7 +64,7 @@ public static partial class Parser
                 else if (str[ndx] == '=')
                 {
                     string a = s.ToString();
-                    if (a == "+" || a == "-" || a == ":" || a == "*" || a == "/" || a == "&" || a == ">" || a == "<" || a == "=" || a == "!") goto end;
+                    if (a == "+" || a == "-" || a == ":" || a == "*" || a == "/" || a == "&" || a == ">" || a == "<" || a == "=" || a == "!" || a == "?" || a == "%") goto end;
                     if (!string.IsNullOrWhiteSpace(a)) retval.AddLast(new Word(a, line, fileName));
                     s.Clear();
                 }

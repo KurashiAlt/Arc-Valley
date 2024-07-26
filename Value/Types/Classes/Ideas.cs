@@ -1,6 +1,7 @@
 ﻿
 using Pastel;
 using System.ComponentModel;
+using System.Linq;
 using System.Text;
 using System.Xml.Linq;
 
@@ -23,6 +24,7 @@ public class Idea : IArcObject
         ArcEffect effect,
         ArcEffect removedEffect
     ) {
+        Id = new(key);
         Name = name;
         Desc = desc;
         Modifier = modifier;
@@ -30,6 +32,7 @@ public class Idea : IArcObject
         RemovedEffect = removedEffect;
         keyValuePairs = new()
         {
+            { "id", Id },
             { "name", Name },
             { "desc", Desc },
             { "modifier", Modifier },
@@ -37,13 +40,33 @@ public class Idea : IArcObject
             { "removed_effect", RemovedEffect },
         };
 
-        Id = new(key);
     }
 
-    public bool CanGet(string indexer) => keyValuePairs.CanGet(indexer);
-    public IVariable? Get(string indexer) => keyValuePairs.Get(indexer);
+    public bool CanGet(string indexer)
+    {
+        return indexer switch
+        {
+            "transpile" => true,
+            _ => keyValuePairs.CanGet(indexer)
+        };
+    }
+    public IVariable? Get(string indexer)
+    {
+        if (indexer == "transpile")
+        {
+            return new ArcFunction((Walker i) =>
+            {
+                i = Args.GetArgs(i, out Args args);
+
+                ArcObject v = Compiler.GetVariable<ArcObject>(args.block.ToWord());
+                return Transpile(v);
+            });
+        }
+
+        return keyValuePairs.Get(indexer);
+    }
     public override string ToString() => Name.Value;
-    public string Transpile(IdeaGroup ideaGroup)
+    public Block Transpile(ArcObject ideaGroup)
     {
         Block sb = new()
         {
@@ -57,16 +80,16 @@ public class Idea : IArcObject
         };
 
         Program.Localisation.Add($"{Id}", Name.Value);
-        if (Id.Value.EndsWith("7"))
+        if (false && Id.Value.EndsWith("7"))
         {
             bool addedSpacing = false;
             StringBuilder desc = new(Desc.Value.Trim('"'));
 
             IEnumerable<string> a = from idea 
-                in IdeaGroup.IdeaGroups 
-                where string.Join(' ', idea.Value.Trigger.Value).Contains(ideaGroup.Id.Value) 
-                orderby idea.Value.Name.Value 
-                select idea.Value.Name.Value.Trim('"');
+                in Compiler.GetVariable<Dict<IVariable>>("idea_groups") 
+                where string.Join(' ', ((ArcObject)idea.Value).Get<ArcBlock>("trigger")).Contains((ideaGroup.Get("id") ?? ArcString.Empty).ToString() ?? "")
+                orderby (ideaGroup.Get("name") ?? ArcString.Empty).ToString()
+                select (ideaGroup.Get("name") ?? ArcString.Empty).ToString();
             if (a.Any())
             {
                 addedSpacing = true;
@@ -87,16 +110,16 @@ public class Idea : IArcObject
         {
             Program.Localisation.Add($"{Id}_desc", Desc.Value);
         }
-        return string.Join(' ', sb);
+        return sb;
     }
-    public static Idea Constructor(Block block, string key, int num)
+    public static Idea Constructor(Block block, int num)
     {
         Walker i = new(block);
 
         i = Args.GetArgs(i, out Args args, 2);
 
         return new Idea(
-            $"{key}_{num}",
+            $"{Compiler.GetVariable<Dict<IVariable>>("idea_groups").Last().Key}_{num}",
             args.Get(ArcString.Constructor, "name"),
             args.Get(ArcString.Constructor, "desc"),
             args.Get(ArcModifier.Constructor, "modifier", new()),
@@ -105,6 +128,7 @@ public class Idea : IArcObject
         );
     }
 }
+#if false
 public class IdeaGroup : IArcObject
 {
     public static Dict<IdeaGroup> IdeaGroups = new();
@@ -229,3 +253,4 @@ public class IdeaGroup : IArcObject
         return "Idea Groups";
     }
 }
+#endif

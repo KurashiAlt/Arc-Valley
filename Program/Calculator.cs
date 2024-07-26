@@ -18,6 +18,7 @@ public static partial class Calculator
                 case '/':
                 case '*':
                 case '^':
+                case '%':
                     steps.Add(current);
                     current = "";
                     steps.Add(c.ToString());
@@ -44,7 +45,7 @@ public static partial class Calculator
         s.ReplaceSelf(',', '.');
         List<string> steps = GetSteps(s);
 
-        Operations(ref steps, "^");
+        Operations(ref steps, "^", "%");
         Operations(ref steps, "/", "*");
         Operations(ref steps, "+", "-");
 
@@ -74,6 +75,7 @@ public static partial class Calculator
                     "/" => left / right,
                     "*" => left * right,
                     "^" => double.Pow(left, right),
+                    "%" => left % right,
                     _ => throw ArcException.Create("Unknown Operator", left, oper, right, steps, operators)
                 };
 

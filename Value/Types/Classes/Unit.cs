@@ -1,4 +1,4 @@
-﻿
+﻿#if false
 using Pastel;
 using System.IO;
 using System.Linq;
@@ -60,8 +60,8 @@ public class Unit : IArcObject
         Units.Add(id, this);
     }
 
-    public bool CanGet(string indexer) => KeyValuePairs.CanGet(indexer);
-    public IVariable? Get(string indexer) => KeyValuePairs.Get(indexer);
+    public bool CanGet(string indexer) => KeyValuePairs.CanGet(indexer) || Attributes.CanGet(indexer);
+    public IVariable? Get(string indexer) => KeyValuePairs.CanGet(indexer) ? KeyValuePairs.Get(indexer) : Attributes.Get(indexer);
     public static Walker Call(Walker i)
     {
         i.ForceMoveNext();
@@ -114,3 +114,4 @@ public class Unit : IArcObject
     public override string ToString() => Name.Value;
     public Walker Call(Walker i, ref Block result) { result.Add(Id.Value.ToString()); return i; }
 }
+#endif

@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.Numerics;
 using Pastel;
+using static System.Net.Mime.MediaTypeNames;
+using System.Net.Http.Headers;
 
 namespace Arc;
 public static partial class Compiler
@@ -43,7 +45,7 @@ public static partial class Compiler
         { "church_aspects", ChurchAspect.ChurchAspects },
         { "countries", Country.Countries },
         { "culture_groups", CultureGroup.CultureGroups },
-        { "idea_groups", IdeaGroup.IdeaGroups },
+        //{ "idea_groups", IdeaGroup.IdeaGroups },
         { "cultures", Culture.Cultures },
         { "estates", Estate.Estates },
         { "personal_deitys", PersonalDeity.PersonalDeitys },
@@ -66,8 +68,8 @@ public static partial class Compiler
         { "custom_buttons", CustomButton.CustomButtons },
         { "custom_icons", CustomIcon.CustomIcons },
         { "interface_files", InterfaceNode.Files },
+        { "vanilla_files", VanillaNode.Files },
         { "diplomatic_actions", DiplomaticAction.DiplomaticActions },
-        { "units", Unit.Units },
         { "defines", new ArcObject() },
         { "default_reform", new ArcCode() },
         { "terrain_declarations", new ArcBlock() },
@@ -156,7 +158,6 @@ public static partial class Compiler
             "personal_deity" => PersonalDeity.Call(g),
             "advisor_type" => AdvisorType.Call(g),
             "tradenode" => TradeNode.Call(g),
-            "idea_group" => IdeaGroup.Call(g),
             "opinion_modifier" => OpinionModifier.Call(g),
             "relation" => Relation.Call(g),
             "culture_group" => CultureGroup.Call(g),
@@ -171,7 +172,6 @@ public static partial class Compiler
             "country_event" => Event.Call(g, false),
             "province_event" => Event.Call(g, true),
             "incident" => Incident.Call(g),
-            "unit" => Unit.Call(g),
             "localisation" => DefineLoc(g),
             "advisor" => Advisor.Call(g),
             "age" => Age.Call(g),
@@ -200,6 +200,7 @@ public static partial class Compiler
             "custom_button" => CustomButton.Call(g),
             "custom_icon" => CustomIcon.Call(g),
             "interface_file" => InterfaceNode.Call(g),
+            "vanilla_file" => VanillaNode.Call(g),
             "class" => ArcClass.Call(g),
             "struct" => ArcStruct.Call(g),
             _ => DynamicClass(g)
@@ -358,12 +359,27 @@ public static partial class Compiler
     {
         Console.WriteLine(Parser.FormatCode(result.ToString()));
     }
-    public static void __write_file(ref Walker g, CompileType type, bool allowFormat = true, bool forceFormat = false)
+    public static void __write_file(ref Walker g, CompileType type, bool allowFormat = true, bool forceFormat = false, bool directory = false)
     {
         g.ForceMoveNext();
         string file = GetId(g.Current);
         g = Args.GetArgs(g, out Args args);
-        Program.OverwriteFile($"{Program.TranspileTarget}/{file}", Compile(type, args.Get()), AllowFormatting: allowFormat, ForceFormatting: forceFormat);
+        if (directory)
+        {
+            string text = Compile(type, args.Get()).Replace("@HASHTAG@", "#");
+
+            text = Program.ReplaceBlocks(text);
+            if (allowFormat && Program.Format) text = Parser.FormatCode(text);
+            else if (forceFormat) text = Parser.FormatCode(text);
+
+            text = text.Replace("__ARC.FORCE_END_LINE__", "\n");
+
+            File.WriteAllText(file, text);
+        }
+        else
+        {
+            Program.OverwriteFile($"{Program.TranspileTarget}/{file}", Compile(type, args.Get()).Replace("@HASHTAG@", "#"), AllowFormatting: allowFormat, ForceFormatting: forceFormat);
+        }
     }
     public static void __delete(ref Walker g)
     {
@@ -475,9 +491,9 @@ public static partial class Compiler
             }
             else
             {
-                double nValue = new ArcFloat(value).Value * multiplier;
+                double nValue = new ArcFloat(value).Value;
 
-                str += $"{text}: §{(isGood == nValue >= 0 ? 'G' : 'R')}{nValue.ToString($"F{precision}")}{(percent ? "%" : "")}§!";
+                str += $"{text}: §{(isGood == nValue >= 0 ? 'G' : 'R')}{(nValue * multiplier).ToString($"F{precision}")}{(percent ? "%" : "")}§!";
             }
 
             str += '\n';
@@ -559,7 +575,7 @@ public static partial class Compiler
                 } while (enume.MoveNext());
             }
         }
-        else throw new Exception();
+        else throw ArcException.Create($"{dictValue} was not an ArcEnumerable", g, result, type, bound, varKey, dictKey, whenBlock);
     }
     public static void __for(ref Walker g, ref Block result, CompileType type, ArcObject? bound)
     {
@@ -628,9 +644,20 @@ public static partial class Compiler
         string value = g.Current;
         if (TranspiledString(value, '"', out string? nValue, type, bound, g.Current.GetFile()))
         {
-            Console.WriteLine($"{g.Current.GetFile()} line {g.Current.File}: {nValue}");
+            Console.WriteLine($"{rep(nValue)}");
         }
-        else Console.WriteLine($"{g.Current.GetFile()} line {g.Current.File}: {value}");
+        else Console.WriteLine($"{rep(value)}");
+
+        string rep(string v)
+        {
+            v = Program.ReplaceBlocks(v);
+            v = v.Replace("__ARC.FORCE_END_LINE__", "\n");
+            v = v.Replace("\\n", "\n");
+            v = v.Replace("/[", "{");
+            v = v.Replace("/]", "}");
+
+            return v;
+        }
     }
     public static void __dot_scoping(ref Walker g, ref Block result, CompileType type, ArcObject? bound)
     {
@@ -684,6 +711,8 @@ public static partial class Compiler
             case "<": VariableOperator("check_variable", ref result, Invert: true); break;
             case "==": VariableOperator("is_variable_equal", ref result); break;
             case "!=": VariableOperator("is_variable_equal", ref result, Invert: true); break;
+            case "?=": VariableOperator("random_variable", ref result); break;
+            case "%=": VariableOperator("modulo_variable", ref result); break;
             default: throw ArcException.Create($"While performing a quick variable operation '&' syntax, operator {Operator} was not recognized", left, Operator, args, result);
         }
 
@@ -759,6 +788,7 @@ public static partial class Compiler
         }
         bool VariableExists(string id)
         {
+            if (Program.CheckForVariableDefinitions == false) return true;
             if (global.CanGet("variables"))
                 if (global.Get<IArcObject>("variables").CanGet(left))
                     return true;

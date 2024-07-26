@@ -45,7 +45,8 @@ public class BuildingLine : IArcObject
             { "id", new ArcString($"{id}_line") },
             { "name", new ArcString($"Unlocked {name} buildings") },
             { "is_percentage", new ArcBool(false) },
-            { "trigger", new ArcTrigger("always", "=", "yes") }
+            { "trigger", new ArcTrigger("always", "=", "yes") },
+            { "precision", new ArcInt(0) }
         };
         ArgList.Add("this", tThis);
         Compiler.GetVariable<Dict<IVariable>>(new Word("modifier_definitions")).Add($"{id}_line", tThis);

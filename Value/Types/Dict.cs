@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Linq;
 using System.Security.Cryptography;
 
 namespace Arc;
@@ -56,6 +57,7 @@ public class Dict<Type> : IArcObject, ArcEnumerable, IEnumerable<KeyValuePair<st
     }
     protected readonly Dictionary<string, DictPointer<Type>> Kvps;
     public Dictionary<string, Type>.ValueCollection Values() => Kvps.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Value).Values;
+    public Dict(Dictionary<string, DictPointer<Type>> kvps) { Kvps = kvps; }
     public Dict() { Kvps = new(); }
     public Dict(Block s, Func<string, Args, Type> constructor) 
     {
@@ -78,6 +80,13 @@ public class Dict<Type> : IArcObject, ArcEnumerable, IEnumerable<KeyValuePair<st
         if (indexer == "first") return Kvps.Values.First().Value;
         if (indexer == "last") return Kvps.Values.Last().Value;
         if (indexer == "count") return new ArcInt(Kvps.Count);
+        if (indexer == "priority_sorted")
+        {
+            Dict<Type> sortedList = new(
+                (from n in Kvps orderby ((ArcInt)((IArcObject)n.Value.Value).Get("priority")).Value descending select n).ToDictionary(n => n.Key, n => n.Value)
+            );
+            return sortedList;
+        }
         return Kvps[indexer].Value;
     }
     public virtual T Get<T>(string indexer)
@@ -97,7 +106,10 @@ public class Dict<Type> : IArcObject, ArcEnumerable, IEnumerable<KeyValuePair<st
     }
     public virtual bool CanGet(string indexer)
     {
+        if (indexer == "first") return true;
+        if (indexer == "last") return true;
         if (indexer == "count") return true;
+        if (indexer == "priority_sorted") return true;
         return Kvps.ContainsKey(indexer);
     }
     public Type this[string indexer]

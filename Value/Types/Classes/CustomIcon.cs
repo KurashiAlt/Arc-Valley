@@ -28,6 +28,7 @@ public class CustomIcon : ArcObject
         { "id", new ArcString(id) },
         { "potential", args.Get(ArcTrigger.Constructor, "potential", new ArcTrigger()) },
         { "tooltip", args.Get(ArcString.Constructor, "tooltip", null) },
+        { "frame_variable", args.Get(ArcString.Constructor, "frame_variable", null) },
         { "frames", args.Get(ArcList<ArcObject>.GetConstructor(FrameConstructor), "frames", new(FrameConstructor)) }
     };
     public void Transpile(ref Block b)
@@ -43,6 +44,11 @@ public class CustomIcon : ArcObject
         {
             b.Add("tooltip", "=", $"{id}_tt");
             Program.Localisation.Add($"{id}_tt", Tooltip.ToString());
+        }
+        ArcString? FrameVariable = GetNullable<ArcString>("frame_variable");
+        if (FrameVariable != null)
+        {
+            b.Add("frame_variable", "=", $"{FrameVariable}");
         }
         
         foreach (ArcObject? frame in Get<ArcList<ArcObject>>("frames").Values)

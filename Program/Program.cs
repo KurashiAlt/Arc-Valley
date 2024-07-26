@@ -23,6 +23,7 @@ internal partial class Program
     public static IEnumerable<string> LoadOrder;
     public static string[] PartialMod;
     public static bool OnlyCustomTranspilers;
+    public static bool CheckForVariableDefinitions;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     public static List<string> warnings = new();
     public static bool Format = false;
@@ -47,6 +48,7 @@ internal partial class Program
         LoadOrder = from c in arcDefines.Get(ArcCode.Constructor, "load_order").Value select new string(c.Value);
         PartialMod = (from a in arcDefines.Get(ArcCode.Constructor, "partial_mod", new()).Value select a.Value).ToArray();
         OnlyCustomTranspilers = arcDefines.Get(ArcBool.Constructor, "only_custom_transpilers", new(false)).Value;
+        CheckForVariableDefinitions = arcDefines.Get(ArcBool.Constructor, "check_for_variable_definitions", new(true)).Value;
 
         if (args.Length == 0)
         {
@@ -216,7 +218,6 @@ internal partial class Program
         ("script", "", ChurchAspect.Transpile),
         ("script", "", AdvisorType.Transpile),
         ("script", "", TradeNode.Transpile),
-        ("script", "", IdeaGroup.Transpile),
         ("script", "", Policy.Transpile),
         ("script", "", Relation.Transpile),
         ("script", "", CultureGroup.Transpile),
@@ -226,7 +227,6 @@ internal partial class Program
         ("script", "", Estate.Transpile),
         ("script", "", GovernmentReform.Transpile),
         ("script", "", GovernmentMechanic.Transpile),
-        ("script", "", Unit.Transpile),
         ("script", "", Advisor.Transpile),
         ("script", "", Age.Transpile),
         ("script", "", DiplomaticAction.Transpile),
@@ -640,6 +640,9 @@ internal partial class Program
         if (vdirOverride == null) ArcDirectory.ScriptVDir.Add(path);
         else vdirOverride.Add(path);
         text = ReplaceBlocks(text);
+        text = text.Replace("__ARC.FORCE_END_LINE__", "\n");
+        text = text.Replace("__ARC.OPEN_BRACKET__", "{");
+        text = text.Replace("__ARC.CLOSE_BRACKET__", "}");
 
         bool v = PartialMod.Length == 0;
         foreach (string PartialModFile in PartialMod)
@@ -670,7 +673,6 @@ internal partial class Program
 
         CreateTillFolder(pathOrg);
 
-        text = text.Replace("__ARC.FORCE_END_LINE__", "\n");
         if (File.Exists(path))
         {
             string old = File.ReadAllText(path);
@@ -681,19 +683,19 @@ internal partial class Program
             File.WriteAllText(path, text);
         }
 
-        string ReplaceBlocks(string text)
+    }
+    public static string ReplaceBlocks(string text)
+    {
+        Regex blockSpot = ArcBlocks();
+        while (text.Contains("__ARC.BLOCK__"))
         {
-            Regex blockSpot = ArcBlocks();
-            while (text.Contains("__ARC.BLOCK__"))
+            text = blockSpot.Replace(text, new MatchEvaluator((m) =>
             {
-                text = blockSpot.Replace(text, new MatchEvaluator((m) =>
-                {
-                    int id = int.Parse(m.Groups[1].Value);
-                    return CompileList.list[id].Compiled;
-                }));
-            }
-            return text;
+                int id = int.Parse(m.Groups[1].Value);
+                return CompileList.list[id].Compiled;
+            }));
         }
+        return text;
     }
     private static string TranspileDefines()
     {

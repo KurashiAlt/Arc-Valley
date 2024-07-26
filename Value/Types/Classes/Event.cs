@@ -42,9 +42,15 @@ public class Option : IArcObject
     public override string ToString() => Name.Value;
     public void Transpile(ref Block sb, string key)
     {
-        Program.Localisation.Add(key, Name.Value);
-        sb.Add("option", "=", "{",
-            "name", "=", key);
+        sb.Add("option", "=", "{");
+
+        if (Name.Value.StartsWith('!')) sb.Add("title", "=", Name.Value[..1]);
+        else
+        {
+            Program.Localisation.Add(key, Name.Value);
+            sb.Add("name", "=", key);
+        }
+
         if (Goto != null) sb.Add("goto", "=", Goto.Id);
         if (Highlight) sb.Add("highlight", "=", "yes");
         AiChance.Compile("ai_chance", ref sb);
@@ -181,15 +187,25 @@ public class Event : IArcObject
     public override string ToString() => Id.Value;
     public void Transpile(ref Block b)
     {
-        Program.Localisation.Add($"{Id}.title", Title.Value);
-        Program.Localisation.Add($"{Id}.desc", Desc.Value);
-
         if (ProvinceEvent) b.Add("province_event", "=", "{");
         else b.Add("country_event", "=", "{");
 
         b.Add("id", "=", Id);
-        b.Add("title", "=", $"{Id}.title");
-        b.Add("desc", "=", $"{Id}.desc");
+
+        if (Title.Value.StartsWith('!')) b.Add("title", "=", Title.Value[..1]);
+        else
+        {
+            Program.Localisation.Add($"{Id}.title", Title.Value);
+            b.Add("title", "=", $"{Id}.title");
+        }
+
+        if (Desc.Value.StartsWith('!')) b.Add("desc", "=", Desc.Value[..1]);
+        else
+        {
+            Program.Localisation.Add($"{Id}.desc", Desc.Value);
+            b.Add("desc", "=", $"{Id}.desc");
+        }
+
         if(Pictures != null) 
         {
             foreach(KeyValuePair<string, ArcTrigger> pic in Pictures)

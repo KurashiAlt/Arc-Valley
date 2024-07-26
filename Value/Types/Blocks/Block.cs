@@ -148,12 +148,14 @@ public class ArcBlock : IValue, IArcObject
     public IVariable? Get(string indexer) => indexer switch
     {
         "id" => InjectedName ?? new ArcString("unnamed_block"),
+        "to_string" => new ArcString(Value),
         _ => throw new Exception()
     };
 
     public bool CanGet(string indexer) => indexer switch
     {
         "id" => true,
+        "to_string" => true,
         _ => false
     };
 }

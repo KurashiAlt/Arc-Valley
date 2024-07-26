@@ -1,8 +1,25 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.Drawing.Printing;
 using System.Text.RegularExpressions;
 
 namespace Arc;
+public class ArcFunction : IVariable
+{
+    public Func<Walker, Block> Callable;
+    public ArcFunction(Func<Walker, Block> func)
+    {
+        Callable = func;
+    }
+    public Walker Call(Walker i, ref Block result)
+    {
+        Block b = Callable(i);
+
+        result.Add(b);
+
+        return i;
+    }
+}
 public class ArcPredicate : IVariable
 {
     public Func<Walker, bool> Predicate;
@@ -39,7 +56,7 @@ public class ArcPredicate : IVariable
 public class ArcString : IValue, IArcObject
 {
     public string Value { get; set; }
-
+    public static ArcString Empty = new("");
     public static string TrimOneQuote(string value)
     {
         if (value.StartsWith('"') && value.EndsWith('"')) return value[1..^1];
@@ -164,6 +181,12 @@ public class ArcString : IValue, IArcObject
             "contains" => new ArcPredicate((IVariable right) => {
                 return Value.Contains(right.ToString());
             }, ArcString.Constructor),
+            "starts_with" => new ArcPredicate((IVariable right) => {
+                return Value.StartsWith(right.ToString());
+            }, ArcString.Constructor),
+            "ends_with" => new ArcPredicate((IVariable right) => {
+                return Value.EndsWith(right.ToString());
+            }, ArcString.Constructor),
             "to_lower" => new ArcString(Value.ToLower()),
             _ => throw new Exception()
         };;;
@@ -174,6 +197,8 @@ public class ArcString : IValue, IArcObject
         return indexer switch
         {
             "contains" => true,
+            "starts_with" => true,
+            "ends_with" => true,
             "to_lower" => true,
             _ => false
         };
