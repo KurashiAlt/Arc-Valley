@@ -451,9 +451,14 @@ internal partial class Program
         public string Relative() => Path.GetRelativePath(directory, FullFileName).Replace('\\', '/');
         public string Relative(string s) => Path.GetRelativePath(Path.Combine(directory, s), FullFileName).Replace('\\', '/');
         public string Extension() => Path.GetExtension(FullFileName).Replace('\\', '/');
-        public ArcFile(string fullFileName) { FullFileName = fullFileName; }
+        public ArcFile(string fullFileName) { FullFileName = fullFileName.Replace('\\', '/'); }
         public static implicit operator ArcFile(string s) => new(s);
     }
+    
+    /// <summary>
+    /// Handles the Gfx folder transpilation.
+    /// </summary>
+    /// <returns>The name of the function.</returns>
     static string GfxFolders()
     {
         Block b = new("spriteTypes", "=", "{");
@@ -618,71 +623,8 @@ internal partial class Program
         }
         return "Special Units";
     }
-    public static void CreateTillFolder(string fold)
-    {
-        string[] paths = fold.Split('/');
-        string newPath = directory;
-        foreach (string s in paths)
-        {
-            if (s.Contains('.')) continue;
-
-            newPath = Path.Combine(newPath, s);
-            if (!Directory.Exists(newPath))
-            {
-                Console.WriteLine($"\tCreating {Path.GetRelativePath(directory, newPath)}".Pastel(ConsoleColor.Magenta));
-                Directory.CreateDirectory(newPath);
-            }
-        }
-    }
-    public static void OverwriteFile(string path, string text, bool AllowFormatting = true, bool BOM = false, VDirType? vdirOverride = null, bool ForceFormatting = false)
-    {
-        if (vdirOverride == null) ArcDirectory.ScriptVDir.Add(path);
-        else vdirOverride.Add(path);
-        text = ReplaceBlocks(text);
-        text = text.Replace("__ARC.FORCE_END_LINE__", "\n");
-        text = text.Replace("__ARC.OPEN_BRACKET__", "{");
-        text = text.Replace("__ARC.CLOSE_BRACKET__", "}");
-
-        bool v = PartialMod.Length == 0;
-        foreach (string PartialModFile in PartialMod)
-        {
-            if (path.EndsWith(PartialModFile)) v = true;
-        }
-        if (!v) return;
-        if (BOM)
-        {
-            byte[] data = Encoding.UTF8.GetBytes(text);
-            byte[] result = Encoding.UTF8.GetPreamble().Concat(data).ToArray();
-            UTF8Encoding encoder = new(true);
-
-            text = encoder.GetString(result);
-        }
-        string pathOrg = path;
-        path = Path.Combine(directory, path);
-        try
-        {
-            if (AllowFormatting && Format) text = Parser.FormatCode(text);
-            else if (ForceFormatting) text = Parser.FormatCode(text);
-        }
-        catch (Exception)
-        {
-            Console.WriteLine(path);
-            throw;
-        }
-
-        CreateTillFolder(pathOrg);
-
-        if (File.Exists(path))
-        {
-            string old = File.ReadAllText(path);
-            if (text != old) File.WriteAllText(path, text);
-        }
-        else
-        {
-            File.WriteAllText(path, text);
-        }
-
-    }
+    public static void CreateTillFolder(string fold) => ArcDirectory.CreateTillDirectory(fold);
+    public static void OverwriteFile(string path, string text, bool AllowFormatting = true, bool BOM = false, VDirType? vdirOverride = null, bool ForceFormatting = false) => ArcDirectory.OverwriteFile(path, text, AllowFormatting, BOM, vdirOverride, ForceFormatting);
     public static string ReplaceBlocks(string text)
     {
         Regex blockSpot = ArcBlocks();
