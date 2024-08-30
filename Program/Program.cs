@@ -25,7 +25,6 @@ internal partial class Program
     public static bool OnlyCustomTranspilers;
     public static bool CheckForVariableDefinitions;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-    public static List<string> warnings = new();
     public static bool Format = false;
     private static int Main(string[] args)
     {
@@ -285,8 +284,6 @@ internal partial class Program
             Unsorted(file);
         }
         
-        OverwriteFile($"warnings.txt", string.Join('\n', warnings), false);
-
         Console.WriteLine($"Transpilation took: {(double)timer.ElapsedMilliseconds / 1000:0.000} seconds".Pastel(ConsoleColor.Red));
 
         ArcDirectory.CheckFolder(TranspileTarget);
@@ -471,6 +468,7 @@ internal partial class Program
             string target = $"{gfxFolder.Get("target")}";
             string fileExtension = $".{gfxFolder.Get("restrict_type")}";
             string treatType = $"{gfxFolder.Get("treat_type")}";
+            ArcBlock name = gfxFolder.Get<ArcBlock>("name");
 
             // Create target folder if it does not exist
             string targetFolder = Path.Combine(TranspileTarget, target);
@@ -480,19 +478,25 @@ internal partial class Program
             string gfxFolderPath = Path.Combine(GfxFolder, id);
             foreach (ArcFile file in ArcDirectory.GetFiles(gfxFolderPath, gfxFolder.Get<ArcBool>("include_sub").Value))
             {
+                ArgList.Add("this", new ArcString(file.Name()));
+
                 // Check file extension
                 if (file.Extension() != fileExtension) continue;
 
                 // Prepare the sprite type entry
-                string textureFilePath = Path.Combine(
-                    targetFolder,
-                    Path.ChangeExtension(file.Relative(gfxFolderPath), treatType)
-                );
+                string textureFilePath = file.Relative(gfxFolderPath);
+                if (Path.HasExtension(textureFilePath))
+                {
+                    int pos = textureFilePath.LastIndexOf('.');
+                    textureFilePath = textureFilePath[..pos] + "." + treatType;
+                }
+                else textureFilePath += $".{treatType}";
+                textureFilePath = Path.Combine(Path.GetRelativePath(TranspileTarget, targetFolder), textureFilePath);
 
                 b.Add(
                     "spriteType", "=", "{",
-                        "name", "=", $"\"{gfxFolder.Get<ArcBlock>("name").Compile()}\"",
-                        "texturefile", "=", $"\"{target}/{textureFilePath}\"",
+                        "name", "=", $"\"{name.Compile()}\"",
+                        "texturefile", "=", $"\"{textureFilePath}\"",
                         gfxFolder.Get<ArcBlock>("type_info").Compile(),
                     "}"
                 );
@@ -509,7 +513,7 @@ internal partial class Program
             // Handle "modifiers" special case
             if (id == "modifiers")
             {
-                foreach (ArcFile file in ArcDirectory.GetFiles(Path.Combine(GfxFolder, "modifiers", "files.txt")))
+                foreach (ArcFile file in ArcDirectory.GetFile($"{GfxFolder}/modifiers/files.txt"))
                 {
                     b.Add(
                         "spriteType", "=", "{",

@@ -58,19 +58,13 @@ public static class ArcDirectory
     /// <param name="path">The relative path for which to create directories.</param>
     public static void CreateTillDirectory(string path)
     {
-        string[] paths = path.Split('/');
-        string newPath = directory;
+        string? DirPath = Path.GetDirectoryName(path);
+        if (DirPath == null) return;
 
-        foreach (string s in paths)
+        if (!Directory.Exists(DirPath))
         {
-            if (s.Contains('.')) continue; // Skip if it's a file (not a directory).
-
-            newPath = Path.Combine(newPath, s);
-            if (!Directory.Exists(newPath))
-            {
-                Console.WriteLine($"\tCreating {Path.GetRelativePath(directory, newPath)}".Pastel(ConsoleColor.Magenta));
-                Directory.CreateDirectory(newPath);
-            }
+            Console.WriteLine($"\tCreating {Path.GetRelativePath(directory, DirPath)}".Pastel(ConsoleColor.Magenta));
+            Directory.CreateDirectory(DirPath);
         }
     }
 
