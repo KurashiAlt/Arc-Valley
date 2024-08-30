@@ -461,37 +461,55 @@ internal partial class Program
     /// <returns>The name of the function.</returns>
     static string GfxFolders()
     {
+        // Initialize a new block for sprite types
         Block b = new("spriteTypes", "=", "{");
 
+        // Get the list of graphics folders from the compiler
         foreach (ArcObject gfxFolder in Compiler.GetVariable<Dict<IVariable>>(new("gfx_folders")).Values())
         {
-            CreateTillFolder($"{TranspileTarget}/{gfxFolder.Get("target")}");
+            string id = $"{gfxFolder.Get("id")}";
+            string target = $"{gfxFolder.Get("target")}";
+            string fileExtension = $".{gfxFolder.Get("restrict_type")}";
+            string treatType = $"{gfxFolder.Get("treat_type")}";
 
-            foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/{gfxFolder.Get("id")}", gfxFolder.Get<ArcBool>("include_sub").Value))
+            // Create target folder if it does not exist
+            string targetFolder = Path.Combine(TranspileTarget, target);
+            ArcDirectory.CreateTillDirectory(targetFolder);
+
+            // Get the folder path and iterate over files
+            string gfxFolderPath = Path.Combine(GfxFolder, id);
+            foreach (ArcFile file in ArcDirectory.GetFiles(gfxFolderPath, gfxFolder.Get<ArcBool>("include_sub").Value))
             {
-                if (file.Extension() != $".{gfxFolder.Get("restrict_type")}") continue;
+                // Check file extension
+                if (file.Extension() != fileExtension) continue;
 
-                ArgList.Add("this", new ArcString(file.Name()));
+                // Prepare the sprite type entry
+                string textureFilePath = Path.Combine(
+                    targetFolder,
+                    Path.ChangeExtension(file.Relative(gfxFolderPath), treatType)
+                );
 
                 b.Add(
                     "spriteType", "=", "{",
                         "name", "=", $"\"{gfxFolder.Get<ArcBlock>("name").Compile()}\"",
-                        "texturefile", "=", $"\"{gfxFolder.Get("target")}/{
-                            Path.ChangeExtension(file.Relative($"{GfxFolder}/{gfxFolder.Get("id")}"), gfxFolder.Get("treat_type").ToString())
-                        }\"",
+                        "texturefile", "=", $"\"{target}/{textureFilePath}\"",
                         gfxFolder.Get<ArcBlock>("type_info").Compile(),
                     "}"
                 );
 
-                ArcDirectory.ScriptVDir.Add($"{TranspileTarget}/{gfxFolder.Get("target")}/{file.Relative($"{GfxFolder}/{gfxFolder.Get("id")}")}");
-                ArcDirectory.Copy(file.Relative(), $"{TranspileTarget}/{gfxFolder.Get("target")}/{file.Relative($"{GfxFolder}/{gfxFolder.Get("id")}")}");
+                // Add file to the virtual directory and copy it
+                string relativePath = Path.Combine(target, file.Relative(gfxFolderPath));
+                ArcDirectory.ScriptVDir.Add(Path.Combine(TranspileTarget, relativePath));
+                ArcDirectory.Copy(file.Relative(), Path.Combine(TranspileTarget, relativePath));
 
+                // Drop the argument list entry for "this"
                 ArgList.Drop("this");
             }
 
-            if (gfxFolder.Get("id").ToString() == "modifiers")
+            // Handle "modifiers" special case
+            if (id == "modifiers")
             {
-                foreach (ArcFile file in ArcDirectory.GetFile($"{GfxFolder}/modifiers/files.txt"))
+                foreach (ArcFile file in ArcDirectory.GetFiles(Path.Combine(GfxFolder, "modifiers", "files.txt")))
                 {
                     b.Add(
                         "spriteType", "=", "{",
@@ -503,52 +521,86 @@ internal partial class Program
             }
         }
 
-        CreateTillFolder($"{TranspileTarget}/gfx/special");
-        foreach (ArcFile file in ArcDirectory.GetFiles($"{GfxFolder}/special"))
+        // Process special graphics
+        string specialFolderPath = Path.Combine(TranspileTarget, "gfx", "special");
+        ArcDirectory.CreateTillDirectory(specialFolderPath);
+        foreach (ArcFile file in ArcDirectory.GetFiles(Path.Combine(GfxFolder, "special")))
         {
-            ArcDirectory.GfxVDir.Add($"{TranspileTarget}/gfx/special/{file.File()}");
-            ArcDirectory.Copy(file.Relative(), $"{TranspileTarget}/gfx/special/{file.File()}");
+            ArcDirectory.GfxVDir.Add(Path.Combine(specialFolderPath, file.File()));
+            ArcDirectory.Copy(file.Relative(), Path.Combine(specialFolderPath, file.File()));
         }
 
-        CreateTillFolder($"{TranspileTarget}/gfx/flags");
-        foreach (string c in ArcDirectory.GetFiles($"{GfxFolder}/flags"))
+        // Process flags
+        string flagsFolderPath = Path.Combine(TranspileTarget, "gfx", "flags");
+        ArcDirectory.CreateTillDirectory(flagsFolderPath);
+        foreach (string filePath in ArcDirectory.GetFiles(Path.Combine(GfxFolder, "flags")))
         {
-            string s = c.Split('\\').Last();
-            string oldPath = $"{GfxFolder}/flags/{s}";
-            string newPath = $"{TranspileTarget}/gfx/flags/{Country.Countries[s.Split('.')[0]].Tag}.tga";
+            string fileName = Path.GetFileName(filePath);
+            string oldPath = Path.Combine(GfxFolder, "flags", fileName);
+            string newPath = Path.Combine(flagsFolderPath, $"{Country.Countries[Path.GetFileNameWithoutExtension(fileName)].Tag}.tga");
 
             ArcDirectory.GfxVDir.Add(newPath);
             ArcDirectory.Copy(oldPath, newPath);
         }
 
+        // Finalize the block
         b.Add("}");
 
-        OverwriteFile($"{TranspileTarget}/interface/arc5.gfx", string.Join(' ', b), vdirOverride: ArcDirectory.GfxVDir);
+        // Overwrite the configuration file with the generated content
+        OverwriteFile(Path.Combine(TranspileTarget, "interface", "arc5.gfx"), string.Join(' ', b), vdirOverride: ArcDirectory.GfxVDir);
 
         return "Gfx Folders";
     }
+    
     static string Unsorted()
     {
         return Unsorted("");
     }
+    /// <summary>
+    /// Handles the Unsorted folder transpilation.
+    /// </summary>
+    /// <param name="fileEnd">The file extension to filter the files that should be processed.</param>
+    /// <returns>The name of the function indicating the completion status of processing unsorted files.</returns>
     static string Unsorted(string fileEnd)
     {
-        RFold(UnsortedFolder);
-        void RFold(string fold)
+        // Start processing from the root unsorted folder
+        ProcessFolder(UnsortedFolder);
+
+        // Recursive method to process each folder and its contents
+        void ProcessFolder(string folderPath)
         {
-            IEnumerable<string> Folders = ArcDirectory.GetFolders(fold);
-            foreach (string folder in Folders)
+            // Get subdirectories within the current folder
+            IEnumerable<string> subFolders = ArcDirectory.GetFolders(folderPath);
+            foreach (string subFolder in subFolders)
             {
-                RFold(folder);
+                ProcessFolder(subFolder); // Recursive call for subfolders
             }
 
-            string tfold = $"{TranspileTarget}\\{Path.GetRelativePath($"{UnsortedFolder}", fold)}".Replace('\\', '/');
-            CreateTillFolder(tfold);
-            IEnumerable<string> files = ArcDirectory.GetFiles(fold);
+            // Construct the target folder path for the transpiled files
+            string relativePath = Path.GetRelativePath(UnsortedFolder, folderPath);
+            string targetFolderPath = Path.Combine(TranspileTarget, relativePath).Replace('\\', '/');
+            ArcDirectory.CreateTillDirectory(targetFolderPath);
+
+            // Get files within the current folder
+            IEnumerable<string> files = ArcDirectory.GetFiles(folderPath);
             foreach (string file in files)
             {
-                if(file.EndsWith(fileEnd)) UnsortedSingleFile(file);
+                // Process only files that match the specified extension
+                if (file.EndsWith(fileEnd, StringComparison.OrdinalIgnoreCase))
+                {
+                    ProcessFile(file);
+                }
             }
+        }
+
+        // Method to process an individual file
+        void ProcessFile(string filePath)
+        {
+            string relativeFilePath = filePath.Replace('\\', '/'); // Ensure path consistency
+            string targetFilePath = Path.Combine(TranspileTarget, Path.GetRelativePath(UnsortedFolder, relativeFilePath)).Replace('\\', '/');
+
+            ArcDirectory.UnsortedVDir.Add(targetFilePath); // Add to virtual directory
+            ArcDirectory.Copy(relativeFilePath, targetFilePath); // Copy the file to the target location
         }
 
         return "Unsorted Files";
