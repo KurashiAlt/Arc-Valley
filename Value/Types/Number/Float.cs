@@ -8,19 +8,19 @@ public class ArcFloat : IArcNumber, IValue
     }
     public ArcFloat(Word value)
     {
-        if (value.EndsWith('%')) value = new Word((double.Parse(value.Value[..^1]) / 100).ToString("0.000"), value);
+        if (value.EndsWith('%')) value = new Word((double.Parse(value.Value[..^1]) / 100).ToString("0.###"), value);
         Value = Calculator.Calculate(value);
     }
     public ArcFloat(Block b)
     {
         Word value = b.ToWord();
-        if (value.EndsWith('%')) value = new Word((double.Parse(value.Value[..^1]) / 100).ToString("0.000"), value);
+        if (value.EndsWith('%')) value = new Word((double.Parse(value.Value[..^1]) / 100).ToString("0.###"), value);
         Value = Calculator.Calculate(value);
     }
     public void Set(Block b)
     {
         Word value = b.ToWord();
-        if (value.EndsWith('%')) value = new Word((double.Parse(value.Value[..^1]) / 100).ToString("0.000"), value);
+        if (value.EndsWith('%')) value = new Word((double.Parse(value.Value[..^1]) / 100).ToString("0.###"), value);
         Value = Calculator.Calculate(value);
     }
     public static ArcFloat Constructor(Block b) => new ArcFloat(b);
@@ -29,7 +29,7 @@ public class ArcFloat : IArcNumber, IValue
 
     public override string ToString()
     {
-        return Value.ToString();
+        return Value.ToString("0.###");
     }
     public bool LogicalCall(ref Walker i)
     {
@@ -105,12 +105,12 @@ public class ArcFloat : IArcNumber, IValue
                 default:
                     {
                         i.MoveBack();
-                        result.Add(Value.ToString());
+                        result.Add(ToString());
                     }
                     break;
             }
         }
-        else result.Add(Value.ToString());
+        else result.Add(ToString());
         return i;
     }
 }

@@ -45,7 +45,7 @@ public static partial class Compiler
             else if (g.StartsWith('&')) __variable(ref g, ref result);
             else if (g.EndsWith(',') || g.EndsWith(';')) __multi_scope(ref g, ref result, type, bound);
             else if (TranspiledString(g.Current, '`', out string? newValue, type, bound, g.Current.GetFile()) && newValue != null) result.Add(newValue);
-            else if (g.EndsWith('%')) result.Add((double.Parse(g.Current.Value[..^1]) / 100).ToString("0.000"));
+            else if (g.EndsWith('%')) result.Add((double.Parse(g.Current.Value[..^1]) / 100).ToString("0.###"));
             else if (g.EnclosedBy('[', ']')) __quick_limit(ref g, ref result, type, bound);
             else if (g.EnclosedBy('(', ')')) __quick_math(ref g, ref result);
             else if (g.Contains("->")) __dot_scoping(ref g, ref result, type, bound);

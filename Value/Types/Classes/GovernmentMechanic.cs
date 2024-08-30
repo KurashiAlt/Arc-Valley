@@ -332,7 +332,7 @@ public class GovernmentMechanic : IArcObject
         args.Get(ArcString.Constructor, "name"),
         args.Get(ArcString.Constructor, "alert_icon_gfx", null),
         args.Get(ArcInt.Constructor, "alert_icon_index", null),
-        args.Get(ArcTrigger.Constructor, "available", null),
+        args.Get(ArcTrigger.Constructor, "available", new("always", "=", "yes")),
         args.Get(Dict<GovernmentMechanicPower>.Constructor(GovernmentMechanicPower.Constructor), "powers", null),
         args.Get(Dict<GovernmentMechanicInteraction>.Constructor(GovernmentMechanicInteraction.Constructor), "interactions", null)
     );

@@ -381,7 +381,6 @@ internal partial class Program
         OverwriteFile($"{TranspileTarget}/common/naval_doctrines/arc.txt", b.ToString());
         return "Naval Doctrines";
     }
-
     static string CenterOfTrade()
     {
         Block COTFile = new();

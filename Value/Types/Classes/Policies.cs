@@ -66,9 +66,9 @@ public class Policy : ArcObject
         s.Add(
                 "}",
                 Get<ArcModifier>("modifier").Compile(),
-                Get<ArcEffect>("effect").Compile("effect"),
-                Get<ArcEffect>("removed_effect").Compile("removed_effect"),
-                Get<ArcTrigger>("ai_will_do").Compile("ai_will_do"),
+                Get<ArcEffect>("effect").Compile("effect", false),
+                Get<ArcEffect>("removed_effect").Compile("removed_effect", false),
+                Get<ArcTrigger>("ai_will_do").Compile("ai_will_do", false),
             "}"
         );
     }

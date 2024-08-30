@@ -83,7 +83,6 @@ public static partial class Compiler
         { "interface", new Dict<IValue>() {
             { "church_aspects", new ArcString("") },
             { "countryreligionview", new ArcString("") },
-            { "provinceview", new ArcString("") },
             { "macrobuildinterface", new ArcString("") },
             { "buildings", new ArcCode() },
         } },
@@ -890,7 +889,7 @@ public static partial class Compiler
     {
         string calc = g.Current.Value[1..^1];
 
-        result.Add(Calculator.Calculate(new Word(calc, g)));
+        result.Add(Calculator.Calculate(new Word(calc, g)).ToString("0.###"));
     }
     public static void __float_random(ref Walker g, ref Block result)
     {

@@ -233,12 +233,9 @@ public class Building : ArcObject
         Program.OverwriteFile($"{Program.TranspileTarget}/common/buildings/arc.txt", string.Join(' ', b));
 
         string macro = Compiler.global.Get<Dict<IValue>>("interface").Get<ArcString>("macrobuildinterface").Value;
-        string provinceview = Compiler.global.Get<Dict<IValue>>("interface").Get<ArcString>("provinceview").Value;
         macro = macro.Replace("$buildings$", string.Join(' ', a)).Trim('`');
-        provinceview = provinceview.Replace("$buildings$", string.Join(' ', a)).Trim('`');
 
         Program.OverwriteFile($"{Program.TranspileTarget}/interface/macrobuildinterface.gui", macro, false);
-        Program.OverwriteFile($"{Program.TranspileTarget}/interface/provinceview.gui", provinceview, false);
 
         return "Buildings";
     }

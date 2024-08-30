@@ -6,7 +6,7 @@
     <RootNamespace>Arc_Valley</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Configurations>Debug;Release;Test</Configurations>
+    <Configurations>Debug;Release;Test;PurpleProject</Configurations>
   </PropertyGroup>
 
   <ItemGroup>

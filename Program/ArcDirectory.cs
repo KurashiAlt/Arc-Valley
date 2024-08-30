@@ -4,6 +4,9 @@ using System.Collections;
 using System.IO;
 
 namespace Arc;
+/*
+    Represents a virtual directory that stores a list of file paths.
+*/
 public class VDirType : IEnumerable<string>
 {
     List<string> files = new();
@@ -18,9 +21,15 @@ public class VDirType : IEnumerable<string>
     public int Count => files.Count;
 
 }
+/*
+    Provides methods for directory management and file operations, including population and cleanup.
+*/
 public static class ArcDirectory
 {
+    // Base directory of the application.
     public static string directory = AppDomain.CurrentDomain.BaseDirectory;
+
+    // Virtual directories to manage different types of files.
     public static VDirType ScriptVDir = new();
     public static VDirType UnsortedVDir = new();
     public static VDirType MapVDir = new();
@@ -28,7 +37,8 @@ public static class ArcDirectory
     public static VDirType ExtraFiles = new();
     public static void CheckFolder(string path)
     {
-        if (Path.GetRelativePath(directory, path).Replace('\\', '/').StartsWith($"{Program.TranspileTarget}/.")) return;
+        path = path.Replace('\\', '/');
+        if (Path.GetRelativePath(directory, path).StartsWith($"{Program.TranspileTarget}/.")) return;
 
         string[] subPaths = GetDirectories(path);
         foreach (string subPath in subPaths)
@@ -55,17 +65,10 @@ public static class ArcDirectory
     }
     public static void Copy(string origin, string destination)
     {
-        origin = Path.Combine(directory, origin);
-        destination = Path.Combine(directory, destination);
+        origin = Path.Combine(directory, origin).Replace('\\', '/');
+        destination = Path.Combine(directory, destination).Replace('\\', '/');
 
-        try
-        {
-            File.Copy(origin, destination, true);
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+        File.Copy(origin, destination, true);
     }
     public static void VDirPopulate(string[] args)
     {
@@ -113,12 +116,14 @@ public static class ArcDirectory
     }
     public static string[] GetDirectories(string path)
     {
+        path = path.Replace('\\', '/');
         if (!path.StartsWith(directory)) path = Path.Combine(directory, path);
 
         return Directory.GetDirectories(path).OrderBy(d => d).ToArray();
     }
     public static string[] GetFiles(string path, bool includeSubdirectories = false)
     {
+        path = path.Replace('\\', '/');
         if (!Path.Exists(Path.Combine(directory, path))) return new string[] { };
         if (!path.StartsWith(directory)) path = Path.Combine(directory, path);
 
@@ -128,16 +133,17 @@ public static class ArcDirectory
     }
     public static string[] GetFile(string path)
     {
+        path = path.Replace('\\', '/');
         if (!Path.Exists(Path.Combine(directory, path))) return new string[] { };
         if (!path.StartsWith(directory)) path = Path.Combine(directory, path);
 
         return File.ReadAllLines(path);
     }
-    public static IEnumerable<string> GetFolders(string path)
+    public static string[] GetFolders(string path)
     {
-        string location = Path.Combine(directory, path);
+        string location = Path.Combine(directory, path).Replace('\\', '/');
 
-        return from s in GetDirectories(location) select Path.GetRelativePath(directory, s);
+        return (from s in GetDirectories(location) select Path.GetRelativePath(directory, s)).ToArray();
     }
 
 }

@@ -12,13 +12,13 @@ public class Option : IArcObject
 {
     public string Class => "Option";
     ArcString Name { get; set; }
-    ArcCode AiChance { get; set; }
+    ArcTrigger AiChance { get; set; }
     ArcBool Highlight { get; set; }
     Province? Goto { get; set; }
     ArcTrigger? Trigger { get; set; }
     ArcEffect Effect { get; set; }
     public Dict<IVariable?> keyValuePairs { get; set; }
-    public Option(ArcString name, ArcCode aiChance, ArcBool highlight, Province? @goto, ArcTrigger? trigger, ArcEffect effect)
+    public Option(ArcString name, ArcTrigger aiChance, ArcBool highlight, Province? @goto, ArcTrigger? trigger, ArcEffect effect)
     {
         Name = name;
         AiChance = aiChance;
@@ -54,7 +54,7 @@ public class Option : IArcObject
         if (Goto != null) sb.Add("goto", "=", Goto.Id);
         if (Highlight) sb.Add("highlight", "=", "yes");
         AiChance.Compile("ai_chance", ref sb);
-        if(Trigger != null) Trigger.Compile("trigger", ref sb);
+        Trigger?.Compile("trigger", ref sb);
         Effect.Compile(ref sb);
         sb.Add("}");
     }
@@ -67,7 +67,7 @@ public class Option : IArcObject
 
         return new Option(
             args.Get(ArcString.Constructor, "name"),
-            args.Get(ArcCode.Constructor, "ai_chance", new("factor", "=", "1")),
+            args.Get(ArcTrigger.Constructor, "ai_chance", new("factor", "=", "1")),
             args.Get(ArcBool.Constructor, "highlight", new(false)),
             args.GetFromListNullable(Province.Provinces, "goto"),
             args.Get(ArcTrigger.Constructor, "trigger", null),
