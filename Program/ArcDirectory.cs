@@ -180,6 +180,24 @@ public static class ArcDirectory
     }
 
     /// <summary>
+    /// Combines the two paths.
+    /// </summary>
+    public static string Combine(string origin, string destination)
+    {
+        string path = Path.Combine(origin, destination);
+        return path.Replace('\\', '/');
+    }
+
+    /// <summary>
+    /// Gets relative path between two paths.
+    /// </summary>
+    public static string Relative(string origin, string destination)
+    {
+        string path = Path.GetRelativePath(origin, destination);
+        return path.Replace('\\', '/');
+    }
+
+    /// <summary>
     /// Gets files in a directory, optionally including subdirectories.
     /// </summary>
     /// <param name="path">Relative path to search for files.</param>

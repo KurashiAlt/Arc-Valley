@@ -491,7 +491,7 @@ internal partial class Program
                     textureFilePath = textureFilePath[..pos] + "." + treatType;
                 }
                 else textureFilePath += $".{treatType}";
-                textureFilePath = Path.Combine(Path.GetRelativePath(TranspileTarget, targetFolder), textureFilePath);
+                textureFilePath = ArcDirectory.Combine(ArcDirectory.Relative(TranspileTarget, targetFolder), textureFilePath);
 
                 b.Add(
                     "spriteType", "=", "{",
