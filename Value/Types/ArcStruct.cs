@@ -1,20 +1,44 @@
 ﻿using Arc;
+using System.Diagnostics;
 using System.Runtime.Serialization;
 
-public class ArcStruct : IArcObject
+public class ArcStruct : ArcType
 {
     public static Dict<ArcStruct> Structs = new();
 
     //Properties
     Dictionary<Word, (ArcType type, Block? def)> Structure = new();
-    ArcString Id;
-    public ArcStruct(string id, Args args)
+    ArcString? Id;
+    public ArcStruct(string? id, Args args)
     {
-        Id = new(id);
+        if (id != null)
+        {
+            Id = new(id);
+            Structs.Add(id, this);
+        }
 
         ParseStructure(args);
+
+        ThisConstructor = (Block block) =>
+        {
+            if (!Parser.HasEnclosingBrackets(block))
+            {
+                block.AddFirst(new Word("{", block.First.Value));
+                block.AddLast(new Word("}", block.Last.Value));
+            }
+
+            Args arguments = Args.GetArgs(block);
+            ArcObject obj = new();
+
+            foreach (var kvp in Structure)
+            {
+                AddArgumentToObject(arguments, obj, kvp);
+            }
+
+            return obj;
+        };
+
         RegisterType(id);
-        Structs.Add(id, this);
     }
 
     /// <summary>
@@ -29,10 +53,22 @@ public class ArcStruct : IArcObject
             Block type = walker.GetScope();
             walker.ForceMoveNext();
 
-            Word name = walker.Current;
-            Block? defaultValue = GetDefaultValue(walker);
+            if (walker == "=")
+            {
+                // This means it 's the old structure, meaning Type is the name and the next word is the Type.
+                walker.ForceMoveNext();
 
-            Structure.Add(name, (ArcType.Constructor(type), defaultValue));
+                Block realType = walker.GetScope();
+                Structure.Add(type.ToString(), (ArcType.Constructor(realType), null));
+                // In the old structure you can't define default values here
+            }
+            else
+            {
+                Word name = walker.Current;
+                Block? defaultValue = GetDefaultValue(walker);
+
+                Structure.Add(name, (ArcType.Constructor(type), defaultValue));
+            }
         } while (walker.MoveNext());
     }
 
@@ -60,20 +96,12 @@ public class ArcStruct : IArcObject
     /// Registers the type in the ArcType.Types dictionary with a constructor that creates an ArcObject based on the provided block.
     /// </summary>
     /// <param name="id">The identifier for the type being registered.</param>
-    private void RegisterType(string id)
+    private void RegisterType(string? id)
     {
-        ArcType.Types.Add(id, new((Block block) =>
+        if (id != null)
         {
-            Args arguments = Args.GetArgs(block);
-            ArcObject obj = new();
-
-            foreach (var kvp in Structure)
-            {
-                AddArgumentToObject(arguments, obj, kvp);
-            }
-
-            return obj;
-        }));
+            ArcType.Types.Add(id, new(ThisConstructor));
+        }
     }
 
     /// <summary>
@@ -95,6 +123,7 @@ public class ArcStruct : IArcObject
         IVariable? value;
         if (!Compiler.TryGetVariable(arg.ToWord(), out value))
         {
+            if (arg.ToString().Contains("grain")) Debugger.Break();
             value = kvp.Value.type.ThisConstructor(arg);
         }
 
@@ -140,5 +169,5 @@ public class ArcStruct : IArcObject
         return i;
     }
     public IVariable? Get(string indexer) => indexer == "id" ? Id : null;
-    public bool CanGet(string indexer) => indexer == "id";
+    public bool CanGet(string indexer) => indexer == "id" && Id != null;
 }

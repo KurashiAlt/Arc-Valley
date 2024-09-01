@@ -1,5 +1,6 @@
 ﻿using Arc;
 using System;
+using System.Diagnostics;
 using System.Numerics;
 
 public class ArgList : IArcObject, IArcNumber
@@ -182,6 +183,7 @@ public class ArcType : IValue
     {
         return new ArcType(ThisConstructor, Nullable);
     }
+    public ArcType() { }
     public ArcType(Func<string, IVariable?> get, bool nullable = false)
     {
         Nullable = nullable;
@@ -197,36 +199,7 @@ public class ArcType : IValue
         if(b.Count != 1)
         {
             Args args = Args.GetArgs(b);
-            Dictionary<string, ArcType> Structure = new();
-
-            foreach (KeyValuePair<string, Block> pair in args.keyValuePairs ?? throw ArcException.Create(b))
-            {
-                Structure.Add(pair.Key, Constructor(pair.Value));
-            }
-
-            ArcType Struct = new((Block c) => {
-                if (!Parser.HasEnclosingBrackets(c))
-                {
-                    c.AddFirst(new Word("{", c.First.Value));
-                    c.AddLast(new Word("}", c.Last.Value));
-                }
-                Args nArgs = Args.GetArgs(c);
-                ArcObject obj = new();
-                foreach (KeyValuePair<string, ArcType> pair in Structure)
-                {
-                    try
-                    {
-                        obj.Add(pair.Key, nArgs.Get(pair.Value.ThisConstructor, pair.Key));
-                    }
-                    catch
-                    {
-                        if (!pair.Value.Nullable) throw;
-                    }
-                }
-                return obj;
-            });
-
-            return Struct;
+            return new ArcStruct(null, args);
         }
 
         if(b.First == null) throw new Exception();
