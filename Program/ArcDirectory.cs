@@ -1,6 +1,7 @@
 ﻿using Pastel;
 using System.Collections;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Arc;
@@ -10,15 +11,28 @@ namespace Arc;
 public class VDirType : IEnumerable<string>
 {
     readonly List<string> files = new();
-    public void Add(string path)
+    public void Add(ArcPath path)
     {
-        path = path.Replace("\\", "/");
         files.Add(path);
     }
     public bool Contains(string path) => files.Contains(path);
     public IEnumerator<string> GetEnumerator() => files.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     public int Count => files.Count;
+}
+
+/// <summary>
+/// An abstraction layer that makes paths always use '/' intead of '\'
+/// </summary>
+public class ArcPath
+{
+    public string value;
+    public ArcPath(string path)
+    {
+        value = path.NormalizePath();
+    }
+    public static implicit operator string(ArcPath path) => path.value;
+    public static implicit operator ArcPath(string path) => new(path);
 }
 
 /// <summary>
@@ -53,10 +67,21 @@ public static class ArcDirectory
     public static VDirType ExtraFiles => VDirs[4].VDir;
 
     /// <summary>
+    /// Normalizes path separators to use forward slashes.
+    /// </summary>
+    /// <param name="path">The path to normalize.</param>
+    /// <returns>The normalized path.</returns>
+    public static string NormalizePath(this string path)
+    {
+        path = path.Replace('\\', '/');
+        return path;
+    }
+
+    /// <summary>
     /// Creates all required subdirectories up to the specified directory path.
     /// </summary>
     /// <param name="path">The relative path for which to create directories.</param>
-    public static void CreateTillDirectory(string path)
+    public static void CreateTillDirectory(ArcPath path)
     {
         string? DirPath = Path.GetDirectoryName(path);
         if (DirPath == null) return;
@@ -72,9 +97,9 @@ public static class ArcDirectory
     /// Tries to delete a file at the specified relative path.
     /// </summary>
     /// <param name="path">Relative path of the file to delete.</param>
-    public static void TryDelete(string path)
+    public static void TryDelete(ArcPath path)
     {
-        string fullPath = Path.Combine(directory, path);
+        ArcPath fullPath = Path.Combine(directory, path);
         if (File.Exists(fullPath)) File.Delete(fullPath);
     }
 
@@ -83,10 +108,10 @@ public static class ArcDirectory
     /// </summary>
     /// <param name="origin">Relative origin path.</param>
     /// <param name="destination">Relative destination path.</param>
-    public static void Copy(string origin, string destination)
+    public static void Copy(ArcPath origin, ArcPath destination)
     {
-        origin = Path.Combine(directory, origin).Replace('\\', '/');
-        destination = Path.Combine(directory, destination).Replace('\\', '/');
+        origin = Path.Combine(directory, origin);
+        destination = Path.Combine(directory, destination);
 
         CreateTillDirectory(destination);
 
@@ -103,7 +128,7 @@ public static class ArcDirectory
     /// <param name="vdirOverride">An optional virtual directory to use instead of the default ScriptVDir.</param>
     /// <param name="forceFormatting">Indicates whether to forcefully apply formatting regardless of the allowFormatting flag.</param>
     public static void OverwriteFile(
-        string path,
+        ArcPath path,
         string text,
         bool allowFormatting = true,
         bool addBOM = false,
@@ -133,7 +158,7 @@ public static class ArcDirectory
         }
 
         // Construct the full path and format the text if needed
-        string originalPath = path;
+        ArcPath originalPath = path;
         path = Path.Combine(ArcDirectory.directory, path);
 
         // Ensure the directory exists before writing the file
@@ -171,30 +196,29 @@ public static class ArcDirectory
     /// </summary>
     /// <param name="path">Relative path to search for directories.</param>
     /// <returns>Array of directory paths.</returns>
-    public static string[] GetDirectories(string path)
+    public static ArcPath[] GetDirectories(ArcPath path)
     {
-        path = path.Replace('\\', '/');
-        if (!path.StartsWith(directory)) path = Path.Combine(directory, path);
+        if (!path.value.StartsWith(directory)) path = Path.Combine(directory, path);
 
-        return Directory.GetDirectories(path).OrderBy(d => d).ToArray();
+        return Directory.GetDirectories(path).OrderBy(d => d).Select(s => new ArcPath(s)).ToArray();
     }
 
     /// <summary>
     /// Combines the two paths.
     /// </summary>
-    public static string Combine(string origin, string destination)
+    public static string Combine(ArcPath origin, ArcPath destination)
     {
-        string path = Path.Combine(origin, destination);
-        return path.Replace('\\', '/');
+        ArcPath path = Path.Combine(origin, destination);
+        return path;
     }
 
     /// <summary>
     /// Gets relative path between two paths.
     /// </summary>
-    public static string Relative(string origin, string destination)
+    public static string Relative(ArcPath origin, ArcPath destination)
     {
-        string path = Path.GetRelativePath(origin, destination);
-        return path.Replace('\\', '/');
+        ArcPath path = Path.GetRelativePath(origin, destination);
+        return path;
     }
 
     /// <summary>
@@ -203,18 +227,17 @@ public static class ArcDirectory
     /// <param name="path">Relative path to search for files.</param>
     /// <param name="includeSubdirectories">Whether to include files in subdirectories.</param>
     /// <returns>Array of file paths.</returns>
-    public static string[] GetFiles(string path, bool includeSubdirectories = false)
+    public static ArcPath[] GetFiles(ArcPath path, bool includeSubdirectories = false)
     {
-        path = path.Replace('\\', '/');
-        string fullPath = Path.Combine(directory, path);
-        if (!Directory.Exists(fullPath)) return Array.Empty<string>();
+        ArcPath fullPath = Path.Combine(directory, path);
+        if (!Directory.Exists(fullPath)) return Array.Empty<ArcPath>();
 
-        if (!path.StartsWith(directory)) path = Path.Combine(directory, path);
+        if (!path.value.StartsWith(directory)) path = Path.Combine(directory, path);
 
         if (includeSubdirectories)
-            return Directory.GetFiles(path, "*.*", SearchOption.AllDirectories).OrderBy(d => d).ToArray();
+            return Directory.GetFiles(path, "*.*", SearchOption.AllDirectories).OrderBy(d => d).Select(s => new ArcPath(s)).ToArray();
 
-        return Directory.GetFiles(path).OrderBy(d => d).ToArray();
+        return Directory.GetFiles(path).OrderBy(d => d).Select(s => new ArcPath(s)).ToArray();
     }
 
     /// <summary>
@@ -222,12 +245,11 @@ public static class ArcDirectory
     /// </summary>
     /// <param name="path">Relative path of the file to read.</param>
     /// <returns>Array of lines read from the file.</returns>
-    public static string[] GetFile(string path)
+    public static string[] GetFile(ArcPath path)
     {
-        path = path.Replace('\\', '/');
-        string fullPath = path;
+        ArcPath fullPath = path;
 
-        if (!fullPath.StartsWith(directory)) fullPath = Path.Combine(directory, path);
+        if (!fullPath.value.StartsWith(directory)) fullPath = Path.Combine(directory, path);
 
         if (!File.Exists(fullPath)) return Array.Empty<string>();
         
@@ -239,39 +261,35 @@ public static class ArcDirectory
     /// </summary>
     /// <param name="path">Relative path to search for folders.</param>
     /// <returns>Array of relative folder paths.</returns>
-    public static string[] GetFolders(string path)
+    public static ArcPath[] GetFolders(ArcPath path)
     {
-        string location = Path.Combine(directory, path).Replace('\\', '/');
-        return GetDirectories(location).Select(s => Path.GetRelativePath(directory, s)).ToArray();
+        ArcPath location = Path.Combine(directory, path);
+        return GetDirectories(location).Select(s => new ArcPath(Path.GetRelativePath(directory, s))).ToArray();
     }
 
     /// <summary>
     /// Recursively checks folders for files that are not part of predefined virtual directories.
     /// </summary>
     /// <param name="path">The root path to start checking.</param>
-    public static void CheckFolder(string path)
+    public static void CheckFolderForUncategorizedFiles(ArcPath path)
     {
-        path = path.Replace('\\', '/');
-
         // Skip if the path is inside a hidden or excluded folder.
-        if (Path.GetRelativePath(directory, path).StartsWith($"{Program.TranspileTarget}/.")) return;
+        if (path.value.Split('/').Last().StartsWith('.')) return;
 
-        string[] subPaths = GetDirectories(path);
-        foreach (string subPath in subPaths)
+        ArcPath[] subPaths = GetDirectories(path);
+        foreach (ArcPath subPath in subPaths)
         {
-            CheckFolder(subPath); // Recursively check subdirectories.
+            CheckFolderForUncategorizedFiles(subPath);
         }
 
-        string[] files = GetFiles(path);
-        foreach (string file in files)
+        ArcPath[] files = GetFiles(path);
+        foreach (ArcPath file in files)
         {
-            string aPath = Path.GetRelativePath(directory, file).Replace('\\', '/');
-
-            // Skip if the file is already in any known virtual directory.
+            ArcPath aPath = Path.GetRelativePath(directory, file);
             if (VDirs.Any(vd => vd.VDir.Contains(aPath))) continue;
 
             // Add to ExtraFiles if not categorized.
-            VDirs[4].VDir.Add(aPath);
+            ExtraFiles.Add(aPath);
         }
     }
     
@@ -290,7 +308,7 @@ public static class ArcDirectory
             else
             {
                 string[] VDirCache = GetFile($".arc/{name}.vdir");
-                foreach (string vDirPath in VDirCache)
+                foreach (ArcPath vDirPath in VDirCache)
                 {
                     if (!vDir.Contains(vDirPath)) vDir.Add(vDirPath);
                 }

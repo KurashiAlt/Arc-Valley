@@ -71,10 +71,10 @@ internal partial class Program
 
         if (args.Contains("script") || args.Contains("all"))
         {
-            foreach (string file in ArcDirectory.GetFiles($"{SelectorFolder}"))
+            foreach (ArcPath file in ArcDirectory.GetFiles($"{SelectorFolder}"))
             {
-                if (!file.EndsWith(".png")) continue;
-                string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
+                if (!file.value.EndsWith(".png")) continue;
+                ArcPath name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
 
                 _ = new ProvinceGroup(name, new())
                 {
@@ -172,7 +172,7 @@ internal partial class Program
             TimeSpan tstart = timer.Elapsed;
             var vList = (from c in CompileList.list where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
             int ti = 0;
-            while (vList.Any())
+            while (vList.Length != 0)
             {
                 foreach (ArcBlock v in vList)
                 {
@@ -204,7 +204,6 @@ internal partial class Program
         ("script", "", PersonalDeity.Transpile),
         ("script", "", Decision.Transpile),
         ("script", "", Event.Transpile),
-        ("script", "", Adjacency.Transpile),
         ("script", "", Area.Transpile),
         ("script", "", Bookmark.Transpile),
         ("script", "", Region.Transpile),
@@ -286,7 +285,7 @@ internal partial class Program
         
         Console.WriteLine($"Transpilation took: {(double)timer.ElapsedMilliseconds / 1000:0.000} seconds".Pastel(ConsoleColor.Red));
 
-        ArcDirectory.CheckFolder(TranspileTarget);
+        ArcDirectory.CheckFolderForUncategorizedFiles(TranspileTarget);
         if (ArcDirectory.ExtraFiles.Count == 0) Console.WriteLine("All files recognized");
         else if (!args.Contains("no-vdir"))
         {
@@ -403,36 +402,36 @@ internal partial class Program
         RFold(MapFolder);
         void RFold(string fold)
         {
-            IEnumerable<string> Folders = ArcDirectory.GetFolders(fold);
-            foreach (string folder in Folders)
+            IEnumerable<ArcPath> Folders = ArcDirectory.GetFolders(fold);
+            foreach (ArcPath folder in Folders)
             {
                 RFold(folder);
             }
 
             string tfold = $"{TranspileTarget}\\map\\{Path.GetRelativePath($"{directory}/{MapFolder}", fold)}".Replace('\\', '/');
             CreateTillFolder(tfold);
-            IEnumerable<string> files = ArcDirectory.GetFiles(fold);
-            foreach (string file in files)
+            IEnumerable<ArcPath> files = ArcDirectory.GetFiles(fold);
+            foreach (ArcPath file in files)
             {
-                if (file.EndsWith("colormap.dds"))
+                if (file.value.EndsWith("colormap.dds"))
                 {
-                    string cfile = Path.GetRelativePath(directory, file).Replace('\\', '/');
-                    frw(cfile, $"{TranspileTarget}\\map\\terrain\\colormap_autumn.dds".Replace('\\', '/'));
-                    frw(cfile, $"{TranspileTarget}\\map\\terrain\\colormap_spring.dds".Replace('\\', '/'));
-                    frw(cfile, $"{TranspileTarget}\\map\\terrain\\colormap_summer.dds".Replace('\\', '/'));
-                    frw(cfile, $"{TranspileTarget}\\map\\terrain\\colormap_winter.dds".Replace('\\', '/'));
+                    ArcPath cfile = Path.GetRelativePath(directory, file).Replace('\\', '/');
+                    frw(cfile, $"{TranspileTarget}/map/terrain/colormap_autumn.dds");
+                    frw(cfile, $"{TranspileTarget}/map/terrain/colormap_spring.dds");
+                    frw(cfile, $"{TranspileTarget}/map/terrain/colormap_summer.dds");
+                    frw(cfile, $"{TranspileTarget}/map/terrain/colormap_winter.dds");
                 }
                 else
                 {
                     frw(
-                        Path.GetRelativePath(directory, file).Replace('\\', '/'), 
-                        $"{TranspileTarget}\\map\\{Path.GetRelativePath($"{directory}/{MapFolder}", file)}".Replace('\\', '/')
+                        Path.GetRelativePath(directory, file), 
+                        $"{TranspileTarget}/map/{Path.GetRelativePath($"{directory}/{MapFolder}", file)}"
                     );
                 }
             }
         }
 
-        void frw(string cfile, string tfile)
+        void frw(ArcPath cfile, ArcPath tfile)
         {
             ArcDirectory.MapVDir.Add(tfile);
             ArcDirectory.Copy(cfile, tfile);
@@ -448,7 +447,8 @@ internal partial class Program
         public string Relative() => Path.GetRelativePath(directory, FullFileName).Replace('\\', '/');
         public string Relative(string s) => Path.GetRelativePath(Path.Combine(directory, s), FullFileName).Replace('\\', '/');
         public string Extension() => Path.GetExtension(FullFileName).Replace('\\', '/');
-        public ArcFile(string fullFileName) { FullFileName = fullFileName.Replace('\\', '/'); }
+        public ArcFile(ArcPath fullFileName) { FullFileName = fullFileName; }
+        public static implicit operator ArcFile(ArcPath s) => new(s);
         public static implicit operator ArcFile(string s) => new(s);
     }
     
@@ -574,8 +574,8 @@ internal partial class Program
         void ProcessFolder(string folderPath)
         {
             // Get subdirectories within the current folder
-            IEnumerable<string> subFolders = ArcDirectory.GetFolders(folderPath);
-            foreach (string subFolder in subFolders)
+            IEnumerable<ArcPath> subFolders = ArcDirectory.GetFolders(folderPath);
+            foreach (ArcPath subFolder in subFolders)
             {
                 ProcessFolder(subFolder); // Recursive call for subfolders
             }
@@ -586,11 +586,11 @@ internal partial class Program
             ArcDirectory.CreateTillDirectory(targetFolderPath);
 
             // Get files within the current folder
-            IEnumerable<string> files = ArcDirectory.GetFiles(folderPath);
-            foreach (string file in files)
+            IEnumerable<ArcPath> files = ArcDirectory.GetFiles(folderPath);
+            foreach (ArcPath file in files)
             {
                 // Process only files that match the specified extension
-                if (file.EndsWith(fileEnd, StringComparison.OrdinalIgnoreCase))
+                if (file.value.EndsWith(fileEnd, StringComparison.OrdinalIgnoreCase))
                 {
                     ProcessFile(file);
                 }
@@ -738,8 +738,8 @@ internal partial class Program
         }
         else if (fileLocation.EndsWith("/"))
         {
-            string[] files = ArcDirectory.GetFiles(fileLocation);
-            foreach (string file in files)
+            ArcPath[] files = ArcDirectory.GetFiles(fileLocation);
+            foreach (ArcPath file in files)
             {
                 string fileContent = File.ReadAllText(file);
                 Compiler.ObjectDeclare(fileContent + headers, file, true);

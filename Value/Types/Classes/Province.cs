@@ -246,7 +246,7 @@ trade_winds = ""trade_winds.txt""
 # Define which indices in trees.bmp palette which should count as trees for automatic terrain assignment
 tree = {{ 3 4 7 10 }}
 
-{string.Join('\n', from a in Adjacency.Adjacencies where a.Value.Get<ArcString>("type").Value == "canal" select $"canal_definition = {{ name = \"{a.Key}\" x = 0 y = 0 }}")}
+{string.Join('\n', from b in Compiler.GetVariable<Dict<IVariable?>>("adjacencies").Values() where b is ArcObject a && a.Get<ArcString>("type").Value == "canal" select $"canal_definition = {{ name = \"{b}\" x = 0 y = 0 }}")}
 ");
         return "Provinces";
     }

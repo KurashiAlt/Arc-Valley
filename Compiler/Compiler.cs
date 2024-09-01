@@ -33,7 +33,6 @@ public static partial class Compiler
             { "world_trade_center", new("level", "=", "3", "cost", "=", "1000", "development", "=", "25", "type", "=", "inland", "province_modifiers", "=", "{", "province_trade_power_value", "=", "25", "local_institution_spread", "=", "0.3", "}", "state_modifiers", "=", "{", "local_development_cost", "=", "-0.1", "local_manpower_modifier", "=", "0.33", "allowed_num_of_buildings", "=", "1", "}") },
 
         } },
-        { "adjacencies", Adjacency.Adjacencies },
         { "advisor_types", AdvisorType.AdvisorTypes },
         { "areas", Area.Areas },
         { "events", Event.Events },
@@ -149,7 +148,6 @@ public static partial class Compiler
             "church_aspect" => ChurchAspect.Call(g),
             "inheritable" => Args.Call(g),
             "country" => Country.Call(g),
-            "adjacency" => Adjacency.Call(g),
             "building" => Building.Call(g),
             "bookmark" => Bookmark.Call(g),
             "religion" => Religion.Call(g),

@@ -113,7 +113,6 @@ public class ArcType : IValue
         { "church_aspect", new(ChurchAspect.ChurchAspects.Get) },
         { "personality_trait", new(RulerPersonality.RulerPersonalities.Get) },
         { "country", new(Country.Countries.Get) },
-        { "adjacency", new(Adjacency.Adjacencies.Get) },
         { "building", new(Building.Buildings.Get) },
         { "bookmark", new(Bookmark.Bookmarks.Get) },
         { "religion", new(Religion.Religions.Get) },

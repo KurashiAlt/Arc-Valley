@@ -3,6 +3,11 @@
 public class ArcObject : Dict<IVariable?>
 {
     public Dictionary<string, NewCommand>? functions;
+    public override string ToString()
+    {
+        if (CanGet("id")) return Get("id")?.ToString()??"ArcObject";
+        return "ArcObject";
+    }
     public bool TryGetVariable(Word locator, out IVariable? var)
     {
         bool value = Compiler.TryGetVariable(locator.Value, out IVariable? vr, Get, CanGet);
