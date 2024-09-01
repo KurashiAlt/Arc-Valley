@@ -1,5 +1,4 @@
 ﻿using Arc;
-
 public class ArcObject : Dict<IVariable?>
 {
     public Dictionary<string, NewCommand>? functions;

@@ -1,48 +1,5 @@
 ﻿using Arc;
 using System.Collections.Generic;
-public class ArcNull : IVariable
-{
-
-}
-public class ArcStruct : ArcObject
-{
-    public static Dict<ArcStruct> Structs = new();
-    public ArcStruct(string id, Args args)
-    {
-        if (args.keyValuePairs == null) throw ArcException.Create(id, args);
-        Args Default = Args.GetArgs(args.Get("default", new()));
-        Block thisArgs = args.Get("args");
-
-        ArcType.Types.Add(id, new(
-            (Block b) => {
-                Args rs = Args.GetArgs(b);
-                rs.Inherit(Default);
-                ArcType type = ArcType.Constructor(thisArgs);
-                return type.ThisConstructor(rs.block);
-            }
-        ));
-
-        Structs.Add(id, this);
-    }
-    public static ArcStruct Constructor(string id, Args args) => new(id, args)
-    {
-        { "id", new ArcString(id) },
-    };
-    public static Walker Call(Walker i) => Call(i, Constructor);
-}
-public static partial class Transpiler
-{
-    public static List<ArcEffect> SimpleTranspilers = new();
-    public static string TranspileSimples()
-    {
-        foreach (ArcEffect obj in SimpleTranspilers)
-        {
-            obj.Compile();
-        }
-
-        return "Simple Dynamic Classes";
-    }
-}
 public class ArcClass : ArcObject
 {
     public static Dict<ArcClass> Classes = new();
@@ -90,6 +47,7 @@ public class ArcClass : ArcObject
             if (pair.Key == "id") continue;
             if (pair.Key == "args") continue;
             if (pair.Key == "default") continue;
+            if (pair.Key == "attributes") continue;
             if (pair.Key == "on_create") continue;
             if (pair.Key == "on_create_with_compile") continue;
             if (pair.Key == "simple_transpile") continue;
