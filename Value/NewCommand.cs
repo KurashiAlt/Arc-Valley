@@ -176,23 +176,23 @@ public class ArcType : IValue
             return c;
         }) }
     };
-    public void Set(Block b) => throw new NotImplementedException();
-    public Func<Block, IVariable> ThisConstructor { get; set; }
+    public Func<Block, IVariable> InstanceConstructor { get; set; }
     public bool Nullable { get; set; }
-    public ArcType CreateCopy()
-    {
-        return new ArcType(ThisConstructor, Nullable);
-    }
-    public ArcType() { }
+
+
+#pragma warning disable CS8618
+    public ArcType() { } // Required for types that inherit from this type.
+#pragma warning restore CS8618
+
     public ArcType(Func<string, IVariable?> get, bool nullable = false)
     {
         Nullable = nullable;
-        ThisConstructor = (Block b) => get(b.ToWord());
+        InstanceConstructor = (Block b) => get(b.ToWord());
     }
     public ArcType(Func<Block, IVariable> constructor, bool nullable = false)
     {
         Nullable = nullable;
-        ThisConstructor = constructor;
+        InstanceConstructor = constructor;
     }
     public static ArcType Constructor(Block b)
     {
@@ -220,7 +220,7 @@ public class ArcType : IValue
             {
                 ArcType sub = Regulat(t, false);
 
-                return ArcList<IVariable>.GetConstructor(sub.ThisConstructor, va: false)(b);
+                return ArcList<IVariable>.GetConstructor(sub.InstanceConstructor, va: false)(b);
             }, nullable);
         }
         else
@@ -233,6 +233,12 @@ public class ArcType : IValue
         ArcType c = Types[key].CreateCopy();
         c.Nullable = nullable;
         return c;
+    }
+
+    public void Set(Block b) => throw new NotImplementedException();
+    public ArcType CreateCopy()
+    {
+        return new ArcType(InstanceConstructor, Nullable);
     }
 }
 public enum CompileType
@@ -278,7 +284,7 @@ public class NewCommand : ArcObject
         ArcType typ = b.Get<ArcType>("args");
         try
         {
-            return typ.ThisConstructor(args.block);
+            return typ.InstanceConstructor(args.block);
         }
         catch (Exception e)
         {

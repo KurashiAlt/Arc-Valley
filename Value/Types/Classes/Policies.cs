@@ -25,8 +25,8 @@ public class Policy : ArcObject
             { "ai_will_do", args.Get(ArcTrigger.Constructor, "ai_will_do", new("factor", "=", "1")) },
         };
 
-        policy.Add("group_1", args.Get(ArcType.Types["idea_group"].ThisConstructor, "group_1"));
-        policy.Add("group_2", args.Get(ArcType.Types["idea_group"].ThisConstructor, "group_2"));
+        policy.Add("group_1", args.Get(ArcType.Types["idea_group"].InstanceConstructor, "group_1"));
+        policy.Add("group_2", args.Get(ArcType.Types["idea_group"].InstanceConstructor, "group_2"));
 
         return policy;
     } 

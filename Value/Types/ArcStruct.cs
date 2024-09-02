@@ -19,7 +19,7 @@ public class ArcStruct : ArcType
 
         ParseStructure(args);
 
-        ThisConstructor = (Block block) =>
+        InstanceConstructor = (Block block) =>
         {
             if (!Parser.HasEnclosingBrackets(block))
             {
@@ -100,7 +100,7 @@ public class ArcStruct : ArcType
     {
         if (id != null)
         {
-            ArcType.Types.Add(id, new(ThisConstructor));
+            ArcType.Types.Add(id, new(InstanceConstructor));
         }
     }
 
@@ -124,7 +124,7 @@ public class ArcStruct : ArcType
         if (!Compiler.TryGetVariable(arg.ToWord(), out value))
         {
             if (arg.ToString().Contains("grain")) Debugger.Break();
-            value = kvp.Value.type.ThisConstructor(arg);
+            value = kvp.Value.type.InstanceConstructor(arg);
         }
 
         obj.Add(kvp.Key, value);
@@ -143,7 +143,7 @@ public class ArcStruct : ArcType
 
         if (defaultValue != null)
         {
-            IVariable? value = kvp.Value.type.ThisConstructor(defaultValue);
+            IVariable? value = kvp.Value.type.InstanceConstructor(defaultValue);
             obj.Add(kvp.Key, value);
             return;
         }

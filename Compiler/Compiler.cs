@@ -200,6 +200,7 @@ public static partial class Compiler
             "vanilla_file" => VanillaNode.Call(g),
             "class" => ArcClass.Call(g),
             "struct" => ArcStruct.Call(g),
+            "enum" => ArcEnum.Call(g),
             _ => DynamicClass(g)
         };
     }

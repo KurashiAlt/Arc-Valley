@@ -3,6 +3,7 @@ using System.Collections.Generic;
 public class ArcClass : ArcObject
 {
     public static Dict<ArcClass> Classes = new();
+
     public Func<string, IVariable> Define;
     public Func<Args, string, IVariable> Init;
     public ArcEffect OnCreate;
@@ -69,7 +70,7 @@ public class ArcClass : ArcObject
             if (Default != null) s.Inherit(Default);
             s.keyValuePairs?.Add("id", new Block(obj));
             ArcType t = ArcType.Constructor(args.Get("args"));
-            IVariable v = t.ThisConstructor(s.block);
+            IVariable v = t.InstanceConstructor(s.block);
             if (v is ArcObject ob)
             {
                 ArgList.Add("this", new ArgsObject(s));

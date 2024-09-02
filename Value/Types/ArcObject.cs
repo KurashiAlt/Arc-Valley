@@ -75,7 +75,7 @@ public class ArcObject : Dict<IVariable?>
             }
             else
             {
-                IVariable c = args.Get(kvp.Value.ThisConstructor, kvp.Key);
+                IVariable c = args.Get(kvp.Value.InstanceConstructor, kvp.Key);
                 a.Add(kvp.Key, c);
             }
         }
