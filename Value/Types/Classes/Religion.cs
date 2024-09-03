@@ -76,8 +76,8 @@ public class Religion : IArcObject
     public ArcBool AllowFemaleDefenderOfFaith { get; set; }
     public ArcBool PersonalDeity { get; set; }
     public ArcList<Province>? HolySites { get; set; }
-    public ArcList<Blessing>? Blessings { get; set; }
-    public ArcList<ChurchAspect>? Aspects { get; set; }
+    public ArcList<IVariable>? Blessings { get; set; }
+    public ArcList<IVariable>? Aspects { get; set; }
     public ArcBool UsesChurchPower { get; set; }
     public ArcBool UsesKarma { get; set; }
     public ArcBool UsesPiety { get; set; }
@@ -100,7 +100,7 @@ public class Religion : IArcObject
     public ReligionGroup ReligionGroup { get; set; }
     public AspectsName? AspectsName { get; set; }
     public Dict<IVariable?> KeyValuePairs { get; set; }
-    public Religion(ArcString name, ArcString desc, ArcString id, ArcInt icon, ArcBlock color, ArcBlock heretic, ArcBlock country, ArcBlock province, ArcBlock countryAsSecondary, ArcBlock allowedConversions, ArcBlock onConvert, ArcBool hreReligion, ArcBool hreHereticReligion, ArcString date, ArcBool misguidedHeretic, ArcBool declareWarInRegency, ArcBool canHaveSecondaryReligion, ReligionGroup religionGroup, ArcBool allowFemaleDefenderOfFaith, ArcBool personalDeity, ArcList<Province>? holySites, ArcList<Blessing>? blessings, ArcBool usesChurchPower, ArcList<ChurchAspect>? aspects, ArcBool usesKarma, ArcBool usesPiety, ArcBool usesAnglicanPower
+    public Religion(ArcString name, ArcString desc, ArcString id, ArcInt icon, ArcBlock color, ArcBlock heretic, ArcBlock country, ArcBlock province, ArcBlock countryAsSecondary, ArcBlock allowedConversions, ArcBlock onConvert, ArcBool hreReligion, ArcBool hreHereticReligion, ArcString date, ArcBool misguidedHeretic, ArcBool declareWarInRegency, ArcBool canHaveSecondaryReligion, ReligionGroup religionGroup, ArcBool allowFemaleDefenderOfFaith, ArcBool personalDeity, ArcList<Province>? holySites, ArcList<IVariable>? blessings, ArcBool usesChurchPower, ArcList<IVariable>? aspects, ArcBool usesKarma, ArcBool usesPiety, ArcBool usesAnglicanPower
         , AspectsName? aspectsName, ArcBool fervor, ArcBool ancestors, ArcEffect papacy)
     {
         Name = name;
@@ -205,9 +205,9 @@ public class Religion : IArcObject
             args.Get(ArcBool.Constructor, "allow_female_defenders_of_the_faith", new(true)),
             args.Get(ArcBool.Constructor, "personal_deity", new(false)),
             a,
-            args.Get((Block s) => new ArcList<Blessing>(s, Blessing.Blessings), "blessings", null),
+            args.Get(ArcList<IVariable>.GetConstructor(ArcClass.GetListFunc("blessing"), va: false), "blessings", null),
             args.Get(ArcBool.Constructor, "uses_church_power", new(false)),
-            args.Get((Block s) => new ArcList<ChurchAspect>(s, ChurchAspect.ChurchAspects), "aspects", null),
+            args.Get(ArcList<IVariable>.GetConstructor(ArcClass.GetListFunc("church_aspect"), va: false), "aspects", null),
             args.Get(ArcBool.Constructor, "uses_karma", new(false)),
             args.Get(ArcBool.Constructor, "uses_piety", new(false)),
             args.Get(ArcBool.Constructor, "uses_anglican_power", new(false)),
@@ -247,8 +247,8 @@ public class Religion : IArcObject
         if (UsesAnglicanPower) sb.Append("uses_anglican_power = yes ");
         if (Ancestors) sb.Append("ancestors = yes ");
         if (HolySites != null) sb.Append($"holy_sites = {{ {string.Join(' ', from b in HolySites.Values select b.Id)} }} ");
-        if (Blessings != null) sb.Append($"blessings = {{ {string.Join(' ', from b in Blessings.Values select b.Id)} }} ");
-        if (Aspects != null) sb.Append($"aspects = {{ {string.Join(' ', from b in Aspects.Values select b.Id)} }} ");
+        if (Blessings != null) sb.Append($"blessings = {{ {string.Join(' ', from b in Blessings.Values where b is ArcObject select ((ArcObject)b).Get("id"))} }} ");
+        if (Aspects != null) sb.Append($"aspects = {{ {string.Join(' ', from b in Aspects.Values where b is ArcObject select ((ArcObject)b).Get("id"))} }} ");
         AspectsName?.Transpile(ref sb);
         sb.Append("} ");
     }
