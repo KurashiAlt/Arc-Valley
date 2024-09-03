@@ -119,9 +119,7 @@ public class ArcType : IValue
         { "religion", new(Religion.Religions.Get) },
         { "religious_group", new(ReligionGroup.ReligionGroups.Get) },
         { "personal_deity", new(PersonalDeity.PersonalDeitys.Get) },
-        { "advisor_type", new(AdvisorType.AdvisorTypes.Get) },
         { "tradenode", new(TradeNode.TradeNodes.Get) },
-        //{ "idea_group", new(IdeaGroup.IdeaGroups.Get) },
         { "static_modifier", new(StaticModifier.StaticModifiers.Get) },
         { "opinion_modifier", new(OpinionModifier.OpinionModifiers.Get) },
         { "relation", new(Relation.Relations.Get) },
@@ -138,8 +136,6 @@ public class ArcType : IValue
         { "government_reform", new(GovernmentReform.GovernmentReforms.Get) },
         { "event", new(Event.Events.Get) },
         { "incident", new(Incident.Incidents.Get) },
-        { "advisor", new(Advisor.Advisors.Get) },
-        { "age", new(Age.Ages.Get) },
         { "decision", new(Decision.Decisions.Get) },
         { "building_line", new(BuildingLine.BuildingLines.Get) },
         { "government_mechanic", new(GovernmentMechanic.GovernmentMechanics.Get) },
@@ -221,6 +217,17 @@ public class ArcType : IValue
                 ArcType sub = Regulat(t, false);
 
                 return ArcList<IVariable>.GetConstructor(sub.InstanceConstructor, va: false)(b);
+            }, nullable);
+        }
+        else if (key.StartsWith("dict<") && key.EndsWith(">"))
+        {
+            string t = key[5..^1];
+
+            return new((Block b) =>
+            {
+                ArcClass sub = ArcClass.Classes[t];
+
+                return Dict<IVariable>.Constructor(sub)(b);
             }, nullable);
         }
         else

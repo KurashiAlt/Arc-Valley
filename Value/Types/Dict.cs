@@ -9,7 +9,29 @@ public interface ArcEnumerable
 }
 public class Dict<Type> : IArcObject, ArcEnumerable, IEnumerable<KeyValuePair<string, Type>> where Type : IVariable?
 {
-    //(Block s) => new Dict<Mission>(s, Mission.Constructor)
+    public static Func<Block, Dict<Type>> Constructor(ArcClass cls)
+    {
+        return (Block s) =>
+        {
+            if (Parser.HasEnclosingBrackets(s)) s = Compiler.RemoveEnclosingBrackets(s);
+
+            Dict<Type> dict = new();
+
+            if (s.Count == 0) return dict;
+
+            Walker i = new(s);
+            do
+            {
+                string key = i.Current;
+                i = Args.GetArgs(i, out Args args);
+                cls.Define(key);
+                Type vr = (Type)cls.Init(args, key);
+                dict.Add(key, vr);
+            } while (i.MoveNext());
+
+            return dict;
+        };
+    }
     public static Func<Block, Dict<Type>> Constructor(Func<string, Args, Type> constructor)
     {
         return (Block s) =>
