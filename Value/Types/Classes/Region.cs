@@ -51,7 +51,7 @@ public class Region : IArcObject
         StringBuilder sb = new();
         foreach (Region region in Regions.Values())
         {
-            sb.Append($"{region.Id} = {{ areas = {{ {string.Join(' ', from Area in Area.Areas.Values() where Area.Region == region select Area.Id)} }} }} ");
+            sb.Append($"{region.Id} = {{ areas = {{ {string.Join(' ', from Area in ArcClass.Classes["area"].List where Area.Value is ArcObject area && area.Get("region") == region select $"{Area.Key}_area")} }} }} ");
             Program.Localisation.Add($"{region.Id.Value}", region.Name.Value);
             Program.Localisation.Add($"{region.Id.Value}_name", region.Name.Value);
             Program.Localisation.Add($"{region.Id.Value}_adj", region.Adj.Value);

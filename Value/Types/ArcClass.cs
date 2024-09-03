@@ -102,5 +102,9 @@ public class ArcClass : ArcObject
     {
         { "id", new ArcString(id) },
     };
+    public static Func<Block, IVariable> GetListFunc(string Class)
+    {
+        return (Block b) => Classes[Class].ClassGetConstrutor<IVariable>(b);
+    }
     public static Walker Call(Walker i) => Call(i, Constructor);
 }

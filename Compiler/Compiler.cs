@@ -33,7 +33,6 @@ public static partial class Compiler
             { "world_trade_center", new("level", "=", "3", "cost", "=", "1000", "development", "=", "25", "type", "=", "inland", "province_modifiers", "=", "{", "province_trade_power_value", "=", "25", "local_institution_spread", "=", "0.3", "}", "state_modifiers", "=", "{", "local_development_cost", "=", "-0.1", "local_manpower_modifier", "=", "0.33", "allowed_num_of_buildings", "=", "1", "}") },
 
         } },
-        { "areas", Area.Areas },
         { "events", Event.Events },
         { "decisions", Decision.Decisions },
         { "blessings", Blessing.Blessings },
@@ -139,7 +138,6 @@ public static partial class Compiler
     {
         return (string)g.Current switch {
             "province" => Province.Call(g),
-            "area" => Area.Call(g),
             "region" => Region.Call(g),
             "superregion" => Superregion.Call(g),
             "terrain" => Terrain.Call(g),

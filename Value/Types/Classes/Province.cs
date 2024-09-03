@@ -13,7 +13,7 @@ public class Province : IArcObject
     public ArcBool Lake { get; set; }
     public ArcBool Impassible { get; set; }
     public Terrain Terrain { get; set; }
-    public Area? Area { get; set; }
+    public ArcObject Area { get; set; }
     public ArcInt Id { get; set; }
     public ArcInt BaseDevelopment { get; set; }
     public ArcCode Position { get; set; }
@@ -28,7 +28,7 @@ public class Province : IArcObject
         ArcBool Sea, 
         ArcBool Lake, 
         ArcBool Impassible, 
-        Area? Area, 
+        ArcObject Area, 
         Terrain terrain, 
         ArcInt basedevelopment, 
         ArcCode position, 
@@ -87,7 +87,7 @@ public class Province : IArcObject
             isSea,
             args.Get(ArcBool.Constructor, "lake", new(false)),
             args.Get(ArcBool.Constructor, "impassible", new(false)),
-            args.GetFromListNullable(Area.Areas, "area"),
+            (ArcObject)args.GetFromListNullable(ArcClass.Classes["area"].List, "area"),
             terrain,
             args.Get(ArcInt.Constructor, "base_development", new ArcInt(terrain.BaseDevelopment.Value)),
             args.Get(ArcCode.Constructor, "position"),

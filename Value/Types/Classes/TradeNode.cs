@@ -75,13 +75,13 @@ public class TradeNode : IArcObject
     public static readonly Dict<TradeNode> TradeNodes = new();
     public ArcString Id { get; set; }
     public ArcString Name { get; set; }
-    public ArcList<Area> Areas { get; set; }
+    public ArcList<IVariable> Areas { get; set; }
     public ArcList<Outgoing> Outgoings { get; set; }
     public Province Location { get; set; }
     public ArcBool AiWillPropagateThroughTrade { get; set; }
 
     public Dict<IVariable> keyValuePairs { get; set; }
-    public TradeNode(ArcString id, ArcString name, ArcList<Area> areas, ArcList<Outgoing> outgoings, Province location, ArcBool aiWillPropogateTrade)
+    public TradeNode(ArcString id, ArcString name, ArcList<IVariable> areas, ArcList<Outgoing> outgoings, Province location, ArcBool aiWillPropogateTrade)
     {
         Id = id;
         Name = name;
@@ -113,7 +113,7 @@ public class TradeNode : IArcObject
         TradeNode TradeNode = new(
             new($"{id}_tn"),
             args.Get(ArcString.Constructor, "name"),
-            args.Get(ArcList<Area>.GetConstructor(Area.Areas), "areas"),
+            args.Get(ArcList<IVariable>.GetConstructor(ArcClass.GetListFunc("area"), false), "areas"),
             args.Get(ArcList<Outgoing>.GetConstructor(Outgoing.Constructor), "outgoings", new()),
             args.GetFromList(Province.Provinces, "location"),
             args.Get(ArcBool.Constructor, "ai_will_propagate_through_trade", new(false))
