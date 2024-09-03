@@ -205,8 +205,6 @@ internal partial class Program
         ("script", "", Decision.Transpile),
         ("script", "", Event.Transpile),
         ("script", "", Bookmark.Transpile),
-        ("script", "", Region.Transpile),
-        ("script", "", Superregion.Transpile),
         ("script", "", Province.Transpile),
         ("script", "", Terrain.Transpile),
         ("script", "", Blessing.Transpile),

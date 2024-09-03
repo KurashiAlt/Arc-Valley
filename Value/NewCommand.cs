@@ -106,8 +106,6 @@ public class ArcType : IValue
         { "unknown", new(Compiler.global.Get) },
         { "idea_list", new((Block s) => new ArcList<Idea>(s, (Block s, int num) => Idea.Constructor(s, num + 1))) },
         { "province", new(Province.Provinces.Get) },
-        { "region", new(Region.Regions.Get) },
-        { "superregion", new(Superregion.Superregions.Get) },
         { "terrain", new(Terrain.Terrains.Get) },
         { "blessing", new(Blessing.Blessings.Get) },
         { "church_aspect", new(ChurchAspect.ChurchAspects.Get) },
