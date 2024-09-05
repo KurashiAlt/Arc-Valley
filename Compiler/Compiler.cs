@@ -169,7 +169,6 @@ public static partial class Compiler
             "war_goal" => WarGoal.Call(g),
             "province_group" => ProvinceGroup.Call(g),
             "personality_trait" => RulerPersonality.Call(g),
-            "policy" => Policy.Call(g),
             "subject_type" => SubjectType.Call(g),
             "static_modifier" => StaticModifier.Call(g),
             "define" => CallDefine(g),

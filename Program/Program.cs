@@ -209,7 +209,6 @@ internal partial class Program
         ("script", "", Building.Transpile),
         ("script", "", Country.Transpile),
         ("script", "", TradeNode.Transpile),
-        ("script", "", Policy.Transpile),
         ("script", "", Relation.Transpile),
         ("script", "", CultureGroup.Transpile),
         ("script", "", MissionSeries.Transpile),

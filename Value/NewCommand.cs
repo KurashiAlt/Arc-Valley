@@ -123,7 +123,6 @@ public class ArcType : IValue
         { "mission_series", new(MissionSeries.MissionSerieses.Get) },
         { "agenda", new(EstateAgenda.EstateAgendas.Get) },
         { "privilege", new(EstatePrivilege.EstatePrivileges.Get) },
-        { "policy", new(Policy.Policies.Get) },
         { "estate", new(Estate.Estates.Get) },
         { "government", new(Government.Governments.Get) },
         { "government_names", new(GovernmentNames.GovernmentNameDict.Get) },
