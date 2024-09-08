@@ -201,7 +201,6 @@ internal partial class Program
         {
         ("script", "", Incident.Transpile),
         ("script", "", ReligionGroup.Transpile),
-        ("script", "", PersonalDeity.Transpile),
         ("script", "", Decision.Transpile),
         ("script", "", Event.Transpile),
         ("script", "", Province.Transpile),

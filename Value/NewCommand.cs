@@ -112,7 +112,6 @@ public class ArcType : IValue
         { "building", new(Building.Buildings.Get) },
         { "religion", new(Religion.Religions.Get) },
         { "religious_group", new(ReligionGroup.ReligionGroups.Get) },
-        { "personal_deity", new(PersonalDeity.PersonalDeitys.Get) },
         { "tradenode", new(TradeNode.TradeNodes.Get) },
         { "static_modifier", new(StaticModifier.StaticModifiers.Get) },
         { "opinion_modifier", new(OpinionModifier.OpinionModifiers.Get) },
