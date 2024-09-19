@@ -1,43 +1,48 @@
 ﻿using Arc;
-using System;
-using System.Diagnostics;
-using System.Numerics;
 
 public class ArgList : IArcObject, IArcNumber
 {
     public static Dictionary<string, LinkedList<IVariable>> lists = new();
     public LinkedList<IVariable> list;
+
     public static void Add(string list, IVariable v)
     {
         lists[list].AddFirst(v);
     }
+
     public static void Drop(string list)
     {
         lists[list].RemoveFirst();
     }
+
     public ArgList(string listName, LinkedList<IVariable> list)
     {
         this.list = list;
         lists.Add(listName, list);
     }
+
     public bool CanGet(string indexer)
     {
-        if (list.Count == 0) return false;
+        if (list.Count == 0)
+            return false;
         IVariable arg = list.First();
-        if (arg is IArcObject @object) return @object.CanGet(indexer);
+        if (arg is IArcObject @object)
+            return @object.CanGet(indexer);
         if (arg is IVariable bc)
         {
-            if(bc is IArcObject @object2)
+            if (bc is IArcObject @object2)
             {
                 return @object2.CanGet(indexer);
             }
         }
         throw ArcException.Create(indexer, arg, "args isn't of type [Arc Object]");
     }
+
     public IVariable? Get(string indexer)
     {
         IVariable arg = list.First();
-        if (arg is IArcObject @object) return @object.Get(indexer);
+        if (arg is IArcObject @object)
+            return @object.Get(indexer);
         if (arg is IVariable bc)
         {
             if (bc is IArcObject @object2)
@@ -47,26 +52,35 @@ public class ArgList : IArcObject, IArcNumber
         }
         throw ArcException.Create(indexer, arg, "args isn't of type [Arc Object]");
     }
+
     public IVariable Get() => list.First();
+
     public bool LogicalCall(ref Walker i) => list.First().LogicalCall(ref i);
+
     public Walker Call(Walker w, ref Block result)
     {
         IVariable arg = list.First();
-        if (arg is IVariable @object) return @object.Call(w, ref result);
-        if (arg is IArcObject @objec) return @objec.Call(w, ref result);
+        if (arg is IVariable @object)
+            return @object.Call(w, ref result);
+        if (arg is IArcObject @objec)
+            return @objec.Call(w, ref result);
         throw ArcException.Create(w, result, arg, "args isn't of type [Arc Single]");
     }
+
     public override string ToString()
     {
         return list.First().ToString() ?? "";
     }
+
     public double GetNum()
     {
         IVariable arg = list.First();
-        if (arg is IVariable @object) return ((IArcNumber)@object).GetNum();
+        if (arg is IVariable @object)
+            return ((IArcNumber)@object).GetNum();
         throw ArcException.Create(arg, "args isn't of type [IArcNumber]");
     }
 }
+
 public class ArcType : IValue
 {
     public static Dictionary<string, ArcType> Types = new Dictionary<string, ArcType>()
@@ -83,28 +97,71 @@ public class ArcType : IValue
         { "string", new(ArcString.Constructor) },
         { "float", new(ArcFloat.Constructor) },
         { "int", new(ArcInt.Constructor) },
-        { "text", new((string s) => {
-            ArcString c = new(s);
-            c.Value = $"{s}";
-            return c;
-        })},
-        { "base_scope", new((Block b) => {
-            Word tag = b.ToWord();
-            if (Compiler.IsBaseScope(tag) || tag.StartsWith("event_target")) return ArcString.Constructor(b);
-            throw ArcException.Create(b, $"{tag} is not a base_scope");
-        }) },
-        { "country_scope", new((Block b) => {
-            Word tag = b.ToWord();
-            if (Compiler.IsDefaultScope(tag) || Compiler.IsBaseScope(tag) || tag.StartsWith("event_target") || tag == "emperor") return ArcString.Constructor(b);
-            return Country.Countries.Get(tag) ?? throw ArcException.Create(b);
-        })},
-        { "province_scope", new((Block b) => {
-            Word tag = b.ToWord();
-            if (Compiler.IsDefaultScope(tag) || Compiler.IsBaseScope(tag) || tag.StartsWith("event_target") || tag == "emperor") return ArcString.Constructor(b);
-            return Province.Provinces.Get(tag) ?? throw ArcException.Create(b);
-        })},
+        {
+            "text",
+            new(
+                (string s) =>
+                {
+                    ArcString c = new(s);
+                    c.Value = $"{s}";
+                    return c;
+                }
+            )
+        },
+        {
+            "base_scope",
+            new(
+                (Block b) =>
+                {
+                    Word tag = b.ToWord();
+                    if (Compiler.IsBaseScope(tag) || tag.StartsWith("event_target"))
+                        return ArcString.Constructor(b);
+                    throw ArcException.Create(b, $"{tag} is not a base_scope");
+                }
+            )
+        },
+        {
+            "country_scope",
+            new(
+                (Block b) =>
+                {
+                    Word tag = b.ToWord();
+                    if (
+                        Compiler.IsDefaultScope(tag)
+                        || Compiler.IsBaseScope(tag)
+                        || tag.StartsWith("event_target")
+                        || tag == "emperor"
+                    )
+                        return ArcString.Constructor(b);
+                    return Country.Countries.Get(tag) ?? throw ArcException.Create(b);
+                }
+            )
+        },
+        {
+            "province_scope",
+            new(
+                (Block b) =>
+                {
+                    Word tag = b.ToWord();
+                    if (
+                        Compiler.IsDefaultScope(tag)
+                        || Compiler.IsBaseScope(tag)
+                        || tag.StartsWith("event_target")
+                        || tag == "emperor"
+                    )
+                        return ArcString.Constructor(b);
+                    return Province.Provinces.Get(tag) ?? throw ArcException.Create(b);
+                }
+            )
+        },
         { "unknown", new(Compiler.global.Get) },
-        { "idea_list", new((Block s) => new ArcList<Idea>(s, (Block s, int num) => Idea.Constructor(s, num + 1))) },
+        {
+            "idea_list",
+            new(
+                (Block s) =>
+                    new ArcList<Idea>(s, (Block s, int num) => Idea.Constructor(s, num + 1))
+            )
+        },
         { "province", new(Province.Provinces.Get) },
         { "terrain", new(Terrain.Terrains.Get) },
         { "personality_trait", new(RulerPersonality.RulerPersonalities.Get) },
@@ -134,39 +191,68 @@ public class ArcType : IValue
         { "diplomatic_action", new(DiplomaticAction.DiplomaticActions.Get) },
         { "holy_order", new(HolyOrder.HolyOrders.Get) },
         { "casus_belli", new(CasusBelli.CasusBellies.Get) },
-        { "province_triggered_modifier", new(ProvinceTriggeredModifier.ProvinceTriggeredModifiers.Get) },
+        {
+            "province_triggered_modifier",
+            new(ProvinceTriggeredModifier.ProvinceTriggeredModifiers.Get)
+        },
         { "war_goal", new(WarGoal.WarGoals.Get) },
         { "province_group", new(ProvinceGroup.ProvinceGroups.Get) },
         { "subject_type", new(SubjectType.SubjectTypes.Get) },
-        { "estate_privilege", new((Block b) => {
-            string id = Compiler.GetId(b.ToString());
-            string[] parts = id.Split(':');
-            Estate est = Estate.Estates[parts[0]];
-            if (est.Privileges.dict == null) throw new Exception();
-            EstatePrivilege pr = est.Privileges.dict[parts[1]];
-            return pr;
-        }) },
-        { "country_event", new((Block b) => {
-            string id = Compiler.GetId(b.ToString());
-            Event c = Event.Events[id];
-            if (c.ProvinceEvent.Value) throw ArcException.Create(b, id, $"{id} is not a country_event");
-            return c;
-        }) },
-        { "province_event", new((Block b) => {
-            string id = Compiler.GetId(b.ToString());
-            Event c = Event.Events[id];
-            if (!c.ProvinceEvent.Value) throw ArcException.Create(b, id, $"{id} is not a country_event");
-            return c;
-        }) },
-        { "ui_node", new((Block b) => {
-            string id = Compiler.GetId(b.ToString());
-            InterfaceNode c = Compiler.GetVariable<InterfaceNode>(new(id, b.ToWord()));
-            return c;
-        }) }
+        {
+            "estate_privilege",
+            new(
+                (Block b) =>
+                {
+                    string id = Compiler.GetId(b.ToString());
+                    string[] parts = id.Split(':');
+                    Estate est = Estate.Estates[parts[0]];
+                    if (est.Privileges.dict == null)
+                        throw new Exception();
+                    EstatePrivilege pr = est.Privileges.dict[parts[1]];
+                    return pr;
+                }
+            )
+        },
+        {
+            "country_event",
+            new(
+                (Block b) =>
+                {
+                    string id = Compiler.GetId(b.ToString());
+                    Event c = Event.Events[id];
+                    if (c.ProvinceEvent.Value)
+                        throw ArcException.Create(b, id, $"{id} is not a country_event");
+                    return c;
+                }
+            )
+        },
+        {
+            "province_event",
+            new(
+                (Block b) =>
+                {
+                    string id = Compiler.GetId(b.ToString());
+                    Event c = Event.Events[id];
+                    if (!c.ProvinceEvent.Value)
+                        throw ArcException.Create(b, id, $"{id} is not a country_event");
+                    return c;
+                }
+            )
+        },
+        {
+            "ui_node",
+            new(
+                (Block b) =>
+                {
+                    string id = Compiler.GetId(b.ToString());
+                    InterfaceNode c = Compiler.GetVariable<InterfaceNode>(new(id, b.ToWord()));
+                    return c;
+                }
+            )
+        },
     };
     public Func<Block, IVariable> InstanceConstructor { get; set; }
     public bool Nullable { get; set; }
-
 
 #pragma warning disable CS8618
     public ArcType() { } // Required for types that inherit from this type.
@@ -177,20 +263,23 @@ public class ArcType : IValue
         Nullable = nullable;
         InstanceConstructor = (Block b) => get(b.ToWord());
     }
+
     public ArcType(Func<Block, IVariable> constructor, bool nullable = false)
     {
         Nullable = nullable;
         InstanceConstructor = constructor;
     }
+
     public static ArcType Constructor(Block b)
     {
-        if(b.Count != 1)
+        if (b.Count != 1)
         {
             Args args = Args.GetArgs(b);
             return new ArcStruct(null, args);
         }
 
-        if(b.First == null) throw new Exception();
+        if (b.First == null)
+            throw new Exception();
         string key = b.First.Value;
 
         bool nullable = false;
@@ -200,33 +289,40 @@ public class ArcType : IValue
             nullable = true;
         }
 
-        if(key.StartsWith("list<") && key.EndsWith(">"))
+        if (key.StartsWith("list<") && key.EndsWith(">"))
         {
             string t = key[5..^1];
 
-            return new((Block b) =>
-            {
-                ArcType sub = Regulat(t, false);
+            return new(
+                (Block b) =>
+                {
+                    ArcType sub = Regulat(t, false);
 
-                return ArcList<IVariable>.GetConstructor(sub.InstanceConstructor, va: false)(b);
-            }, nullable);
+                    return ArcList<IVariable>.GetConstructor(sub.InstanceConstructor, va: false)(b);
+                },
+                nullable
+            );
         }
         else if (key.StartsWith("dict<") && key.EndsWith(">"))
         {
             string t = key[5..^1];
 
-            return new((Block b) =>
-            {
-                ArcClass sub = ArcClass.Classes[t];
+            return new(
+                (Block b) =>
+                {
+                    ArcClass sub = ArcClass.Classes[t];
 
-                return Dict<IVariable>.Constructor(sub)(b);
-            }, nullable);
+                    return Dict<IVariable>.Constructor(sub)(b);
+                },
+                nullable
+            );
         }
         else
         {
             return Regulat(key, nullable);
         }
     }
+
     public static ArcType Regulat(string key, bool nullable)
     {
         ArcType c = Types[key].CreateCopy();
@@ -235,28 +331,33 @@ public class ArcType : IValue
     }
 
     public void Set(Block b) => throw new NotImplementedException();
+
     public ArcType CreateCopy()
     {
         return new ArcType(InstanceConstructor, Nullable);
     }
 }
+
 public enum CompileType
 {
     Effect,
     Trigger,
     Modifier,
     Block,
-    Interface
+    Interface,
 }
+
 public class CommandCall : IVariable
 {
     public NewCommand Command;
     public ArcObject This;
+
     public CommandCall(NewCommand command, ArcObject @this)
     {
         Command = command;
         This = @this;
     }
+
     public Walker Call(Walker i, ref Block result)
     {
         i = Args.GetArgs(i, out Args args);
@@ -266,16 +367,20 @@ public class CommandCall : IVariable
         return i;
     }
 }
+
 public class NewCommand : ArcObject
 {
-    static IVariable QFromArgs<T>(Args args, T b) where T : ArcObject
+    static IVariable QFromArgs<T>(Args args, T b)
+        where T : ArcObject
     {
-        if (args.block == null) throw new Exception();
+        if (args.block == null)
+            throw new Exception();
         try
         {
             if (Compiler.TryGetVariable(args.block.ToWord(), out IVariable? var))
             {
-                if (var == null) throw new Exception();
+                if (var == null)
+                    throw new Exception();
                 return var;
             }
         }
@@ -290,13 +395,16 @@ public class NewCommand : ArcObject
             throw ArcException.Create(args, b, e);
         }
     }
+
     public void Call(Args args, ref Block result)
     {
         args.Inherit(Get<ArgsObject>("default").args);
 
         IVariable a;
-        if (Get("args") is Dict<ArcType>) a = FromArgs(args, this);
-        else a = QFromArgs(args, this);
+        if (Get("args") is Dict<ArcType>)
+            a = FromArgs(args, this);
+        else
+            a = QFromArgs(args, this);
 
         ArgList.Add("args", a);
         Compiler.CompileRightAway++;
@@ -306,13 +414,16 @@ public class NewCommand : ArcObject
         Compiler.CompileRightAway--;
         ArgList.Drop("args");
     }
+
     public override Walker Call(Walker i, ref Block result)
     {
         i = Args.GetArgs(i, out Args args);
         Call(args, ref result);
         return i;
     }
+
     public CompileType CommandType;
+
     public NewCommand(string id, Args args, CompileType commandType)
     {
         ArgsObject def = args.Get(ArgsObject.Constructor, "default", new(new()));
@@ -335,7 +446,8 @@ public class NewCommand : ArcObject
         {
             transpile.Value = block;
         }
-        else {
+        else
+        {
             Word FirstWord = args.block.First.Value;
             Block cArgs = args.Get("args");
             if (cArgs.Count == 1)
@@ -350,7 +462,10 @@ public class NewCommand : ArcObject
                 transpile.Value.Add(new Word("=", FirstWord));
                 transpile.Value.Add(new Word("{", FirstWord));
                 Args nArgs = Args.GetArgs(args.Get("args"));
-                foreach (KeyValuePair<string, Block> v in nArgs.keyValuePairs ?? throw ArcException.Create(id, args, FirstWord, cArgs))
+                foreach (
+                    KeyValuePair<string, Block> v in nArgs.keyValuePairs
+                        ?? throw ArcException.Create(id, args, FirstWord, cArgs)
+                )
                 {
                     transpile.Value.Add(new Word("when", FirstWord));
                     transpile.Value.Add(new Word($"[exists = args:{v.Key}]", FirstWord));
@@ -368,7 +483,9 @@ public class NewCommand : ArcObject
                             transpile.Value.Add(new Word("}", FirstWord));
                             break;
                         default:
-                            transpile.Value.Add(new Word($"`{v.Key} = {{args:{v.Key}}}`", FirstWord));
+                            transpile.Value.Add(
+                                new Word($"`{v.Key} = {{args:{v.Key}}}`", FirstWord)
+                            );
                             break;
                     }
                 }
@@ -379,17 +496,33 @@ public class NewCommand : ArcObject
         Add("transpile", transpile);
         CommandType = commandType;
     }
+
     public static Walker CallEffect(Walker i) => Call(i, ConstructorEffect);
+
     public static Walker CallTrigger(Walker i) => Call(i, ConstructorTrigger);
+
     public static Walker CallModifier(Walker i) => Call(i, ConstructorModifier);
-    public static NewCommand Constructor(string id, Args args, CompileType commandType, ref List<(string, NewCommand)> list)
+
+    public static NewCommand Constructor(
+        string id,
+        Args args,
+        CompileType commandType,
+        ref List<(string, NewCommand)> list
+    )
     {
         NewCommand command;
         command = new(id, args, commandType);
         list.Add((id, command));
         return command;
     }
-    public static NewCommand ConstructorEffect(string id, Args args) => Constructor(id, args, CompileType.Effect, ref Compiler.NewEffects);
-    public static NewCommand ConstructorTrigger(string id, Args args) => Constructor(id, args, CompileType.Trigger, ref Compiler.NewTriggers);
-    public static NewCommand ConstructorModifier(string id, Args args) => Constructor(id, args, CompileType.Modifier, ref Compiler.NewModifiers);
+
+    public static NewCommand ConstructorEffect(string id, Args args) =>
+        Constructor(id, args, CompileType.Effect, ref Compiler.NewEffects);
+
+    public static NewCommand ConstructorTrigger(string id, Args args) =>
+        Constructor(id, args, CompileType.Trigger, ref Compiler.NewTriggers);
+
+    public static NewCommand ConstructorModifier(string id, Args args) =>
+        Constructor(id, args, CompileType.Modifier, ref Compiler.NewModifiers);
 }
+
