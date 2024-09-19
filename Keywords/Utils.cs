@@ -1,4 +1,6 @@
-﻿namespace Arc;
+﻿using System.Text;
+
+namespace Arc;
 public partial class Compiler
 {
     public static Walker GetScope(Walker i, out Block scope)
@@ -31,6 +33,60 @@ public partial class Compiler
     {
         return TryGetVariable(locator, out var, new Func<string, IVariable?>(global.Get), global.CanGet);
     }
+    public static string[] GetSubparts(string str)
+    {
+        List<string> retval = new();
+        if (string.IsNullOrWhiteSpace(str)) return retval.ToArray();
+        int ndx = 0;
+        StringBuilder s = new();
+        bool insideDoubleQuote = false;
+        bool insideSpecialQuote = false;
+        int circleIndent = 0;
+        int squareIndent = 0;
+
+        while (ndx < str.Length)
+        {
+            if (!insideDoubleQuote && !insideSpecialQuote && circleIndent == 0 && squareIndent == 0)
+            {
+                if (str[ndx] == '{' || str[ndx] == '}')
+                {
+                    string a = s.ToString();
+                    if (!string.IsNullOrWhiteSpace(a)) retval.Add(a);
+                    s.Clear();
+                    s.Append(str[ndx]);
+                    a = s.ToString();
+                    if (!string.IsNullOrWhiteSpace(a)) retval.Add(a);
+                    s.Clear();
+                    incr();
+                    continue;
+                }
+                else if (str[ndx] == ':')
+                {
+                    string a = s.ToString().Trim();
+                    if (!string.IsNullOrWhiteSpace(a)) retval.Add(a);
+                    s.Clear();
+                    incr();
+                    continue;
+                }
+            }
+            if (str[ndx] == '`') insideSpecialQuote = !insideSpecialQuote;
+            if (str[ndx] == '"') insideDoubleQuote = !insideDoubleQuote;
+            if (str[ndx] == '(') circleIndent++;
+            if (str[ndx] == '[') squareIndent++;
+            if (str[ndx] == ')') circleIndent--;
+            if (str[ndx] == ']') squareIndent--;
+
+            s.Append(str[ndx]);
+            incr();
+            void incr()
+            {
+                ndx++;
+            }
+        }
+        string v = s.ToString();
+        if (!string.IsNullOrWhiteSpace(v)) retval.Add(v);
+        return retval.ToArray();
+    }
     public static bool TryGetVariable(string locator, out IVariable? var, Func<string, IVariable?> Get, Func<string, bool> CanGet)
     {
         if (locator.StartsWith("trigger_value:", "event_target:", "modifier:") || locator.Contains(' ') || locator.EnclosedBy('`'))
@@ -41,12 +97,12 @@ public partial class Compiler
 
         if (locator.Contains(':'))
         {
-            string[] KeyLocator = locator.Split(':');
+            string[] KeyLocator = GetSubparts(locator);
             int f = 0;
             string currentKey;
             do
             {
-                currentKey = KeyLocator[f];
+                currentKey = GetId(KeyLocator[f]);
                 if (KeyLocator.Length > f + 1)
                 {
                     try

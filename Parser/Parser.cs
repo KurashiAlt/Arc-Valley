@@ -105,7 +105,7 @@ public static partial class Parser
         int indent = 0;
         for (int i = 0; i < vs.Count; i++)
         {
-            if (vs[i].StartsWith("#"))
+            if (vs[i].StartsWith('#'))
             {
                 vs[i] = vs[i].Prepend(indent, '\t');
             }

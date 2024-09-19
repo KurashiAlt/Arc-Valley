@@ -151,7 +151,7 @@ public class ArcStruct : ArcType
         if (!isNullable)
         {
             throw ArcException.Create(
-                $"Missing {kvp.Key} for struct", obj, isNullable, defaultValue, kvp.Value.type
+                $"Missing {kvp.Key} for struct", obj, isNullable, defaultValue, kvp.Value.type, kvp.Key
             );
         }
     }
