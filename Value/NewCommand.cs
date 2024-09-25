@@ -261,7 +261,13 @@ public class ArcType : IValue
     public ArcType(Func<string, IVariable?> get, bool nullable = false)
     {
         Nullable = nullable;
-        InstanceConstructor = (Block b) => get(b.ToWord());
+        InstanceConstructor = (Block b) =>
+        {
+            var value = get(b.ToWord());
+            if (value == null)
+                throw new Exception("Could not get the value.");
+            return value;
+        };
     }
 
     public ArcType(Func<Block, IVariable> constructor, bool nullable = false)
