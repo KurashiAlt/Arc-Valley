@@ -30,13 +30,6 @@ internal partial class Program
     {
         CultureInfo.CurrentCulture = CultureInfo.CreateSpecificCulture("en");
 
-        if (args.Length > 0 && Path.Exists(args[0]))
-        {
-            directory = args[0];
-            if (!directory.EndsWith('\\')) directory += "\\";
-            ArcDirectory.directory = directory;
-        }
-
         Args arcDefines = Args.GetArgsFromFile(Path.Combine(directory, "arc.defines"));
         headers = arcDefines.Get(ArcString.Constructor, "headers").Value;
         UnsortedFolder = arcDefines.Get(ArcString.Constructor, "unsorted_target").Value;
