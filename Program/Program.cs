@@ -30,168 +30,120 @@ internal partial class Program
     {
         CultureInfo.CurrentCulture = CultureInfo.CreateSpecificCulture("en");
 
-        Args arcDefines = Args.GetArgsFromFile(Path.Combine(directory, "arc.defines"));
-        headers = arcDefines.Get(ArcString.Constructor, "headers").Value;
-        UnsortedFolder = arcDefines.Get(ArcString.Constructor, "unsorted_target").Value;
-        TranspileTarget = arcDefines.Get(ArcString.Constructor, "transpile_target").Value;
-        GfxFolder = arcDefines.Get(ArcString.Constructor, "gfx_folder").Value;
-        MapFolder = arcDefines.Get(ArcString.Constructor, "map_folder").Value;
-        SelectorFolder = arcDefines.Get(ArcString.Constructor, "selector_folder").Value;
-        LoadOrder = from c in arcDefines.Get(ArcCode.Constructor, "load_order").Value select new string(c.Value);
-        PartialMod = (from a in arcDefines.Get(ArcCode.Constructor, "partial_mod", new()).Value select a.Value).ToArray();
-        OnlyCustomTranspilers = arcDefines.Get(ArcBool.Constructor, "only_custom_transpilers", new(false)).Value;
-        CheckForVariableDefinitions = arcDefines.Get(ArcBool.Constructor, "check_for_variable_definitions", new(true)).Value;
-
-        if (args.Length == 0)
+        if (args.Length == 1 && File.Exists(args[0]))
         {
-            Console.WriteLine("You provided no arguments for arc, would you like to transpile all? y/n");
-            string? response = Console.ReadLine();
-            if (response == "y") args = new string[] { "all" };
-        }
-        if (
-            !args.Contains("no-vdir") &&
-            (!File.Exists(Path.Combine(directory, ".arc/script.vdir")) ||
-            !File.Exists(Path.Combine(directory, ".arc/unsorted.vdir")) ||
-            !File.Exists(Path.Combine(directory, ".arc/map.vdir")) ||
-            !File.Exists(Path.Combine(directory, ".arc/gfx.vdir")))
-        ) {
-            Console.WriteLine("One of the virtual directory caches was missing, arguments have been edited to transpile all");
-            Array.Resize(ref args, args.Length + 1);
-            args[^1] = "all";
+            HandleSingleFile(args);
+            return 0;
         }
 
+        DoDefines();
+        args = SettleArguments(args);
+        args = HandleVDir(args);
         Format = args.Contains("format");
+        ScriptsHandler(args);
 
+        PerformTranspilation(args);
+        PopulateVDir(args);
+        UArgumentHandler(args);
+
+        Console.WriteLine($"Transpilation took: {(double)timer.ElapsedMilliseconds / 1000:0.000} seconds".Pastel(ConsoleColor.Red));
+        CheckForExtraFiles(args);
+
+        return 0;
+    }
+
+    private static void HandleSingleFile(string[] args)
+    {
+        string OriginalPath = args[0];
+        string RenamedPath = Path.ChangeExtension(OriginalPath, "txt");
+
+        string FileResult = Compiler.Compile(CompileType.Effect, Parser.ParseFile(OriginalPath));
+        FileResult = Parser.FormatCode(FileResult);
+
+        File.WriteAllText(RenamedPath, FileResult);
+    }
+
+    private static void ScriptsHandler(string[] args)
+    {
         if (args.Contains("script") || args.Contains("all"))
         {
-            foreach (ArcPath file in ArcDirectory.GetFiles($"{SelectorFolder}"))
-            {
-                if (!file.value.EndsWith(".png")) continue;
-                ArcPath name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
-
-                _ = new ProvinceGroup(name, new())
-                {
-                    { "id", new ArcString(name) },
-                    { "provinces", new ArcList<Province>() }
-                };
-            }
-
-            foreach (string location in LoadOrder)
-            {
-                TimeSpan start = timer.Elapsed;
-                LoadTarget(location);
-                TimeSpan end = timer.Elapsed;
-                Console.WriteLine($"{$"Finished Loading {location}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
-            }
-
-            if (args.Contains("selector"))
-            {
-#pragma warning disable CA1416 // Validate platform compatibility
-                TimeSpan start = timer.Elapsed;
-                using System.Drawing.Bitmap provmap = new($"{directory}/{MapFolder}/provinces.bmp");
-                foreach (string file in ArcDirectory.GetFiles($"{SelectorFolder}"))
-                {
-                    if (!file.EndsWith(".png")) continue;
-                    List<System.Drawing.Color> colors = new();
-
-                    System.Drawing.Bitmap img = new(file);
-
-                    string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
-
-                    for (int x = 0; x < img.Width; x++)
-                    {
-                        for (int y = 0; y < img.Height; y++)
-                        {
-                            if (img.GetPixel(x, y).A == 0) continue;
-
-                            System.Drawing.Color color = provmap.GetPixel(x, y);
-
-                            if (!colors.Contains(color)) colors.Add(color);
-                        }
-                    }
-
-                    List<Province?> list = new();
-                    List<string> keys = new();
-                    foreach (KeyValuePair<string, Province> v in 
-                        from prov in Province.Provinces where 
-                            colors.Contains(System.Drawing.Color.FromArgb(
-                                byte.Parse(prov.Value.Color.Value.ElementAt(0)), 
-                                byte.Parse(prov.Value.Color.Value.ElementAt(1)), 
-                                byte.Parse(prov.Value.Color.Value.ElementAt(2))
-                            )) select prov) {
-                        list.Add(v.Value);
-                        keys.Add(v.Key);
-                    }
-
-                    File.WriteAllText($"{file}.gen", string.Join(' ', from p in keys select p));
-                    ProvinceGroup.ProvinceGroups[name].Get<ArcList<Province>>("provinces").Values = list;
-                }
-#pragma warning restore CA1416 // Validate platform compatibility
-                TimeSpan end = timer.Elapsed;
-                Console.WriteLine($"{$"Finished Loading {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
-            }
-            else
-            {
-                TimeSpan start = timer.Elapsed;
-
-                foreach (string file in ArcDirectory.GetFiles($"{SelectorFolder}"))
-                {
-                    if (!file.EndsWith(".gen")) continue;
-
-                    string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
-
-                    List<Province?> list = new();
-                    foreach (Word w in Parser.ParseFile(file))
-                    {
-                        try
-                        {
-                            list.Add(Province.Provinces[w]);
-                        }
-                        catch
-                        {
-                            Console.WriteLine($"Tried to add province to selector province group: '{file}' selector in question, '{w}' unknown province identifier in question.");
-                        }
-                    }
-
-                    ProvinceGroup.ProvinceGroups[name].Get<ArcList<Province>>("provinces").Values = list;
-                }
-                TimeSpan end = timer.Elapsed;
-                Console.WriteLine($"{$"Finished Loading Cached {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
-            }
+            PredefineSelectorGroups();
+            LoadLocations();
+            LoadSelectorGroups(args);
 
             ArcBlock.PastDefineStep = true;
             Compiler.CompileRightAway += 1;
-            
-            TimeSpan tstart = timer.Elapsed;
-            var vList = (from c in CompileList.list where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
-            int ti = 0;
-            while (vList.Length != 0)
-            {
-                foreach (ArcBlock v in vList)
-                {
-                    try
-                    {
-                        v.Compile();
-                    }
-                    catch (Exception e)
-                    {
-                        v.Compiled = "ERROR";
-                        Console.WriteLine(e.Message);
-                        Console.WriteLine(e.StackTrace);
-                    }
-                    ti++;
-                    if (ti % 1000 == 0) Console.WriteLine($"Has finished compiling {ti} blocks".Pastel(ConsoleColor.Magenta));
-                }
 
-                vList = (from c in CompileList.list where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
-            }
-            TimeSpan tend = timer.Elapsed;
-            Console.WriteLine($"{$"Finished Compiling Code".PadRight(50).Pastel(ConsoleColor.Magenta)}{$"{(tend - tstart).TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Magenta)}");
+            CompileBlocks();
         }
+    }
 
-
-        (string, string, Func<string>)[] Transpilers =
+    private static void UArgumentHandler(string[] args)
+    {
+        for (int i = 0; i < args.Length; i++)
         {
+            if (args[i] != "-u") continue;
+            if (args.Length < i + 1) continue;
+            string file = args[i + 1];
+            Unsorted(file);
+        }
+    }
+
+    private static void CheckForExtraFiles(string[] args)
+    {
+        ArcDirectory.CheckFolderForUncategorizedFiles(TranspileTarget);
+        if (ArcDirectory.ExtraFiles.Count == 0) Console.WriteLine("All files recognized");
+        else if (!args.Contains("no-vdir"))
+        {
+            Console.WriteLine($"{ArcDirectory.ExtraFiles.Count} unknown files found in {TranspileTarget}");
+            foreach (string extraFile in ArcDirectory.ExtraFiles)
+            {
+                Console.WriteLine($"\t{extraFile}".Pastel(ConsoleColor.Gray));
+            }
+            Console.WriteLine($"Would you like to delete these files? y/n");
+            if (args.Contains("-Y"))
+            {
+                foreach (string extraFile in ArcDirectory.ExtraFiles)
+                {
+                    ArcDirectory.TryDelete(Path.Combine(directory, extraFile));
+                }
+                Console.WriteLine("Deleted all unrecognized files");
+            }
+            else if (args.Contains("-N"))
+            {
+                Console.WriteLine("Did not delete unrecognized files");
+            }
+            else
+            {
+                string? response = Console.ReadLine();
+                if (response == "y")
+                {
+                    foreach (string extraFile in ArcDirectory.ExtraFiles)
+                    {
+                        ArcDirectory.TryDelete(Path.Combine(directory, extraFile));
+                    }
+                    Console.WriteLine("Deleted all unrecognized files");
+                }
+                else Console.WriteLine("Did not delete unrecognized files");
+            }
+        }
+    }
+
+    private static void PopulateVDir(string[] args)
+    {
+        if (!args.Contains("no-vdir"))
+        {
+            TimeSpan start = timer.Elapsed;
+            ArcDirectory.VDirPopulate(args);
+            start = timer.Elapsed - start;
+            Console.WriteLine($"{$"Virtual Directory Populated".PadRight(50).Pastel(ConsoleColor.Cyan)}{$"{start.TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
+        }
+    }
+
+    private static void PerformTranspilation(string[] args)
+    {
+        (string, string, Func<string>)[] Transpilers =
+                {
         ("script", "", Incident.Transpile),
         ("script", "", ReligionGroup.Transpile),
         ("script", "", Decision.Transpile),
@@ -248,64 +200,189 @@ internal partial class Program
             start = timer.Elapsed - start;
             Console.WriteLine($"{$"Finished Transpiling{transpiler.Item2} {type}".PadRight(50).Pastel(ConsoleColor.Cyan)}{$"{start.TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
         }
+    }
 
-        if (!args.Contains("no-vdir")) 
+    private static void CompileBlocks()
+    {
+        TimeSpan tstart = timer.Elapsed;
+        var vList = (from c in CompileList.list where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
+        int ti = 0;
+        while (vList.Length != 0)
+        {
+            foreach (ArcBlock v in vList)
+            {
+                try
+                {
+                    v.Compile();
+                }
+                catch (Exception e)
+                {
+                    v.Compiled = "ERROR";
+                    Console.WriteLine(e.Message);
+                    Console.WriteLine(e.StackTrace);
+                }
+                ti++;
+                if (ti % 1000 == 0) Console.WriteLine($"Has finished compiling {ti} blocks".Pastel(ConsoleColor.Magenta));
+            }
+
+            vList = (from c in CompileList.list where c.ShouldBeCompiled && c.Compiled == null select c).ToArray();
+        }
+        TimeSpan tend = timer.Elapsed;
+        Console.WriteLine($"{$"Finished Compiling Code".PadRight(50).Pastel(ConsoleColor.Magenta)}{$"{(tend - tstart).TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Magenta)}");
+    }
+
+    private static void LoadLocations()
+    {
+        foreach (string location in LoadOrder)
         {
             TimeSpan start = timer.Elapsed;
-            ArcDirectory.VDirPopulate(args);
-            start = timer.Elapsed - start;
-            Console.WriteLine($"{$"Virtual Directory Populated".PadRight(50).Pastel(ConsoleColor.Cyan)}{$"{start.TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
+            LoadTarget(location);
+            TimeSpan end = timer.Elapsed;
+            Console.WriteLine($"{$"Finished Loading {location}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).Milliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
         }
-
-        for (int i = 0; i < args.Length; i++)
-        {
-            if (args[i] != "-u") continue;
-            if (args.Length < i + 1) continue;
-            string file = args[i + 1];
-            Unsorted(file);
-        }
-        
-        Console.WriteLine($"Transpilation took: {(double)timer.ElapsedMilliseconds / 1000:0.000} seconds".Pastel(ConsoleColor.Red));
-
-        ArcDirectory.CheckFolderForUncategorizedFiles(TranspileTarget);
-        if (ArcDirectory.ExtraFiles.Count == 0) Console.WriteLine("All files recognized");
-        else if (!args.Contains("no-vdir"))
-        {
-            Console.WriteLine($"{ArcDirectory.ExtraFiles.Count} unknown files found in {TranspileTarget}");
-            foreach (string extraFile in ArcDirectory.ExtraFiles)
-            {
-                Console.WriteLine($"\t{extraFile}".Pastel(ConsoleColor.Gray));
-            }
-            Console.WriteLine($"Would you like to delete these files? y/n");
-            if (args.Contains("-Y"))
-            {
-                foreach (string extraFile in ArcDirectory.ExtraFiles)
-                {
-                    ArcDirectory.TryDelete(Path.Combine(directory, extraFile));
-                }
-                Console.WriteLine("Deleted all unrecognized files");
-            }
-            else if (args.Contains("-N"))
-            {
-                Console.WriteLine("Did not delete unrecognized files");
-            }
-            else
-            {
-                string? response = Console.ReadLine();
-                if (response == "y")
-                {
-                    foreach (string extraFile in ArcDirectory.ExtraFiles)
-                    {
-                        ArcDirectory.TryDelete(Path.Combine(directory, extraFile));
-                    }
-                    Console.WriteLine("Deleted all unrecognized files");
-                }
-                else Console.WriteLine("Did not delete unrecognized files");
-            }
-        }
-
-        return 0;
     }
+
+    private static void LoadSelectorGroups(string[] args)
+    {
+        if (args.Contains("selector"))
+        {
+#pragma warning disable CA1416 // Validate platform compatibility
+            TimeSpan start = timer.Elapsed;
+            using System.Drawing.Bitmap provmap = new($"{directory}/{MapFolder}/provinces.bmp");
+            foreach (string file in ArcDirectory.GetFiles($"{SelectorFolder}"))
+            {
+                if (!file.EndsWith(".png")) continue;
+                List<System.Drawing.Color> colors = new();
+
+                System.Drawing.Bitmap img = new(file);
+
+                string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
+
+                for (int x = 0; x < img.Width; x++)
+                {
+                    for (int y = 0; y < img.Height; y++)
+                    {
+                        if (img.GetPixel(x, y).A == 0) continue;
+
+                        System.Drawing.Color color = provmap.GetPixel(x, y);
+
+                        if (!colors.Contains(color)) colors.Add(color);
+                    }
+                }
+
+                List<Province?> list = new();
+                List<string> keys = new();
+                foreach (KeyValuePair<string, Province> v in
+                    from prov in Province.Provinces
+                    where
+                        colors.Contains(System.Drawing.Color.FromArgb(
+                            byte.Parse(prov.Value.Color.Value.ElementAt(0)),
+                            byte.Parse(prov.Value.Color.Value.ElementAt(1)),
+                            byte.Parse(prov.Value.Color.Value.ElementAt(2))
+                        ))
+                    select prov)
+                {
+                    list.Add(v.Value);
+                    keys.Add(v.Key);
+                }
+
+                File.WriteAllText($"{file}.gen", string.Join(' ', from p in keys select p));
+                ProvinceGroup.ProvinceGroups[name].Get<ArcList<Province>>("provinces").Values = list;
+            }
+#pragma warning restore CA1416 // Validate platform compatibility
+            TimeSpan end = timer.Elapsed;
+            Console.WriteLine($"{$"Finished Loading {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
+        }
+        else
+        {
+            TimeSpan start = timer.Elapsed;
+
+            foreach (string file in ArcDirectory.GetFiles($"{SelectorFolder}"))
+            {
+                if (!file.EndsWith(".gen")) continue;
+
+                string name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
+
+                List<Province?> list = new();
+                foreach (Word w in Parser.ParseFile(file))
+                {
+                    try
+                    {
+                        list.Add(Province.Provinces[w]);
+                    }
+                    catch
+                    {
+                        Console.WriteLine($"Tried to add province to selector province group: '{file}' selector in question, '{w}' unknown province identifier in question.");
+                    }
+                }
+
+                ProvinceGroup.ProvinceGroups[name].Get<ArcList<Province>>("provinces").Values = list;
+            }
+            TimeSpan end = timer.Elapsed;
+            Console.WriteLine($"{$"Finished Loading Cached {SelectorFolder}".PadRight(50).Pastel(ConsoleColor.Yellow)}{$"{(end - start).TotalMilliseconds,7:0} Milliseconds".Pastel(ConsoleColor.Red)}");
+        }
+    }
+
+    private static void PredefineSelectorGroups()
+    {
+        foreach (ArcPath file in ArcDirectory.GetFiles($"{SelectorFolder}"))
+        {
+            if (!file.value.EndsWith(".png")) continue;
+            ArcPath name = Path.GetRelativePath($"{directory}/{SelectorFolder}", file).Split('.')[0];
+
+            _ = new ProvinceGroup(name, new())
+                {
+                    { "id", new ArcString(name) },
+                    { "provinces", new ArcList<Province>() }
+                };
+        }
+    }
+
+    private static string[] HandleVDir(string[] args)
+    {
+        if (
+                    !args.Contains("no-vdir") &&
+                    (!File.Exists(Path.Combine(directory, ".arc/script.vdir")) ||
+                    !File.Exists(Path.Combine(directory, ".arc/unsorted.vdir")) ||
+                    !File.Exists(Path.Combine(directory, ".arc/map.vdir")) ||
+                    !File.Exists(Path.Combine(directory, ".arc/gfx.vdir")))
+                )
+        {
+            Console.WriteLine("One of the virtual directory caches was missing, arguments have been edited to transpile all");
+            Array.Resize(ref args, args.Length + 1);
+            args[^1] = "all";
+        }
+
+        return args;
+    }
+
+    private static string[] SettleArguments(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            Console.WriteLine("You provided no arguments for arc, would you like to transpile all? y/n");
+            string? response = Console.ReadLine();
+            if (response == "y") args = new string[] { "all" };
+        }
+
+        return args;
+    }
+
+    private static void DoDefines()
+    {
+        Args arcDefines = Args.GetArgsFromFile(Path.Combine(directory, "arc.defines"));
+        headers = arcDefines.Get(ArcString.Constructor, "headers").Value;
+        UnsortedFolder = arcDefines.Get(ArcString.Constructor, "unsorted_target").Value;
+        TranspileTarget = arcDefines.Get(ArcString.Constructor, "transpile_target").Value;
+        GfxFolder = arcDefines.Get(ArcString.Constructor, "gfx_folder").Value;
+        MapFolder = arcDefines.Get(ArcString.Constructor, "map_folder").Value;
+        SelectorFolder = arcDefines.Get(ArcString.Constructor, "selector_folder").Value;
+        LoadOrder = from c in arcDefines.Get(ArcCode.Constructor, "load_order").Value select new string(c.Value);
+        PartialMod = (from a in arcDefines.Get(ArcCode.Constructor, "partial_mod", new()).Value select a.Value).ToArray();
+        OnlyCustomTranspilers = arcDefines.Get(ArcBool.Constructor, "only_custom_transpilers", new(false)).Value;
+        CheckForVariableDefinitions = arcDefines.Get(ArcBool.Constructor, "check_for_variable_definitions", new(true)).Value;
+    }
+
     static string TechnologyGroups()
     {
         if (!Compiler.global.CanGet("technology_groups")) return "";
